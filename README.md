@@ -1,128 +1,59 @@
-<div align="center">
-  
-# 💬 Real-Time Chat Workspace
+# ComicChat
 
-**A highly-scalable, low-latency, self-hosted communication platform.**
+**Социальный мессенджер, в котором каждое новое сообщение становится кадром комикса.**
 
-[![Next.js version](https://img.shields.io/badge/Next.js-14.x-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-Database_&_Auth-43a047?style=for-the-badge&logo=supabase)](https://supabase.com/)
-[![React](https://img.shields.io/badge/React-18-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+Пользователь набирает обычный текст, а собеседник получает визуальное сообщение: узнаваемый персонаж, эмоция, сцена и реплика в комиксном пузыре. Ответ превращается в следующий кадр. Так разговор развивается как **живой комикс**, а не как пересказ истории переписки задним числом.
 
-[Features](#-features) •
-[Architecture](#-architecture) •
-[Getting Started](#-getting-started) •
-[Documentation](#-documentation) •
-[Deploy](#-deploy) •
-[Contributing](#-contributing)
+> **Статус:** идея и дорожная карта утверждены как направление разработки. Текущий код — fork [Real-Time Chat Workspace](https://github.com/Hashimi01/nextjs-supabase-realtime-chat). ComicChat-режим, ChatGPT-интеграция, перенос хостинга и персональный учёт AI-расходов **ещё не реализованы**.
 
-</div>
+## Как это должно выглядеть
 
----
+1. Два человека входят в ComicChat и открывают личную беседу.
+2. Отправитель пишет обычную фразу, например: «Ты уже приехал?».
+3. В его собственной истории **сразу появляется визуальная карточка** отправляемого сообщения (никакого текстового сообщения посреди комиксов).
+4. Карточка получает готовую иллюстрацию: персонаж, настроение, фон и точная реплика. У получателя отображается тот же кадр.
+5. Получатель пишет ответ и инициирует следующий кадр уже от своего имени.
 
-## 🚀 Overview
+Изображение — основной вид сообщения. Исходный текст хранится отдельно для поиска, копирования, доступности и повторной сборки кадра. Генератор рисует **иллюстрацию без букв**, затем приложение программно накладывает исходную реплику: AI не должен перефразировать личные сообщения. Длинный текст может быть разбит на несколько связанных панелей без изменения смысла.
 
-**Real-Time Chat Workspace** is a unified communication platform designed for speed, privacy, and seamless collaboration. Built on top of Next.js and Supabase, it provides an immediate out-of-the-box realtime chatting experience with powerful capabilities like multimedia sharing, offline support, email notifications, and instant direct messaging.
+### Принципы продукта
 
-Whether you're building a community forum, an internal company collaboration tool, or integrating chat into your SaaS, this application offers the secure architecture and flexible UI you need.
+- **Настоящая переписка, не генератор комикса по архиву.** Создание кадра запускается на каждое новое сообщение.
+- **Непрерывная визуальная лента.** Сразу отображается карточка-заготовка; после готовности она обновляется на месте, не добавляя в историю отдельное текстовое сообщение.
+- **Одинаковые герои от кадра к кадру.** Профиль персонажа, референсы и стиль сохраняются в диалоге.
+- **Без промптов.** Пользователь просто пишет текст; стиль, эмоцию и постановку подбирает система, настройки при желании меняются вручную.
+- **Отправитель инициирует и оплачивает свою генерацию.** Его ресурсы не должны расходоваться на сообщения собеседника; источник оплаты всегда явно показывается до отправки.
+- **Приватность по умолчанию.** Закрытые личные чаты, взаимное согласие на участие, блокировка и удаление. Публикация в общую ленту — отдельное действие участников.
+- **Отказоустойчивость.** Ошибка/лимит генерации не теряет исходный текст: остаётся визуальная карточка с возможностью повторить или переключить режим.
 
-## ✨ Features
+## Планируемый продукт
 
-- ⚡ **Lightning-Fast Realtime Sync:** Powered by Supabase Realtime via PostgreSQL, giving you broadcast capabilities and sub-second message delivery.
-- 🔐 **Robust Authentication:** Secure email and password authentication out-of-the-box leveraging Supabase Auth.
-- 🗣️ **Public Rooms & Direct Messaging:** Support for global public lounges and one-on-one encrypted direct communication channels.
-- 📎 **Rich Media Support:** Secure, scalable file and image uploads using Cloudinary or native Supabase Storage buckets.
-- 🎤 **Audio Voice Notes:** Built-in microphone recording, audio previews, and resilient cross-browser audio playback.
-- 📧 **Automated Email Notifications:** Delivery of offline Direct Message alerts utilizing an SMTP integration (Nodemailer).
-- 🌍 **Internationalization (i18n):** Full support for English (LTR) and Arabic (RTL) locales out of the box with zero stuttering.
-- 🎨 **Modern Glass-morphism UI:** Built with Framer Motion and custom CSS design tokens for a beautiful, responsive dark-mode forward interface.
+**Первая версия:** два пользователя, приглашение в чат, собственные персонажи, несколько художественных стилей, realtime-доставка, визуальная отправка и получение, точные реплики, история, повторная генерация, блокировка/удаление, понятный счётчик расходов.
 
-## 🏗 Architecture
+**После MVP:** групповые комикс-чаты, общие сцены и миры, публикация выбранных кадров/глав с согласия участников, подписки/профили, экспорт беседы как комикса, Telegram как необязательный канал доставки. Публичная соцсеть не должна мешать личному мессенджеру.
 
-We adhere to a decoupled, high-performance web architecture focused on scalability:
+## Где будет работать
 
-| Component | Technology | Purpose |
-| --- | --- | --- |
-| **Frontend Framework** | [Next.js](https://nextjs.org) | Pages Router, SSR capabilities, and serverless API endpoints |
-| **UI Library** | [React](https://reactjs.org/) | Declarative component management |
-| **Animations** | [Framer Motion](https://www.framer.com/motion/) | Smooth UI transitions and micro-interactions |
-| **Database & Realtime** | [Supabase Postgres](https://supabase.com) | Centralized state, RLS security policies, real-time web socket broadcasting |
-| **Storage** | [Cloudinary](https://cloudinary.com) / Supabase | Optimized media delivery pipeline |
-| **Mail Services** | [Nodemailer](https://nodemailer.com) | Transactional email orchestration over SMTP |
+Целевой вариант — **самостоятельная веб-версия** и **приложение внутри ChatGPT** (при доступности соответствующих Plugin Extensions). Оба интерфейса используют одну идентичность пользователя и один ComicChat backend. ChatGPT не предоставляет автоматически общую переписку разных аккаунтов: друзья, разрешения, сообщения, доставка и хранение — ответственность ComicChat.
 
-## 📦 Getting Started
+Хостинг ChatGPT Sites (включая совместимость с его сервисами данных и хранилища) — **приоритетный кандидат, но не принятое безусловное решение**: требуется отдельный deployment spike. Система должна оставаться переносимой на иной хостинг. Никакой VPS не покупаем лишь ради прототипа до проверки Sites.
 
-### Prerequisites
+## AI-генерация и оплата: важное ограничение
 
-Identify the underlying system requirements you need to install and configure:
-- **Node.js** `>= 20.9.0`
-- **npm** or **yarn**
-- A **Supabase** Project (Create one [here](https://database.new) for free)
+Цель — чтобы **автор каждого сообщения** авторизовался самостоятельно и расходовал только свои разрешённые ресурсы. Для реализации предусмотрен сменный `GenerationProvider` и раздельный `UsageLedger` по отправителям.
 
-### Installation
+1. **Безопасный MVP:** локальный renderer (заготовки персонажей/поз/фонов + программные текстовые пузыри), не требующий дорогой AI-генерации каждого сообщения.
+2. **Полная AI-генерация:** официальный поддерживаемый API и прозрачный источник оплаты (например, бюджет/кредиты ComicChat), если он необходим.
+3. **Цель — личные ресурсы ChatGPT/Codex:** отдельный эксперимент и юридико-технический gate. Умение встроенного Codex создавать изображения **не означает**, что стороннее удалённое социальное приложение вправе перенаправлять такой расход на подписку каждого пользователя. На 01.10.2026 опубликованный preview Sign in with ChatGPT Plan Usage перечисляет image generation среди неподдерживаемых tools. Не использовать чужие client_id, скрытые backend endpoints, веб-сессионные cookie или выдавать экспериментальный механизм за официальную интеграцию.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Hashimi01/chat.git
-   cd chat
-   ```
+Сами Plus/Pro и обычный API-биллинг — разные вещи. Если личный режим недоступен, отправка не должна молча переключаться на чужой счёт или создавать непредвиденные расходы.
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+## Техническая исходная точка
 
-3. **Configure Environment Variables:**
-   Copy the provided configuration template:
-   ```bash
-   cp .env.example .env.local
-   ```
-   *Populate the newly created `.env.local` file with your specific credentials. Refer to [ENV_EXAMPLE.md](ENV_EXAMPLE.md) for detailed instructions.*
+Fork наследует **Next.js / React / Supabase** и связанный UI из upstream. Это ещё не мигрированный и не развернутый ComicChat. Прежде чем менять базу данных или auth, фиксируем рабочий baseline и проводим аудит исходных функций/секретов/сборки. Текущие `package.json` и README исходного проекта содержат несовпадающие сведения о версиях, поэтому ориентир — реальная сборка и lockfile, а не рекламные заявления документации.
 
-4. **Initialize Database Schema:**
-   You must structure your database. Navigate to the SQL Editor in your Supabase Dashboard and run the entire contents of [`database.sql`](database.sql).
-   *For deep-dives on RLS and table definitions, refer to [DATABASE_SETUP.md](DATABASE_SETUP.md).*
+Подробнее: [ROADMAP.md](ROADMAP.md) · [Технические решения](docs/ARCHITECTURE.md) · [Исходный README](docs/UPSTREAM_README.md).
 
-5. **Start the Development Server:**
-   ```bash
-   npm run dev
-   ```
-   The application will become available locally at [http://localhost:3000](http://localhost:3000).
+## Происхождение и лицензия
 
-## 📚 Documentation
-
-Detailed guides are available to help you configure specific system domains:
-
-- 🗄️ **[Database Setup](DATABASE_SETUP.md)** - Learn about PostgreSQL Schema, Row Level Security (RLS) policies, and triggers.
-- 📡 **[Realtime Setup](REALTIME_SETUP.md)** - Instructions on turning on logical replication and database websockets.
-- ☁️ **[Storage Config (Cloudinary)](CLOUDINARY_SETUP.md)** - Setup highly scalable media pipelines.
-- 📦 **[Storage Config (Supabase)](STORAGE_SETUP.md)** - Alternative media storage utilizing Supabase Buckets.
-- 🐛 **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Solutions for common connectivity or permission bottlenecks.
-
-## 🚢 Deploy
-
-The easiest way to deploy your Real-Time Chat Workspace is through the [Vercel Platform](https://vercel.com/new).
-
-1. Push your code to your GitHub/GitLab repository.
-2. Import your project into Vercel.
-3. Add your Environment Variables found in `.env.local` to the Vercel project settings.
-4. Click **Deploy**.
-
-## 🤝 Contributing
-
-We welcome contributions of all forms, from bug reports to architectural enhancements. 
-
-1. **Fork the Repository**
-2. **Create a Feature Branch:** `git checkout -b feature/AmazingFeature`
-3. **Commit your Changes:** `git commit -m 'Add some AmazingFeature'`
-4. **Push to the Branch:** `git push origin feature/AmazingFeature`
-5. **Open a Pull Request**
-
-Please make sure to review our `.eslintrc.json` rules before committing.
-
-## 📄 License
-
-This project is distributed under the underlying MIT License. For further information, strictly consult the [LICENSE](LICENSE) file located centrally within the directory.
-
+ComicChat основан на [Hashimi01/nextjs-supabase-realtime-chat](https://github.com/Hashimi01/nextjs-supabase-realtime-chat). Сохранён оригинальный файл [LICENSE](LICENSE) (MIT) и его условия. Существующие файлы настройки Supabase/Cloudinary пока относятся к upstream, а не к целевому production-развёртыванию ComicChat.
