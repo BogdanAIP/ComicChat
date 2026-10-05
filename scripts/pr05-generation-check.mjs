@@ -9,7 +9,7 @@ const read = (path) =>
   fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8')
 
 const migration = read(
-  'supabase/migrations/20261005_pr05_generation_pipeline.sql'
+  'supabase/migrations/20261005130000_pr05_generation_pipeline.sql'
 )
 const workflow = read('.github/workflows/ci.yml')
 const failures = []
@@ -82,7 +82,7 @@ requireText(
 )
 requireText(
   workflow,
-  '20261005_pr05_generation_pipeline.sql',
+  '20261005130000_pr05_generation_pipeline.sql',
   'PR-05 migration in PostgreSQL CI'
 )
 requireText(
