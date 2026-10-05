@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "assessedAt": "2026-10-05",
+  "baseCommit": "4a89984304674589ca884ee57a6e32fb35d4e465",
+  "decision": "frontend-runtime-spike-keep-supabase-backend",
+  "deploymentStatus": "not-yet-tested-in-chatgpt-sites",
+  "sitesRuntime": {
+    "source": "https://help.openai.com/en/articles/20001339-creating-and-using-chatgpt-sites",
+    "publicBeta": true,
+    "frameworkCompatibility": "deployment-test-required",
+    "databaseCompatibility": "deployment-test-required",
+    "backgroundServiceCompatibility": "deployment-test-required",
+    "d1R2MentionedByOfficialDocs": true
+  },
+  "boundaries": [
+    {
+      "id": "web-build",
+      "current": "nextjs-production-build-ci-verified",
+      "sitesDecision": "deployment-test-required",
+      "migration": "none-before-sites-save-version-test"
+    },
+    {
+      "id": "identity",
+      "current": "supabase-auth-email-password",
+      "sitesDecision": "retain-for-first-runtime-spike",
+      "migration": "adapter-required-before-switching-identity-provider"
+    },
+    {
+      "id": "data",
+      "current": "supabase-postgres-postgrest-rpc",
+      "sitesDecision": "retain-for-first-runtime-spike",
+      "migration": "d1-is-not-a-drop-in-replacement"
+    },
+    {
+      "id": "authorization",
+      "current": "postgres-rls-security-definer-auth-uid",
+      "sitesDecision": "retain-for-first-runtime-spike",
+      "migration": "explicit-authorization-adapter-required"
+    },
+    {
+      "id": "realtime",
+      "current": "supabase-private-broadcast",
+      "sitesDecision": "external-connectivity-test-required",
+      "migration": "transport-adapter-required-before-replacement"
+    },
+    {
+      "id": "generation-worker",
+      "current": "service-role-postgres-worker-contract-no-hosted-dispatcher",
+      "sitesDecision": "do-not-assume-sites-background-worker-support",
+      "migration": "separate-worker-or-explicit-supported-sites-mechanism"
+    },
+    {
+      "id": "media",
+      "current": "disabled-on-comicchat-private-path",
+      "sitesDecision": "future-private-asset-spike",
+      "migration": "signed-media-adapter-required"
+    },
+    {
+      "id": "legacy-upload-email",
+      "current": "inherited-but-not-used-by-comicchat-private-path",
+      "sitesDecision": "exclude-from-mvp-portability-gate",
+      "migration": "remove-or-isolate-before-production-hardening"
+    }
+  ],
+  "requiredNextEvidence": [
+    "open-this-repository-in-chatgpt-sites-work-or-codex",
+    "run-sites-compatibility-conversion-without-changing-business-semantics",
+    "save-a-version-before-deploying",
+    "verify-two-account-auth-private-chat-realtime-and-reconnect",
+    "verify-outbound-connectivity-to-the-selected-supabase-project",
+    "record-generated-hosting-metadata-only-after-a-real-sites-project-exists"
+  ]
+}
