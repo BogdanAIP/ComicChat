@@ -14,11 +14,13 @@ const useSupabase = () => {
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session)
+            if (!session) setCurrentUser(null)
         })
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session)
+            if (!session) setCurrentUser(null)
         })
 
         return () => subscription.unsubscribe()
@@ -26,7 +28,6 @@ const useSupabase = () => {
 
     useEffect(() => {
         if (!session?.user?.id) {
-            setCurrentUser(null)
             return
         }
 
