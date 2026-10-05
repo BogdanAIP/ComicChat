@@ -55,7 +55,14 @@ History is sorted by `created_at, id`. The client subscribes to Realtime and the
 
 ## Realtime and status ownership
 
-`comic_membership` and `comic_message` are added to the Supabase Realtime publication. A participant discovers a newly created conversation from their own membership INSERT (`user_id = auth.uid()`), then reloads the conversation list; other users' membership rows remain invisible. Message Realtime continues to use membership-scoped RLS.
+PR-02 uses **private Supabase Broadcast**, not Postgres Changes. Database triggers publish only two topic shapes:
+
+- `user:<user_id>` for conversation-membership discovery;
+- `conversation:<conversation_id>` for message INSERT/UPDATE notifications.
+
+Clients set `config.private = true` and attach their Auth JWT before joining. The `comicchat_receive_broadcast` SELECT policy on `realtime.messages` authorizes `user:<id>` only when the topic ID equals `auth.uid()`, and authorizes a conversation topic only when a matching `comic_membership` row exists.
+
+Authenticated clients receive Broadcasts but have no Broadcast INSERT policy; only database trigger functions call `realtime.send(..., true)`. On a Broadcast the UI reloads persisted rows, so the database remains the source of truth and Realtime never creates a second logical message.
 
 Browser users cannot directly update message status. PR-02 leaves new messages in `queued`; later render-worker PRs will move the same row through `queued -> rendering -> ready | failed` from a trusted server/provider boundary.
 
@@ -75,12 +82,11 @@ A future privacy/preferences PR can tighten global profile discoverability witho
 
 ## Verification
 
-CI runs:
+CI has three independent gates:
 
-1. `npm ci`
-2. `npm run lint`
-3. `npm run security:pr02`
-4. `npm run build`
+1. **Lint & Build:** `npm ci -> lint -> security:pr02 -> build`.
+2. **Postgres security integration:** applies the migration to PostgreSQL 17 with minimal Supabase-compatible Auth/Realtime stubs, runs catalog assertions, then runs the A/B/C authorization and idempotency scenario.
+3. **Local Supabase realtime integration:** starts an isolated Supabase stack (Auth + PostgREST + Realtime), creates disposable A/B/C users, validates private Broadcast authorization/delivery, rejects C from A/B's conversation topic, and verifies persisted history after B disconnects/reconnects.
 
 `scripts/pr02-security-check.mjs` is an architectural guard that fails CI if the new private UI references legacy DM tables, public upload paths, caller-controlled notification fields, or if the migration reintroduces permissive/direct message writes.
 
@@ -92,16 +98,16 @@ Against a test Supabase project after applying the migration:
 
 1. Sign in as accounts A and B in separate browser profiles.
 2. A searches B by username and opens a direct conversation.
-3. B sees the same conversation after refresh/realtime update.
-4. A sends text; A and B resolve the same persistent message ID.
+3. B receives a private `user:B` Broadcast and sees the same conversation; C receives no membership Broadcast.
+4. B can join private `conversation:<id>`; C is rejected from that topic. A sends text, B receives the Broadcast, and both resolve the same persistent message row.
 5. Retry the same `client_nonce` + text: no duplicate row is created.
 6. Retry that nonce with different text: the RPC rejects it.
 7. A cannot query a third-party conversation ID through `comic_message`.
 8. A cannot directly insert/update/delete `comic_message`.
 9. B marking delivered/read changes only B's receipt.
-10. Reconnect either client; message history stays deduplicated and ordered.
+10. Disconnect/reconnect B's private conversation channel; persisted message history stays deduplicated and ordered.
 11. Confirm the private UI exposes no attachment/audio/email action.
 
 ## Gate to PR-03
 
-PR-03 may build comic-first visual cards on top of this path only after PR-02 migration + two-account authorization/reconnect acceptance pass in a test Supabase environment.
+PR-03 may build comic-first visual cards on top of this path only after all three PR-02 CI gates pass, including the isolated full-Supabase private Broadcast/reconnect scenario.
