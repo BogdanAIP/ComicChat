@@ -26,7 +26,7 @@
         "character": {
           "slot": "sender",
           "anchor": "start",
-          "silhouette": "template-1"
+          "silhouette": "template-3"
         },
         "bubble": {
           "key": "compact",
@@ -158,7 +158,7 @@
         "character": {
           "slot": "partner",
           "anchor": "end",
-          "silhouette": "template-3"
+          "silhouette": "template-1"
         },
         "bubble": {
           "key": "compact",
