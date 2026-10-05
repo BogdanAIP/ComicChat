@@ -33,6 +33,7 @@ export const normalizeComicConversation = (row, myUserId) => {
     user_a: myUserId,
     user_b: row.other_user_id,
     otherUserId: row.other_user_id,
+    otherUsername: row.other_username ?? null,
     created_at: row.conversation_created_at,
     lastMessage: row.last_message_content,
     lastMessageTime: row.last_message_time ?? row.conversation_created_at,
@@ -109,3 +110,16 @@ export const markComicMessagesRead = (supabase, messageIds) =>
 
 export const COMIC_PRIVATE_MEDIA_DISABLED_MESSAGE =
   'Private attachments are temporarily disabled while ComicChat moves media to participant-authorized private storage.'
+
+export const searchComicUsers = async (supabase, query = '') => {
+  const { data, error } = await supabase.rpc('comic_search_users', {
+    p_query: query,
+  })
+
+  if (error) throw error
+
+  return (data ?? []).map(row => ({
+    id: row.user_id,
+    username: row.username ?? null,
+  }))
+}
