@@ -4,7 +4,7 @@ import styles from '../styles/Home.module.css'
 import sidebarStyles from '../styles/Sidebar.module.css'
 import Auth from '../components/Auth'
 import Chat from '../components/Chat'
-import DirectMessages from '../components/DirectMessages'
+import ComicDirectMessages from '../components/ComicDirectMessages'
 import Profile from '../components/Profile'
 import useTranslation from '../utils/useTranslation'
 import { useEffect, useRef, useState } from 'react'
@@ -109,9 +109,8 @@ export default function Home({ currentUser, session, supabase }) {
                   onOpenDirectMessages={handleOpenDirectMessages}
                 />
               ) : (
-                <DirectMessages
+                <ComicDirectMessages
                   ref={directMessagesRef}
-                  currentUser={currentUser}
                   session={session}
                   supabase={supabase}
                 />
