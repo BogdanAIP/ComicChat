@@ -50,7 +50,7 @@
       "name": "multiline-incoming-rendering",
       "input": {
         "messageId": "msg-multiline-in",
-        "text": "Line one\\nLine two\\nLine three",
+        "text": "Line one\nLine two\nLine three",
         "mine": false,
         "status": "rendering"
       },
@@ -58,7 +58,7 @@
         "renderer": "TemplateRenderer",
         "version": 1,
         "messageId": "msg-multiline-in",
-        "text": "Line one\\nLine two\\nLine three",
+        "text": "Line one\nLine two\nLine three",
         "side": "incoming",
         "scene": {
           "key": "studio",
