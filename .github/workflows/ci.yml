@@ -156,6 +156,15 @@ jobs:
           );
           SQL
 
+      - name: Verify Realtime publication
+        env:
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: |
+          tables="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select tablename from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename in ('comic_membership','comic_message') order by tablename")"
+          printf '%s\n' "$tables"
+          grep -qx 'comic_membership' <<<"$tables"
+          grep -qx 'comic_message' <<<"$tables"
+
       - name: Run Auth + Realtime + reconnect integration
         env:
           SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
@@ -163,11 +172,12 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
         run: node supabase/tests/pr02_realtime_integration.mjs
 
-      - name: Show local Supabase status on failure
+      - name: Show local Supabase diagnostics on failure
         if: failure()
         run: |
           supabase status || true
           docker ps -a || true
+          docker logs supabase_realtime_comicchat_pr02_ci --tail 300 || true
 
       - name: Stop isolated local Supabase
         if: always()
