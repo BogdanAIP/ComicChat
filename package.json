@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "security:pr02": "node scripts/pr02-security-check.mjs",
     "ux:pr03": "node scripts/pr03-ux-check.mjs",
-    "renderer:pr04": "node scripts/pr04-renderer-check.mjs && node scripts/pr04-template-golden.mjs"
+    "renderer:pr04": "node scripts/pr04-renderer-check.mjs && node scripts/pr04-template-golden.mjs",
+    "pipeline:pr05": "node scripts/pr05-generation-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
