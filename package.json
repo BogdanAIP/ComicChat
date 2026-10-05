@@ -11,7 +11,8 @@
     "ux:pr03": "node scripts/pr03-ux-check.mjs",
     "renderer:pr04": "node scripts/pr04-renderer-check.mjs && node scripts/pr04-template-golden.mjs",
     "pipeline:pr05": "node scripts/pr05-generation-check.mjs",
-    "portability:pr06": "node scripts/pr06-portability-check.mjs"
+    "portability:pr06": "node scripts/pr06-portability-check.mjs",
+    "permissions:pr07": "node scripts/pr07-identity-provider-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
