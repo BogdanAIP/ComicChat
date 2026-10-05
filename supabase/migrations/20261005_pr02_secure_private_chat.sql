@@ -491,7 +491,7 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog
-AS $
+AS $$
 BEGIN
     PERFORM realtime.send(
         jsonb_build_object(
@@ -505,7 +505,7 @@ BEGIN
     );
     RETURN NULL;
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.comic_broadcast_membership_insert() FROM PUBLIC;
 
@@ -520,7 +520,7 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog
-AS $
+AS $$
 DECLARE
     v_conversation_id UUID := COALESCE(NEW.conversation_id, OLD.conversation_id);
 BEGIN
@@ -536,7 +536,7 @@ BEGIN
     );
     RETURN NULL;
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.comic_broadcast_message_change() FROM PUBLIC;
 
