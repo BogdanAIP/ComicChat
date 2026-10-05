@@ -455,8 +455,18 @@ $$;
 REVOKE ALL ON FUNCTION public.comic_mark_conversation_read(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.comic_mark_conversation_read(UUID) TO authenticated;
 
-DO $$
+DO $
 BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime'
+          AND schemaname = 'public'
+          AND tablename = 'comic_conversation'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.comic_conversation;
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1
         FROM pg_publication_tables
@@ -466,7 +476,7 @@ BEGIN
     ) THEN
         ALTER PUBLICATION supabase_realtime ADD TABLE public.comic_message;
     END IF;
-END $$;
+END $;
 
 -- PR-02 deliberately creates no media URL/file column. Attachments remain disabled
 -- in the new ComicChat path until a private asset pipeline with signed access ships.
