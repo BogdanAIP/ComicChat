@@ -144,33 +144,43 @@ try {
     throw new Error('wildcard-like query unexpectedly enumerated users')
   }
 
-  let bConversationResolve
-  const bConversationPromise = new Promise((resolve) => {
-    bConversationResolve = resolve
+  let bMembershipResolve
+  const bMembershipPromise = new Promise((resolve) => {
+    bMembershipResolve = resolve
   })
-  let cConversationEvents = 0
+  let cMembershipEvents = 0
 
-  const bConversationChannel = b
-    .channel('pr02-b-conversations')
+  const bMembershipChannel = b
+    .channel('pr02-b-memberships')
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'comic_conversation' },
-      (payload) => bConversationResolve(payload.new)
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'comic_membership',
+        filter: `user_id=eq.${bId}`,
+      },
+      (payload) => bMembershipResolve(payload.new)
     )
 
-  const cConversationChannel = c
-    .channel('pr02-c-conversations')
+  const cMembershipChannel = c
+    .channel('pr02-c-memberships')
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'comic_conversation' },
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'comic_membership',
+        filter: `user_id=eq.${cId}`,
+      },
       () => {
-        cConversationEvents += 1
+        cMembershipEvents += 1
       }
     )
 
   await Promise.all([
-    subscribe(bConversationChannel, 'B conversation channel'),
-    subscribe(cConversationChannel, 'C conversation channel'),
+    subscribe(bMembershipChannel, 'B conversation channel'),
+    subscribe(cMembershipChannel, 'C conversation channel'),
   ])
 
   const { data: conversationId, error: ensureError } = await a.rpc(
@@ -180,18 +190,21 @@ try {
   if (ensureError) throw ensureError
   if (!conversationId) throw new Error('conversation id missing')
 
-  const bConversation = await withTimeout(
-    bConversationPromise,
+  const bMembership = await withTimeout(
+    bMembershipPromise,
     10000,
-    'B realtime conversation INSERT'
+    'B realtime membership INSERT'
   )
-  if (bConversation.id !== conversationId) {
-    throw new Error('B received the wrong conversation id')
+  if (
+    bMembership.conversation_id !== conversationId ||
+    bMembership.user_id !== bId
+  ) {
+    throw new Error('B received the wrong membership event')
   }
 
   await sleep(1200)
-  if (cConversationEvents !== 0) {
-    throw new Error('non-member C received private conversation realtime event')
+  if (cMembershipEvents !== 0) {
+    throw new Error('non-member C received another user membership event')
   }
 
   const { data: bList, error: bListError } = await b.rpc(
@@ -380,8 +393,8 @@ try {
   }
 
   await Promise.all([
-    b.removeChannel(bConversationChannel),
-    c.removeChannel(cConversationChannel),
+    b.removeChannel(bMembershipChannel),
+    c.removeChannel(cMembershipChannel),
     c.removeChannel(cMessageChannel),
     b.removeChannel(reconnectedChannel),
   ])
