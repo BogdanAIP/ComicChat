@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import ComicPanel from './ComicPanel'
 import styles from '../styles/ComicDirectMessages.module.css'
 
 function makeUuid() {
@@ -496,7 +497,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       <div className={styles.chat}>
         <header className={styles.chatHeader}>
           <div>
-            <p className={styles.eyebrow}>Secure text baseline</p>
+            <p className={styles.eyebrow}>Comic-first private chat</p>
             <h2>{selectedTitle}</h2>
           </div>
           <span className={styles.connection}>
@@ -522,8 +523,9 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                   <div className={styles.placeholderPanel}>✦</div>
                   <h3>Start the conversation</h3>
                   <p>
-                    Text is stored verbatim. Comic rendering will replace this
-                    text-only baseline in later PRs without changing the message ID.
+                    Every message occupies a visual comic card immediately. The
+                    illustration is a deterministic demo placeholder until the
+                    render pipeline ships; the original text and message ID stay unchanged.
                   </p>
                 </div>
               )}
@@ -532,23 +534,16 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                 const mine = message.sender_id === myUserId
 
                 return (
-                  <article
+                  <ComicPanel
                     key={message.id}
-                    className={
-                      mine
-                        ? `${styles.message} ${styles.mine}`
-                        : styles.message
-                    }
-                  >
-                    <div className={styles.messageMeta}>
-                      <span>{mine ? 'You' : selectedTitle}</span>
-                      <span>{message.status}</span>
-                    </div>
-                    <p>{message.original_text}</p>
-                    {message.optimistic && (
-                      <span className={styles.sending}>Sending…</span>
-                    )}
-                  </article>
+                    messageId={message.id}
+                    speaker={mine ? 'You' : selectedTitle}
+                    text={message.original_text}
+                    status={message.status}
+                    mine={mine}
+                    optimistic={message.optimistic}
+                    createdAt={message.created_at}
+                  />
                 )
               })}
               <div ref={messagesEndRef} />
@@ -556,6 +551,20 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
             <form className={styles.composer} onSubmit={send}>
               {error && <p className={styles.error}>{error}</p>}
+
+              {draft.length > 0 && (
+                <div className={styles.composerPreview} aria-label="Comic message preview">
+                  <ComicPanel
+                    messageId={`draft:${selectedConversationId}`}
+                    speaker="You"
+                    text={draft}
+                    status="queued"
+                    mine
+                    preview
+                  />
+                </div>
+              )}
+
               <div className={styles.composerRow}>
                 <textarea
                   className={styles.textarea}

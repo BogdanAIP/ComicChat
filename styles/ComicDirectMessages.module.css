@@ -18,7 +18,9 @@
 .sidebarHeader,
 .chatHeader,
 .composerNote,
-.messageMeta {
+.comicCaption,
+.comicIdentity,
+.comicActions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -160,42 +162,301 @@
   min-height: 0;
   overflow: auto;
   flex-direction: column;
-  gap: 12px;
+  gap: 22px;
   padding: 24px;
 }
 
-.message {
-  width: min(620px, 85%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 18px 18px 18px 6px;
-  padding: 12px 14px;
-  background: #151d33;
+.comicCard {
+  width: min(680px, 90%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  overflow: hidden;
+  background: #121a2f;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
 }
 
-.mine {
+.comicCardIncoming {
+  align-self: flex-start;
+}
+
+.comicCardMine {
   align-self: flex-end;
-  border-radius: 18px 18px 6px 18px;
-  background: #202b49;
 }
 
-.message p {
-  margin: 8px 0 0;
+.comicCardPreview {
+  width: min(540px, 100%);
+  margin-inline-start: auto;
+  box-shadow: none;
+}
+
+.comicFigure {
+  margin: 0;
+}
+
+.comicScene {
+  position: relative;
+  display: grid;
+  min-height: 250px;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 20px;
+  place-items: center;
+}
+
+.scene_studio {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.16), transparent 22%),
+    linear-gradient(145deg, #263556, #131c33 62%, #0c1325);
+}
+
+.scene_city {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px) 0 0 / 46px 100%,
+    linear-gradient(155deg, #323b5e, #171c32 55%, #0c1221);
+}
+
+.scene_window {
+  background:
+    linear-gradient(90deg, transparent 66%, rgba(205, 227, 255, 0.13) 66% 68%, transparent 68%),
+    linear-gradient(145deg, #233d50, #17263a 52%, #0d1423);
+}
+
+.scene_night {
+  background:
+    radial-gradient(circle at 76% 18%, rgba(255, 255, 255, 0.19) 0 5%, transparent 6%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.11) 0 1px, transparent 2px),
+    linear-gradient(145deg, #1d2748, #0f1730 62%, #080d1b);
+}
+
+.sceneArtwork {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sceneTexture {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(115deg, transparent 0 46%, rgba(255, 255, 255, 0.05) 47% 48%, transparent 49%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0 1px,
+      transparent 1px 5px
+    );
+  pointer-events: none;
+}
+
+.characterSilhouette {
+  position: absolute;
+  inset-block-end: 0;
+  width: 170px;
+  height: 205px;
+  opacity: 0.8;
+  transform-origin: bottom center;
+}
+
+.comicCardMine .characterSilhouette {
+  inset-inline-start: 7%;
+}
+
+.comicCardIncoming .characterSilhouette {
+  inset-inline-end: 7%;
+}
+
+.characterHead {
+  position: absolute;
+  inset-block-start: 13px;
+  inset-inline-start: 50%;
+  width: 76px;
+  height: 76px;
+  border: 3px solid rgba(255, 255, 255, 0.28);
+  border-radius: 48% 52% 46% 54%;
+  background: rgba(9, 15, 29, 0.76);
+  transform: translateX(-50%);
+}
+
+.characterBody {
+  position: absolute;
+  inset-block-end: -14px;
+  inset-inline-start: 50%;
+  width: 145px;
+  height: 132px;
+  border: 3px solid rgba(255, 255, 255, 0.24);
+  border-radius: 54% 54% 10% 10%;
+  background: rgba(9, 15, 29, 0.78);
+  transform: translateX(-50%);
+}
+
+.pose_1 {
+  transform: rotate(-3deg) translateX(-8px);
+}
+
+.pose_2 {
+  transform: rotate(3deg) translateX(8px);
+}
+
+.sceneSymbol {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-end: 18px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 38px;
+}
+
+.speechBubble {
+  position: relative;
+  z-index: 2;
+  width: min(440px, 86%);
+  max-width: 100%;
+  margin-block: 18px;
+  border: 2px solid rgba(7, 12, 24, 0.72);
+  border-radius: 24px 24px 24px 8px;
+  padding: 15px 18px;
+  background: rgba(249, 250, 253, 0.96);
+  color: #11182a;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
+}
+
+.comicCardMine .speechBubble {
+  margin-inline-start: auto;
+  border-radius: 24px 24px 8px 24px;
+}
+
+.comicCardIncoming .speechBubble {
+  margin-inline-end: auto;
+}
+
+.speechBubble p {
+  margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: clamp(15px, 1.8vw, 18px);
+  line-height: 1.42;
 }
 
-.messageMeta {
-  color: #9da9c5;
+.visualState {
+  position: absolute;
+  inset-block-end: 12px;
+  inset-inline-end: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(5, 10, 20, 0.72);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 11px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
-.sending {
-  display: inline-block;
-  margin-top: 7px;
-  color: #9da9c5;
-  font-size: 11px;
+.visualStateDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.comicCard[data-visual-state='sending'] .visualStateDot,
+.comicCard[data-visual-state='rendering'] .visualStateDot,
+.comicCard[data-visual-state='retry-preview'] .visualStateDot {
+  animation: statusPulse 1s ease-in-out infinite alternate;
+}
+
+.comicCard[data-message-status='failed'] .visualState {
+  outline: 1px solid rgba(255, 164, 164, 0.65);
+}
+
+.comicCard[data-message-status='ready'] .visualState {
+  outline: 1px solid rgba(181, 245, 204, 0.55);
+}
+
+.comicCaption {
+  min-height: 52px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #11192d;
+}
+
+.comicIdentity {
+  min-width: 0;
+  color: #aab5d0;
+  font-size: 12px;
+}
+
+.comicIdentity time {
+  color: #75809b;
+}
+
+.comicSpeaker {
+  color: #eef2ff;
+  font-weight: 700;
+}
+
+.comicActions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.comicAction {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #dce3f5;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.comicAction:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.comicAction:focus-visible,
+.sendButton:focus-visible,
+.searchInput:focus-visible,
+.textarea:focus-visible,
+.searchResult:focus-visible,
+.conversationButton:focus-visible {
+  outline: 3px solid rgba(207, 222, 255, 0.92);
+  outline-offset: 3px;
+}
+
+.composerPreview {
+  display: flex;
+  justify-content: flex-end;
+  max-height: 54vh;
+  margin-bottom: 14px;
+  overflow: auto;
+  border-radius: 18px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+}
+
+@keyframes statusPulse {
+  from {
+    opacity: 0.35;
+    transform: scale(0.82);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.12);
+  }
 }
 
 .emptyChat {
@@ -291,12 +552,62 @@
     min-height: 58vh;
   }
 
-  .message {
+  .comicCard {
+    width: 100%;
+  }
+
+  .comicScene {
+    min-height: 220px;
+    padding: 14px;
+  }
+
+  .speechBubble {
     width: 92%;
+  }
+
+  .comicCaption {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .comicActions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .composerNote {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comicCard[data-visual-state='sending'] .visualStateDot,
+  .comicCard[data-visual-state='rendering'] .visualStateDot,
+  .comicCard[data-visual-state='retry-preview'] .visualStateDot {
+    animation: none;
+  }
+
+  .main,
+  .comicAction,
+  .sendButton {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .comicCard,
+  .speechBubble,
+  .comicAction,
+  .searchInput,
+  .textarea,
+  .sendButton {
+    border: 1px solid CanvasText;
+  }
+
+  .speechBubble {
+    background: Canvas;
+    color: CanvasText;
   }
 }

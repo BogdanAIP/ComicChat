@@ -32,6 +32,9 @@ jobs:
       - name: PR-02 security boundaries
         run: npm run security:pr02
 
+      - name: PR-03 comic-first UX boundaries
+        run: npm run ux:pr03
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
