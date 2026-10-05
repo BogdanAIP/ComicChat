@@ -58,6 +58,12 @@ async function signIn(spec) {
 
   if (error) throw error
   if (!data.session?.access_token) throw new Error(`no session for ${spec.email}`)
+
+  // The Node Realtime harness must explicitly attach the JWT before opening
+  // RLS-protected postgres_changes channels. Browser auth wiring does this as
+  // part of the application session lifecycle.
+  await client.realtime.setAuth(data.session.access_token)
+
   return client
 }
 
