@@ -461,28 +461,90 @@ $$;
 REVOKE ALL ON FUNCTION public.comic_mark_conversation_read(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.comic_mark_conversation_read(UUID) TO authenticated;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_publication_tables
-        WHERE pubname = 'supabase_realtime'
-          AND schemaname = 'public'
-          AND tablename = 'comic_membership'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.comic_membership;
-    END IF;
+-- Realtime authorization for private Broadcast topics.
+-- user:<user_id> is readable only by that user.
+-- conversation:<conversation_id> is readable only by conversation members.
+DROP POLICY IF EXISTS comicchat_receive_broadcast ON realtime.messages;
+CREATE POLICY comicchat_receive_broadcast
+    ON realtime.messages
+    FOR SELECT
+    TO authenticated
+    USING (
+        realtime.messages.extension = 'broadcast'
+        AND (
+            (SELECT realtime.topic()) = 'user:' || (SELECT auth.uid())::TEXT
+            OR (
+                SPLIT_PART((SELECT realtime.topic()), ':', 1) = 'conversation'
+                AND EXISTS (
+                    SELECT 1
+                    FROM public.comic_membership AS m
+                    WHERE m.user_id = (SELECT auth.uid())
+                      AND m.conversation_id::TEXT =
+                          SPLIT_PART((SELECT realtime.topic()), ':', 2)
+                )
+            )
+        )
+    );
 
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_publication_tables
-        WHERE pubname = 'supabase_realtime'
-          AND schemaname = 'public'
-          AND tablename = 'comic_message'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.comic_message;
-    END IF;
-END $$;
+CREATE OR REPLACE FUNCTION public.comic_broadcast_membership_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $
+BEGIN
+    PERFORM realtime.send(
+        jsonb_build_object(
+            'conversation_id', NEW.conversation_id,
+            'user_id', NEW.user_id,
+            'role', NEW.role
+        ),
+        'INSERT',
+        'user:' || NEW.user_id::TEXT,
+        TRUE
+    );
+    RETURN NULL;
+END;
+$;
+
+REVOKE ALL ON FUNCTION public.comic_broadcast_membership_insert() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS comic_membership_broadcast_insert ON public.comic_membership;
+CREATE TRIGGER comic_membership_broadcast_insert
+AFTER INSERT ON public.comic_membership
+FOR EACH ROW
+EXECUTE FUNCTION public.comic_broadcast_membership_insert();
+
+CREATE OR REPLACE FUNCTION public.comic_broadcast_message_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $
+DECLARE
+    v_conversation_id UUID := COALESCE(NEW.conversation_id, OLD.conversation_id);
+BEGIN
+    PERFORM realtime.send(
+        jsonb_build_object(
+            'operation', TG_OP,
+            'conversation_id', v_conversation_id,
+            'message_id', COALESCE(NEW.id, OLD.id)
+        ),
+        TG_OP,
+        'conversation:' || v_conversation_id::TEXT,
+        TRUE
+    );
+    RETURN NULL;
+END;
+$;
+
+REVOKE ALL ON FUNCTION public.comic_broadcast_message_change() FROM PUBLIC;
+
+DROP TRIGGER IF EXISTS comic_message_broadcast_change ON public.comic_message;
+CREATE TRIGGER comic_message_broadcast_change
+AFTER INSERT OR UPDATE ON public.comic_message
+FOR EACH ROW
+EXECUTE FUNCTION public.comic_broadcast_message_change();
 
 -- PR-02 deliberately creates no media URL/file column. Attachments remain disabled
 -- in the new ComicChat path until a private asset pipeline with signed access ships.
