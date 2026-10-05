@@ -127,24 +127,30 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   }, [loadConversations])
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`comic-memberships:${myUserId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'comic_membership',
-          filter: `user_id=eq.${myUserId}`,
-        },
-        () => loadConversations()
-      )
-      .subscribe()
+    let cancelled = false
+    let channel = null
+
+    const subscribeMemberships = async () => {
+      await supabase.realtime.setAuth(session.access_token)
+      if (cancelled) return
+
+      channel = supabase
+        .channel(`user:${myUserId}`, {
+          config: { private: true },
+        })
+        .on('broadcast', { event: 'INSERT' }, () => {
+          loadConversations()
+        })
+        .subscribe()
+    }
+
+    subscribeMemberships()
 
     return () => {
-      supabase.removeChannel(channel)
+      cancelled = true
+      if (channel) supabase.removeChannel(channel)
     }
-  }, [loadConversations, myUserId, supabase])
+  }, [loadConversations, myUserId, session.access_token, supabase])
 
   const markReceipts = useCallback(async (conversationId, markRead) => {
     if (!conversationId) return
@@ -214,60 +220,46 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       channelRef.current = null
     }
 
-    const channel = supabase
-      .channel(`comic-message:${selectedConversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'comic_message',
-          filter: `conversation_id=eq.${selectedConversationId}`,
-        },
-        async (payload) => {
-          if (!payload?.new?.id) return
+    let channel = null
 
-          setMessages((current) => mergeMessage(current, payload.new))
+    const subscribeMessages = async () => {
+      await supabase.realtime.setAuth(session.access_token)
+      if (cancelled) return
 
-          if (payload.new.sender_id !== myUserId) {
-            const visible = typeof document === 'undefined' ? false : !document.hidden
-            await markReceipts(selectedConversationId, visible)
-          }
+      channel = supabase
+        .channel(`conversation:${selectedConversationId}`, {
+          config: { private: true },
+        })
+        .on('broadcast', { event: 'INSERT' }, async () => {
+          await loadHistory()
+        })
+        .on('broadcast', { event: 'UPDATE' }, async () => {
+          await loadHistory()
+        })
+        .subscribe((status) => {
+          if (cancelled) return
+          setConnectionState(
+            status === 'SUBSCRIBED' ? 'connected' : status.toLowerCase()
+          )
+          if (status === 'SUBSCRIBED') loadHistory()
+        })
 
-          await loadConversations()
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'comic_message',
-          filter: `conversation_id=eq.${selectedConversationId}`,
-        },
-        (payload) => {
-          if (!payload?.new?.id) return
-          setMessages((current) => mergeMessage(current, payload.new))
-        }
-      )
-      .subscribe((status) => {
-        if (cancelled) return
-        setConnectionState(status === 'SUBSCRIBED' ? 'connected' : status.toLowerCase())
-        if (status === 'SUBSCRIBED') loadHistory()
-      })
+      channelRef.current = channel
+    }
 
-    channelRef.current = channel
+    subscribeMessages()
 
     return () => {
       cancelled = true
-      if (channelRef.current === channel) channelRef.current = null
-      supabase.removeChannel(channel)
+      if (channel && channelRef.current === channel) channelRef.current = null
+      if (channel) supabase.removeChannel(channel)
     }
   }, [
     loadConversations,
     markReceipts,
     myUserId,
     selectedConversationId,
+    session.access_token,
     supabase,
   ])
 
