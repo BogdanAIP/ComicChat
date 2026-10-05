@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: PR-02 security boundaries
+        run: npm run security:pr02
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -37,3 +40,170 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           NEXT_PUBLIC_SITE_URL: https://placeholder.example.com
         run: npm run build
+
+  db-security:
+    name: Postgres security integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      PGPASSWORD: postgres
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify PostgreSQL client
+        run: psql --version
+
+      - name: Bootstrap Supabase-compatible auth stubs
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon NOLOGIN;
+          CREATE ROLE authenticated NOLOGIN;
+          CREATE SCHEMA auth;
+          CREATE SCHEMA realtime;
+
+          CREATE TABLE realtime.messages (
+            extension TEXT
+          );
+
+          CREATE OR REPLACE FUNCTION realtime.topic()
+          RETURNS TEXT
+          LANGUAGE sql
+          STABLE
+          AS 'SELECT pg_catalog.current_setting(''realtime.topic'', true)';
+
+          CREATE OR REPLACE FUNCTION realtime.send(
+            payload JSONB,
+            event TEXT,
+            topic TEXT,
+            private BOOLEAN DEFAULT TRUE
+          )
+          RETURNS VOID
+          LANGUAGE sql
+          AS 'SELECT pg_catalog.pg_sleep(0)';
+
+          CREATE TABLE auth.users (
+            id UUID PRIMARY KEY,
+            email TEXT
+          );
+
+          CREATE OR REPLACE FUNCTION auth.uid()
+          RETURNS UUID
+          LANGUAGE sql
+          STABLE
+          AS $$
+            SELECT NULLIF(
+              pg_catalog.current_setting('request.jwt.claim.sub', true),
+              ''
+            )::UUID
+          $$;
+
+          CREATE TABLE public."user" (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            username TEXT,
+            email TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+
+          GRANT USAGE ON SCHEMA public TO authenticated;
+          SQL
+
+      - name: Apply PR-02 migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261005_pr02_secure_private_chat.sql
+
+      - name: Run post-migration security assertions
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
+
+      - name: Run two-user authorization integration
+        run: bash supabase/tests/pr02_two_user_integration.sh
+
+  realtime:
+    name: Local Supabase realtime integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js for Realtime harness
+        uses: actions/setup-node@v4
+        with:
+          # The browser app remains built on .nvmrc (Node 20). The Node-based
+          # Realtime harness uses Node 22 for its native WebSocket transport.
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.119.0
+
+      - id: supabase
+        name: Start isolated local Supabase
+        run: |
+          supabase start --exclude studio,storage-api,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
+          supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
+
+      - name: Bootstrap legacy profile table required by user discovery
+        env:
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE IF NOT EXISTS public."user" (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            username TEXT,
+            email TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          SQL
+
+      - name: Verify private Broadcast authorization
+        env:
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: |
+          policy="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select policyname from pg_policies where schemaname='realtime' and tablename='messages' and policyname='comicchat_receive_broadcast'")"
+          test "$policy" = "comicchat_receive_broadcast"
+
+          triggers="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select tgname from pg_trigger where not tgisinternal and tgname in ('comic_membership_broadcast_insert','comic_message_broadcast_change') order by tgname")"
+          printf '%s\n' "$triggers"
+          grep -qx 'comic_membership_broadcast_insert' <<<"$triggers"
+          grep -qx 'comic_message_broadcast_change' <<<"$triggers"
+
+      - name: Run Auth + Realtime + reconnect integration
+        env:
+          SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: node supabase/tests/pr02_realtime_integration.mjs
+
+      - name: Show local Supabase diagnostics on failure
+        if: failure()
+        run: |
+          supabase status || true
+          docker ps -a || true
+          docker logs supabase_realtime_comicchat_pr02_ci --tail 300 || true
+
+      - name: Stop isolated local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+

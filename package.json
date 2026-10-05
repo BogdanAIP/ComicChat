@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "security:pr02": "node scripts/pr02-security-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
