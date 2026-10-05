@@ -85,9 +85,7 @@ jobs:
           RETURNS TEXT
           LANGUAGE sql
           STABLE
-          AS $
-            SELECT pg_catalog.current_setting('realtime.topic', true)
-          $;
+          AS 'SELECT pg_catalog.current_setting(''realtime.topic'', true)';
 
           CREATE OR REPLACE FUNCTION realtime.send(
             payload JSONB,
@@ -97,9 +95,7 @@ jobs:
           )
           RETURNS VOID
           LANGUAGE sql
-          AS $
-            SELECT
-          $;
+          AS 'SELECT pg_catalog.pg_sleep(0)';
 
           CREATE TABLE auth.users (
             id UUID PRIMARY KEY,
