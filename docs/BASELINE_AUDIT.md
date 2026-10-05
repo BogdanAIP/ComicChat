@@ -41,7 +41,7 @@ The preserved upstream README still advertises Next.js 14.x. Runtime/lockfile ev
 
 The inherited repository contained both `package-lock.json` and `yarn.lock`. ComicChat CI uses npm and `npm ci`; PR-01 removes `yarn.lock` so `package-lock.json` is the single baseline lockfile.
 
-The existing CI workflow is structurally appropriate for a baseline gate: clean checkout, Node setup, `npm ci`, lint, and production build with placeholder public Supabase values. Before PR-01, GitHub reported **zero workflow runs** for the fork. GitHub's Actions UI then confirmed the root cause explicitly: workflows inherited by this fork were disabled at repository level. After reviewing the workflow set (including removal of the inherited direct-push dependency updater in this PR), Actions were explicitly enabled on 2026-10-05. This documentation commit intentionally retriggers branch CI; PR-01 remains draft until a hosted run completes.
+The existing CI workflow is structurally appropriate for a baseline gate: clean checkout, Node setup, `npm ci`, lint, and production build with placeholder public Supabase values. Before PR-01, GitHub reported **zero workflow runs** for the fork. GitHub's Actions UI then confirmed the root cause explicitly: workflows inherited by this fork were disabled at repository level. After reviewing the workflow set (including removal of the inherited direct-push dependency updater in this PR), Actions were explicitly enabled on 2026-10-05. A user-authenticated push after enabling Actions created both `push` and `pull_request` CI runs. Hosted CI run `37289060263` (push) and run `37289064810` (pull request) both completed successfully; `npm ci`, lint, and production build all passed.
 
 PR-01 migrates linting to ESLint 9 flat config and `eslint .`, matching the current Next.js guidance. The legacy `.eslintrc.json` is removed. The new rules exposed 61 inherited errors; the conditional Hooks were fixed structurally rather than disabling `rules-of-hooks`. One narrow suppression remains around the inherited denormalized thread-preview cache and is explicitly tagged for PR-02. Final lint result is 0 errors / 8 warnings.
 
@@ -156,7 +156,7 @@ Do not merge upstream dependency updates blindly. Review them as explicit depend
 PR-01 is complete when:
 
 - the PR branch has a current lint configuration,
-- clean local parity checks run `npm ci -> npm run lint -> npm run build`, and GitHub Actions event delivery is restored or explicitly resolved,
+- clean local parity checks and hosted GitHub Actions both pass `npm ci -> npm run lint -> npm run build`,
 - this audit is reviewed as the baseline record,
 - no direct-push dependency updater remains,
 - the next task starts from the P0 security/DM model findings above.
