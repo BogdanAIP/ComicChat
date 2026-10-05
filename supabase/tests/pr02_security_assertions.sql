@@ -83,6 +83,48 @@ BEGIN
         RAISE EXCEPTION 'PR02_ASSERT: message idempotency unique constraint is missing';
     END IF;
 
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'realtime'
+          AND tablename = 'messages'
+          AND policyname = 'comicchat_receive_broadcast'
+          AND cmd = 'SELECT'
+          AND COALESCE(qual, '') LIKE '%broadcast%'
+          AND COALESCE(qual, '') LIKE '%comic_membership%'
+    ) THEN
+        RAISE EXCEPTION 'PR02_ASSERT: private Broadcast receive policy is missing';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'realtime'
+          AND tablename = 'messages'
+          AND cmd = 'INSERT'
+          AND roles @> ARRAY['authenticated']::NAME[]
+    ) THEN
+        RAISE EXCEPTION 'PR02_ASSERT: authenticated clients must not send ComicChat Broadcasts directly';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE NOT tgisinternal
+          AND tgname = 'comic_membership_broadcast_insert'
+    ) THEN
+        RAISE EXCEPTION 'PR02_ASSERT: membership Broadcast trigger is missing';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_trigger
+        WHERE NOT tgisinternal
+          AND tgname = 'comic_message_broadcast_change'
+    ) THEN
+        RAISE EXCEPTION 'PR02_ASSERT: message Broadcast trigger is missing';
+    END IF;
+
     RAISE NOTICE 'PR02_ASSERT: secure private chat checks passed';
 END
 $$;
