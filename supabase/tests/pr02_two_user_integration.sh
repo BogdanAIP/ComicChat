@@ -42,6 +42,12 @@ CONVERSATION_ID="$(user_scalar "${A}" "SELECT public.comic_ensure_direct_convers
 B_CONVERSATION_ID="$(user_scalar "${B}" "SELECT public.comic_ensure_direct_conversation('${A}'::uuid);")"
 [[ "${CONVERSATION_ID}" == "${B_CONVERSATION_ID}" ]]
 
+B_OWN_MEMBERSHIP="$(user_scalar "${B}" "SELECT COUNT(*) FROM public.comic_membership WHERE conversation_id = '${CONVERSATION_ID}'::uuid;")"
+[[ "${B_OWN_MEMBERSHIP}" == "1" ]]
+
+C_MEMBERSHIP_VISIBILITY="$(user_scalar "${C}" "SELECT COUNT(*) FROM public.comic_membership WHERE conversation_id = '${CONVERSATION_ID}'::uuid;")"
+[[ "${C_MEMBERSHIP_VISIBILITY}" == "0" ]]
+
 MESSAGE_ID="$(user_scalar "${A}" "SELECT id FROM public.comic_send_message('${CONVERSATION_ID}'::uuid, '${NONCE}'::uuid, 'hello bravo');")"
 [[ -n "${MESSAGE_ID}" ]]
 
