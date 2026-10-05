@@ -8,9 +8,15 @@ import { PaperclipIcon, MicIcon, StopIcon, CloseIcon, SingleTickIcon, DoubleTick
 import useTranslation from '../utils/useTranslation'
 import { motion } from 'framer-motion'
 
-const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
+const DirectMessages = forwardRef((props, ref) => {
+  if (!props.session?.user?.id) return null
+  return <DirectMessagesContent {...props} forwardedRef={ref} />
+})
+
+DirectMessages.displayName = 'DirectMessages'
+
+const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef }) => {
   const { t } = useTranslation()
-  if (!session?.user?.id) return null
 
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -36,6 +42,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
   const recordingCancelledRef = useRef(false)
   const deliveredMarkedRef = useRef(new Set())
   const readMarkedRef = useRef(new Set())
+  const tempMessageCounterRef = useRef(0)
 
   const myUserId = session.user.id
 
@@ -67,7 +74,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
     setCurrentThread(thread)
   }
 
-  useImperativeHandle(ref, () => ({
+  useImperativeHandle(forwardedRef, () => ({
     openThreadWith: async (partnerId) => {
       await openWithUser(partnerId)
       setShowSidebar(false)
@@ -305,6 +312,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
     return () => { if (ch) supabase.removeChannel(ch) }
   }, [supabase, currentThread])
 
+  /* eslint-disable react-hooks/set-state-in-effect -- inherited denormalized thread preview cache; PR-02 will replace this state shape */
   useEffect(() => {
     if (!currentThread?.id || dmMessages.length === 0) return
 
@@ -378,6 +386,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
       return updated
     })
   }, [dmMessages, currentThread?.id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const loadAudioDuration = (url) => new Promise((resolve) => {
     const audio = document.createElement('audio')
@@ -495,7 +504,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
     })
   }
 
-  const clearPendingFiles = () => {
+  function clearPendingFiles() {
     setPendingFiles(prev => {
       prev.forEach(file => {
         if (file.previewUrl) URL.revokeObjectURL(file.previewUrl)
@@ -605,7 +614,8 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
     }
 
     if (!tempId) {
-      tempId = `temp-${Date.now()}`
+      tempMessageCounterRef.current += 1
+      tempId = `temp-${tempMessageCounterRef.current}`
       const temp = { 
         id: tempId, 
         content: content || '', 
@@ -738,7 +748,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
     return name[0].toUpperCase()
   }
 
-  const getMessagePreview = (message) => {
+  function getMessagePreview(message) {
     if (!message) return ''
     if (message.file_type?.startsWith('audio/')) return '🎤 Audio clip'
     if (message.file_type?.startsWith('image/')) return message.content || '🖼️ Image'
@@ -1295,10 +1305,6 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
       </div>
     </div>
   )
-})
-
-DirectMessages.displayName = 'DirectMessages'
+}
 
 export default DirectMessages
-
-
