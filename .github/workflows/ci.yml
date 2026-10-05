@@ -193,6 +193,7 @@ jobs:
           SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
           SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: node supabase/tests/pr02_realtime_integration.mjs
 
       - name: Show local Supabase diagnostics on failure
