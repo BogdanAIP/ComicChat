@@ -23,7 +23,7 @@ This PR is intentionally text-only. Image generation, character assets, provider
 The authenticated browser has:
 
 - RLS-filtered `SELECT` on conversations, messages, and receipts;
-- no direct `SELECT` on membership rows;
+- RLS-filtered `SELECT` only on the caller's own membership rows;
 - no direct `INSERT`, `UPDATE`, or `DELETE` on the new ComicChat tables.
 
 Writes happen through narrowly scoped `SECURITY DEFINER` RPCs. Every RPC derives the caller from `auth.uid()`; none accepts a caller user ID as an authorization input. Every definer function fixes `search_path`.
@@ -55,7 +55,7 @@ History is sorted by `created_at, id`. The client subscribes to Realtime and the
 
 ## Realtime and status ownership
 
-`comic_conversation` and `comic_message` are added to the Supabase Realtime publication. RLS remains the read boundary, so a participant can discover a newly created conversation and then receive its messages without exposing other users' conversations.
+`comic_membership` and `comic_message` are added to the Supabase Realtime publication. A participant discovers a newly created conversation from their own membership INSERT (`user_id = auth.uid()`), then reloads the conversation list; other users' membership rows remain invisible. Message Realtime continues to use membership-scoped RLS.
 
 Browser users cannot directly update message status. PR-02 leaves new messages in `queued`; later render-worker PRs will move the same row through `queued -> rendering -> ready | failed` from a trusted server/provider boundary.
 
