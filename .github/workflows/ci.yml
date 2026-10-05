@@ -112,3 +112,62 @@ jobs:
       - name: Run two-user authorization integration
         run: bash supabase/tests/pr02_two_user_integration.sh
 
+  realtime:
+    name: Local Supabase realtime integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.119.0
+
+      - id: supabase
+        name: Start isolated local Supabase
+        run: |
+          supabase start --exclude studio,storage-api,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
+          supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
+
+      - name: Bootstrap legacy profile table required by user discovery
+        env:
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE IF NOT EXISTS public."user" (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            username TEXT,
+            email TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+          SQL
+
+      - name: Run Auth + Realtime + reconnect integration
+        env:
+          SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
+        run: node supabase/tests/pr02_realtime_integration.mjs
+
+      - name: Show local Supabase status on failure
+        if: failure()
+        run: |
+          supabase status || true
+          docker ps -a || true
+
+      - name: Stop isolated local Supabase
+        if: always()
+        run: supabase stop --no-backup || true
+
