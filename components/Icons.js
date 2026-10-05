@@ -7,17 +7,22 @@ const baseSvgProps = {
   strokeLinejoin: 'round'
 }
 
-const createIcon = (paths) => ({ size = 20, className } = {}) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    className={className}
-    {...baseSvgProps}
-  >
-    {paths}
-  </svg>
-)
+const createIcon = (paths) => {
+  const Icon = ({ size = 20, className } = {}) => (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      className={className}
+      {...baseSvgProps}
+    >
+      {paths}
+    </svg>
+  )
+
+  Icon.displayName = 'Icon'
+  return Icon
+}
 
 export const PaperclipIcon = createIcon(
   <path d="M16.5 6.5v8.75a4.75 4.75 0 1 1-9.5 0v-9.5a3.75 3.75 0 1 1 7.5 0v8.5a2.75 2.75 0 1 1-5.5 0V7.75" />
