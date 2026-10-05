@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: PR-02 security boundaries
+        run: npm run security:pr02
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
