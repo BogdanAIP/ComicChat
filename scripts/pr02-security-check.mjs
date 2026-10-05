@@ -42,6 +42,11 @@ for (const legacy of [
   )
 }
 
+forbidText(ui, "'postgres_changes'", 'secure UI must not use Postgres Changes')
+requireText(ui, ".on('broadcast'", 'secure UI uses Broadcast')
+requireText(ui, "config: { private: true }", 'secure UI uses private Realtime channels')
+requireText(ui, 'supabase.realtime.setAuth(session.access_token)', 'Realtime JWT authorization')
+
 for (const rpc of [
   'comic_ensure_direct_conversation',
   'comic_list_direct_conversations',
@@ -119,6 +124,36 @@ requireText(
   migration,
   'GRANT SELECT ON TABLE public.comic_membership TO authenticated',
   'own-membership SELECT grant'
+)
+requireText(
+  migration,
+  'CREATE POLICY comicchat_receive_broadcast',
+  'private Broadcast authorization policy'
+)
+requireText(
+  migration,
+  "realtime.messages.extension = 'broadcast'",
+  'Broadcast-only Realtime authorization'
+)
+requireText(
+  migration,
+  'PERFORM realtime.send(',
+  'database-triggered Broadcast'
+)
+requireText(
+  migration,
+  "'user:' || NEW.user_id::TEXT",
+  'per-user Broadcast topic'
+)
+requireText(
+  migration,
+  "'conversation:' || v_conversation_id::TEXT",
+  'per-conversation Broadcast topic'
+)
+forbidText(
+  migration,
+  'ALTER PUBLICATION supabase_realtime ADD TABLE',
+  'legacy Postgres Changes publication'
 )
 
 if (
