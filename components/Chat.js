@@ -7,9 +7,13 @@ import PendingAudioPreview from './PendingAudioPreview'
 import { PaperclipIcon, MicIcon, StopIcon, CloseIcon, CheckIcon, WaveIcon, SendIcon } from './Icons'
 import useTranslation from '../utils/useTranslation'
 
-const Chat = ({ currentUser, session, supabase, onOpenDirectMessages }) => {
+const Chat = (props) => {
+    if (!props.currentUser) return null
+    return <ChatContent {...props} />
+}
+
+const ChatContent = ({ currentUser, session, supabase, onOpenDirectMessages }) => {
     const { t } = useTranslation()
-    if (!currentUser) return null
     const [messages, setMessages] = useState([])
     const [editingUsername, setEditingUsername] = useState(false)
     const [users, setUsers] = useState({})
