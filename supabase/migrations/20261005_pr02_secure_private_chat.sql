@@ -99,8 +99,15 @@ CREATE POLICY comic_conversation_select
     TO authenticated
     USING (public.comic_is_member(id));
 
--- Membership rows are intentionally not exposed directly to the browser.
--- Participant discovery is provided by narrowly scoped RPCs below.
+-- A browser may see only its own membership rows. This gives Realtime a
+-- deterministic, non-sensitive signal that a conversation became available
+-- without exposing the other participants or allowing membership writes.
+DROP POLICY IF EXISTS comic_membership_select_own ON public.comic_membership;
+CREATE POLICY comic_membership_select_own
+    ON public.comic_membership
+    FOR SELECT
+    TO authenticated
+    USING (user_id = auth.uid());
 
 DROP POLICY IF EXISTS comic_message_select ON public.comic_message;
 CREATE POLICY comic_message_select
@@ -122,6 +129,7 @@ REVOKE ALL ON TABLE public.comic_message FROM anon, authenticated;
 REVOKE ALL ON TABLE public.comic_message_receipt FROM anon, authenticated;
 
 GRANT SELECT ON TABLE public.comic_conversation TO authenticated;
+GRANT SELECT ON TABLE public.comic_membership TO authenticated;
 GRANT SELECT ON TABLE public.comic_message TO authenticated;
 GRANT SELECT ON TABLE public.comic_message_receipt TO authenticated;
 
@@ -460,9 +468,9 @@ BEGIN
         FROM pg_publication_tables
         WHERE pubname = 'supabase_realtime'
           AND schemaname = 'public'
-          AND tablename = 'comic_conversation'
+          AND tablename = 'comic_membership'
     ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.comic_conversation;
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.comic_membership;
     END IF;
 
     IF NOT EXISTS (
