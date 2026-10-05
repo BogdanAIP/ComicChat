@@ -40,7 +40,7 @@ forbidText(panel, 'getComicStatus', 'legacy ad-hoc status helper')
 
 requireText(renderer, "renderer: 'TemplateRenderer'", 'TemplateRenderer descriptor')
 requireText(renderer, 'version: 1', 'renderer descriptor version')
-requireText(renderer, 'const exactText = String(text ?? '')', 'exact text preservation')
+requireText(renderer, "const exactText = String(text ?? '')", 'exact text preservation')
 requireText(renderer, 'getBubbleLayout(exactText)', 'bubble layout derivation')
 requireText(renderer, 'firstStrongDirection(exactText)', 'text direction derivation')
 requireText(renderer, 'stableComicSeed(messageId)', 'stable message seed')
