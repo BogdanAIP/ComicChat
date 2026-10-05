@@ -134,7 +134,7 @@ AS $$
 DECLARE
     me UUID := auth.uid();
     pair_key TEXT;
-    conversation_id UUID;
+    v_conversation_id UUID;
 BEGIN
     IF me IS NULL THEN
         RAISE EXCEPTION 'not_authenticated' USING ERRCODE = '42501';
@@ -156,15 +156,15 @@ BEGIN
     VALUES ('direct', me, pair_key)
     ON CONFLICT (direct_key) WHERE direct_key IS NOT NULL
     DO UPDATE SET direct_key = EXCLUDED.direct_key
-    RETURNING id INTO conversation_id;
+    RETURNING id INTO v_conversation_id;
 
     INSERT INTO public.comic_membership(conversation_id, user_id, role)
     VALUES
-        (conversation_id, me, 'member'),
-        (conversation_id, partner_id, 'member')
+        (v_conversation_id, me, 'member'),
+        (v_conversation_id, partner_id, 'member')
     ON CONFLICT (conversation_id, user_id) DO NOTHING;
 
-    RETURN conversation_id;
+    RETURN v_conversation_id;
 END;
 $$;
 
