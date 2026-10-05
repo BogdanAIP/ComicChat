@@ -228,6 +228,12 @@
     linear-gradient(145deg, #1d2748, #0f1730 62%, #080d1b);
 }
 
+.sceneArtwork {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 .sceneTexture {
   position: absolute;
   inset: 0;
