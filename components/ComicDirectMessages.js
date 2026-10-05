@@ -222,8 +222,6 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       channelRef.current = null
     }
 
-    setConnectionState('connecting')
-
     const channel = supabase
       .channel(`comic-message:${selectedConversationId}`)
       .on(
@@ -353,6 +351,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
         }
 
       setMessages([])
+      setConnectionState('connecting')
       setSelectedConversation(row)
       setQuery('')
       setSearchResults([])
@@ -486,6 +485,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                 }
                 onClick={() => {
                   setMessages([])
+                  setConnectionState('connecting')
                   setSelectedConversation(conversation)
                 }}
               >
