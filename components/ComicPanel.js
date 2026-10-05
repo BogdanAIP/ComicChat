@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   getComicAriaLabel,
   getComicScene,
@@ -26,17 +26,31 @@ export default function ComicPanel({
   optimistic = false,
   createdAt = null,
   preview = false,
-  onRetryPreview = null,
 }) {
   const [copyState, setCopyState] = useState('idle')
+  const [retryPreviewing, setRetryPreviewing] = useState(false)
+  const retryTimerRef = useRef(null)
   const scene = getComicScene(messageId, mine)
+  const persistedState = getComicStatus(status, optimistic)
   const state = preview
     ? {
         key: 'draft',
         label: 'Preview',
         announcement: 'Comic message preview',
       }
-    : getComicStatus(status, optimistic)
+    : retryPreviewing
+      ? {
+          key: 'retry-preview',
+          label: 'Retry preview',
+          announcement: 'Demo visual retry is previewing on the same message',
+        }
+      : persistedState
+
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+    }
+  }, [])
 
   const exactText = String(text ?? '')
   const ariaLabel = preview
@@ -47,6 +61,15 @@ export default function ComicPanel({
         status,
         optimistic,
       })
+
+  const retryPreview = () => {
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
+    setRetryPreviewing(true)
+    retryTimerRef.current = setTimeout(() => {
+      setRetryPreviewing(false)
+      retryTimerRef.current = null
+    }, 1200)
+  }
 
   const copyOriginal = async () => {
     try {
@@ -62,7 +85,8 @@ export default function ComicPanel({
     <article
       className={`${styles.comicCard} ${mine ? styles.comicCardMine : styles.comicCardIncoming} ${preview ? styles.comicCardPreview : ''}`}
       data-message-id={messageId}
-      data-message-status={state.key}
+      data-message-status={preview ? 'draft' : persistedState.key}
+      data-visual-state={state.key}
       aria-label={ariaLabel}
     >
       <figure className={styles.comicFigure}>
@@ -117,8 +141,8 @@ export default function ComicPanel({
               <button
                 type="button"
                 className={styles.comicAction}
-                onClick={() => onRetryPreview?.(messageId)}
-                aria-label="Retry visual preview for this same message"
+                onClick={retryPreview}
+                aria-label="Preview a visual retry on this same message without changing server state"
               >
                 Retry preview
               </button>
@@ -128,7 +152,7 @@ export default function ComicPanel({
       </figure>
 
       <span className={styles.srOnly} role="status" aria-live="polite">
-        {preview ? state.announcement : getComicStatus(status, optimistic).announcement}
+        {state.announcement}
       </span>
 
       {!preview && copyState === 'copied' && (
