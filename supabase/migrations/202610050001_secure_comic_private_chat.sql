@@ -263,6 +263,7 @@ CREATE OR REPLACE FUNCTION public.comic_list_conversations()
 RETURNS TABLE (
     conversation_id UUID,
     other_user_id UUID,
+    other_username TEXT,
     conversation_created_at TIMESTAMPTZ,
     last_message_content TEXT,
     last_message_time TIMESTAMPTZ
@@ -275,6 +276,7 @@ AS $$
     SELECT
         c.id,
         other_member.user_id,
+        other_profile.username,
         c.created_at,
         last_message.original_text,
         COALESCE(last_message.created_at, c.created_at)
@@ -284,6 +286,8 @@ AS $$
     JOIN public.comic_membership other_member
       ON other_member.conversation_id = c.id
      AND other_member.user_id <> auth.uid()
+    LEFT JOIN public.user other_profile
+      ON other_profile.id = other_member.user_id
     LEFT JOIN LATERAL (
         SELECT m.original_text, m.created_at
         FROM public.comic_message m
@@ -295,6 +299,28 @@ AS $$
       AND c.kind = 'direct'
     ORDER BY COALESCE(last_message.created_at, c.created_at) DESC, c.id;
 $$;
+
+CREATE OR REPLACE FUNCTION public.comic_search_users(p_query TEXT DEFAULT '')
+RETURNS TABLE (
+    user_id UUID,
+    username TEXT
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $
+    SELECT u.id, u.username
+    FROM public.user u
+    WHERE auth.uid() IS NOT NULL
+      AND u.id <> auth.uid()
+      AND (
+          btrim(COALESCE(p_query, '')) = ''
+          OR COALESCE(u.username, '') ILIKE '%' || replace(replace(btrim(p_query), '%', '\\%'), '_', '\\_') || '%' ESCAPE '\\'
+      )
+    ORDER BY u.created_at DESC, u.id
+    LIMIT 20;
+$;
 
 CREATE OR REPLACE FUNCTION public.comic_send_message(
     p_conversation_id UUID,
@@ -428,12 +454,14 @@ $$;
 
 REVOKE ALL ON FUNCTION public.comic_ensure_conversation(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.comic_list_conversations() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.comic_search_users(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.comic_send_message(UUID, TEXT, TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.comic_mark_messages_delivered(UUID[]) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.comic_mark_messages_read(UUID[]) FROM PUBLIC;
 
 GRANT EXECUTE ON FUNCTION public.comic_ensure_conversation(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.comic_list_conversations() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.comic_search_users(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.comic_send_message(UUID, TEXT, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.comic_mark_messages_delivered(UUID[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.comic_mark_messages_read(UUID[]) TO authenticated;
