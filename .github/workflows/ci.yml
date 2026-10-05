@@ -35,6 +35,9 @@ jobs:
       - name: PR-03 comic-first UX boundaries
         run: npm run ux:pr03
 
+      - name: PR-04 TemplateRenderer goldens
+        run: npm run renderer:pr04
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.

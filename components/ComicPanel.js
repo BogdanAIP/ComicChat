@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import {
-  getComicScene,
-  getComicStatus,
-} from '../utils/comicPresentation'
+import { renderTemplate } from '../utils/templateRenderer.mjs'
 import styles from '../styles/ComicDirectMessages.module.css'
 
 function formatTime(value) {
@@ -29,21 +26,23 @@ export default function ComicPanel({
   const [copyState, setCopyState] = useState('idle')
   const [retryPreviewing, setRetryPreviewing] = useState(false)
   const retryTimerRef = useRef(null)
-  const scene = getComicScene(messageId, mine)
-  const persistedState = getComicStatus(status, optimistic)
-  const state = preview
+  const renderModel = renderTemplate({
+    messageId,
+    text,
+    mine,
+    status,
+    optimistic,
+    preview,
+  })
+  const scene = renderModel.scene
+  const persistedState = renderModel.state
+  const state = retryPreviewing
     ? {
-        key: 'draft',
-        label: 'Preview',
-        announcement: 'Comic message preview',
+        key: 'retry-preview',
+        label: 'Retry preview',
+        announcement: 'Demo visual retry is previewing on the same message',
       }
-    : retryPreviewing
-      ? {
-          key: 'retry-preview',
-          label: 'Retry preview',
-          announcement: 'Demo visual retry is previewing on the same message',
-        }
-      : persistedState
+    : persistedState
 
   useEffect(() => {
     return () => {
@@ -51,7 +50,7 @@ export default function ComicPanel({
     }
   }, [])
 
-  const exactText = String(text ?? '')
+  const exactText = renderModel.text
   const accessibleId = `comic-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`
 
   const retryPreview = () => {
@@ -79,6 +78,8 @@ export default function ComicPanel({
       data-message-id={messageId}
       data-message-status={preview ? 'draft' : persistedState.key}
       data-visual-state={state.key}
+      data-renderer={renderModel.renderer}
+      data-renderer-version={renderModel.version}
       aria-labelledby={`${accessibleId}-speaker`}
       aria-describedby={`${accessibleId}-status`}
     >
@@ -92,6 +93,7 @@ export default function ComicPanel({
             <div className={styles.sceneTexture} aria-hidden="true" />
             <div
               className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]}`}
+              data-character-template={renderModel.character.silhouette}
               aria-hidden="true"
             >
               <span className={styles.characterHead} />
@@ -102,7 +104,17 @@ export default function ComicPanel({
             </span>
           </div>
 
-          <div className={styles.speechBubble}>
+          <div
+            className={styles.speechBubble}
+            data-bubble-layout={renderModel.bubble.key}
+            dir={renderModel.bubble.direction}
+            style={{
+              maxWidth: renderModel.bubble.maxWidth,
+              minHeight: renderModel.bubble.minHeight,
+              padding: renderModel.bubble.padding,
+              fontSize: `${renderModel.bubble.fontScale}rem`,
+            }}
+          >
             <p>{exactText || 'Your message will appear here exactly as typed.'}</p>
           </div>
 

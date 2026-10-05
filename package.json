@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "security:pr02": "node scripts/pr02-security-check.mjs",
-    "ux:pr03": "node scripts/pr03-ux-check.mjs"
+    "ux:pr03": "node scripts/pr03-ux-check.mjs",
+    "renderer:pr04": "node scripts/pr04-renderer-check.mjs && node scripts/pr04-template-golden.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
