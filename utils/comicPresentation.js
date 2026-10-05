@@ -63,6 +63,14 @@ export function getComicStatus(status, optimistic = false) {
     }
   }
 
+  if (normalized === 'queued') {
+    return {
+      key: 'queued',
+      label: 'Queued',
+      announcement: 'Comic artwork is queued',
+    }
+  }
+
   return {
     key: 'queued',
     label: 'Queued',
