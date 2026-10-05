@@ -333,7 +333,9 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
-  font-size: clamp(15px, 1.8vw, 18px);
+  unicode-bidi: plaintext;
+  text-align: start;
+  font-size: inherit;
   line-height: 1.42;
 }
 
