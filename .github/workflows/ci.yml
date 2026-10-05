@@ -40,3 +40,75 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
           NEXT_PUBLIC_SITE_URL: https://placeholder.example.com
         run: npm run build
+
+  db-security:
+    name: Postgres security integration
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      PGPASSWORD: postgres
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify PostgreSQL client
+        run: psql --version
+
+      - name: Bootstrap Supabase-compatible auth stubs
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon NOLOGIN;
+          CREATE ROLE authenticated NOLOGIN;
+          CREATE SCHEMA auth;
+
+          CREATE TABLE auth.users (
+            id UUID PRIMARY KEY,
+            email TEXT
+          );
+
+          CREATE OR REPLACE FUNCTION auth.uid()
+          RETURNS UUID
+          LANGUAGE sql
+          STABLE
+          AS $$
+            SELECT NULLIF(
+              pg_catalog.current_setting('request.jwt.claim.sub', true),
+              ''
+            )::UUID
+          $$;
+
+          CREATE TABLE public."user" (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            username TEXT,
+            email TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+
+          CREATE PUBLICATION supabase_realtime;
+          GRANT USAGE ON SCHEMA public TO authenticated;
+          SQL
+
+      - name: Apply PR-02 migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261005_pr02_secure_private_chat.sql
+
+      - name: Run post-migration security assertions
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
+
+      - name: Run two-user authorization integration
+        run: bash supabase/tests/pr02_two_user_integration.sh
+
