@@ -81,7 +81,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
     SELECT EXISTS (
         SELECT 1
@@ -131,7 +131,7 @@ CREATE OR REPLACE FUNCTION public.comic_ensure_direct_conversation(partner_id UU
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
@@ -181,7 +181,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
@@ -200,7 +200,7 @@ BEGIN
     FROM public."user" AS u
     WHERE u.id <> me
       AND u.username IS NOT NULL
-      AND u.username ILIKE '%' || q || '%'
+      AND POSITION(LOWER(q) IN LOWER(u.username)) > 0
     ORDER BY u.username
     LIMIT 20;
 END;
@@ -222,7 +222,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
@@ -278,7 +278,7 @@ CREATE OR REPLACE FUNCTION public.comic_send_message(
 RETURNS SETOF public.comic_message
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
@@ -382,7 +382,7 @@ CREATE OR REPLACE FUNCTION public.comic_mark_conversation_delivered(p_conversati
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
@@ -419,7 +419,7 @@ CREATE OR REPLACE FUNCTION public.comic_mark_conversation_read(p_conversation_id
 RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, public, auth
+SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
