@@ -121,10 +121,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js for Realtime harness
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          # The browser app remains built on .nvmrc (Node 20). The Node-based
+          # Realtime harness uses Node 22 for its native WebSocket transport.
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
