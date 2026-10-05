@@ -1,0 +1,226 @@
+{
+  "renderer": "TemplateRenderer",
+  "version": 1,
+  "cases": [
+    {
+      "name": "short-outgoing-ready",
+      "input": {
+        "messageId": "msg-short-out",
+        "text": "Hi!",
+        "mine": true,
+        "status": "ready"
+      },
+      "expected": {
+        "renderer": "TemplateRenderer",
+        "version": 1,
+        "messageId": "msg-short-out",
+        "text": "Hi!",
+        "side": "outgoing",
+        "scene": {
+          "key": "studio",
+          "symbol": "✦",
+          "label": "studio scene",
+          "pose": 2,
+          "seed": 2940096116
+        },
+        "character": {
+          "slot": "sender",
+          "anchor": "start",
+          "silhouette": "template-1"
+        },
+        "bubble": {
+          "key": "compact",
+          "characterCount": 3,
+          "lineCount": 1,
+          "emojiCount": 0,
+          "direction": "ltr",
+          "maxWidth": "30rem",
+          "minHeight": "5.5rem",
+          "fontScale": 1.06,
+          "padding": "0.95rem 1.1rem"
+        },
+        "state": {
+          "key": "ready",
+          "label": "Ready",
+          "announcement": "Comic artwork is ready"
+        }
+      }
+    },
+    {
+      "name": "multiline-incoming-rendering",
+      "input": {
+        "messageId": "msg-multiline-in",
+        "text": "Line one\\nLine two\\nLine three",
+        "mine": false,
+        "status": "rendering"
+      },
+      "expected": {
+        "renderer": "TemplateRenderer",
+        "version": 1,
+        "messageId": "msg-multiline-in",
+        "text": "Line one\\nLine two\\nLine three",
+        "side": "incoming",
+        "scene": {
+          "key": "studio",
+          "symbol": "✦",
+          "label": "studio scene",
+          "pose": 1,
+          "seed": 2745645540
+        },
+        "character": {
+          "slot": "partner",
+          "anchor": "end",
+          "silhouette": "template-3"
+        },
+        "bubble": {
+          "key": "standard",
+          "characterCount": 28,
+          "lineCount": 3,
+          "emojiCount": 0,
+          "direction": "ltr",
+          "maxWidth": "34rem",
+          "minHeight": "7rem",
+          "fontScale": 1,
+          "padding": "1rem 1.15rem"
+        },
+        "state": {
+          "key": "rendering",
+          "label": "Rendering",
+          "announcement": "Comic artwork is rendering"
+        }
+      }
+    },
+    {
+      "name": "emoji-incoming-queued",
+      "input": {
+        "messageId": "msg-emoji-in",
+        "text": "🚀✨ Ready?",
+        "mine": false,
+        "status": "queued"
+      },
+      "expected": {
+        "renderer": "TemplateRenderer",
+        "version": 1,
+        "messageId": "msg-emoji-in",
+        "text": "🚀✨ Ready?",
+        "side": "incoming",
+        "scene": {
+          "key": "night",
+          "symbol": "☾",
+          "label": "night scene",
+          "pose": 0,
+          "seed": 849377239
+        },
+        "character": {
+          "slot": "partner",
+          "anchor": "end",
+          "silhouette": "template-2"
+        },
+        "bubble": {
+          "key": "compact",
+          "characterCount": 9,
+          "lineCount": 1,
+          "emojiCount": 2,
+          "direction": "ltr",
+          "maxWidth": "30rem",
+          "minHeight": "5.5rem",
+          "fontScale": 1.06,
+          "padding": "0.95rem 1.1rem"
+        },
+        "state": {
+          "key": "queued",
+          "label": "Queued",
+          "announcement": "Comic artwork is queued"
+        }
+      }
+    },
+    {
+      "name": "rtl-incoming-failed",
+      "input": {
+        "messageId": "msg-rtl-in",
+        "text": "مرحبا ComicChat",
+        "mine": false,
+        "status": "failed"
+      },
+      "expected": {
+        "renderer": "TemplateRenderer",
+        "version": 1,
+        "messageId": "msg-rtl-in",
+        "text": "مرحبا ComicChat",
+        "side": "incoming",
+        "scene": {
+          "key": "night",
+          "symbol": "☾",
+          "label": "night scene",
+          "pose": 2,
+          "seed": 3970590263
+        },
+        "character": {
+          "slot": "partner",
+          "anchor": "end",
+          "silhouette": "template-3"
+        },
+        "bubble": {
+          "key": "compact",
+          "characterCount": 15,
+          "lineCount": 1,
+          "emojiCount": 0,
+          "direction": "rtl",
+          "maxWidth": "30rem",
+          "minHeight": "5.5rem",
+          "fontScale": 1.06,
+          "padding": "0.95rem 1.1rem"
+        },
+        "state": {
+          "key": "failed",
+          "label": "Visual failed",
+          "announcement": "Comic artwork failed; original message is preserved"
+        }
+      }
+    },
+    {
+      "name": "long-outgoing-ready",
+      "input": {
+        "messageId": "msg-long-out",
+        "text": "This is a deliberately long ComicChat message used to verify that the template renderer selects the expansive speech-bubble layout without trimming, rewriting, or losing any part of the original source text. It should remain readable across the full comic panel.",
+        "mine": true,
+        "status": "ready"
+      },
+      "expected": {
+        "renderer": "TemplateRenderer",
+        "version": 1,
+        "messageId": "msg-long-out",
+        "text": "This is a deliberately long ComicChat message used to verify that the template renderer selects the expansive speech-bubble layout without trimming, rewriting, or losing any part of the original source text. It should remain readable across the full comic panel.",
+        "side": "outgoing",
+        "scene": {
+          "key": "window",
+          "symbol": "◫",
+          "label": "window scene",
+          "pose": 2,
+          "seed": 3981516310
+        },
+        "character": {
+          "slot": "sender",
+          "anchor": "start",
+          "silhouette": "template-0"
+        },
+        "bubble": {
+          "key": "expansive",
+          "characterCount": 262,
+          "lineCount": 1,
+          "emojiCount": 0,
+          "direction": "ltr",
+          "maxWidth": "38rem",
+          "minHeight": "9rem",
+          "fontScale": 0.94,
+          "padding": "1.1rem 1.2rem"
+        },
+        "state": {
+          "key": "ready",
+          "label": "Ready",
+          "announcement": "Comic artwork is ready"
+        }
+      }
+    }
+  ]
+}
