@@ -40,10 +40,31 @@ export function stableComicSeed(value = '') {
   return hash >>> 0
 }
 
+function isRtlCodePoint(codePoint) {
+  return (
+    (codePoint >= 0x0590 && codePoint <= 0x05ff) ||
+    (codePoint >= 0x0600 && codePoint <= 0x06ff) ||
+    (codePoint >= 0x0750 && codePoint <= 0x077f) ||
+    (codePoint >= 0x08a0 && codePoint <= 0x08ff) ||
+    (codePoint >= 0xfb50 && codePoint <= 0xfdff) ||
+    (codePoint >= 0xfe70 && codePoint <= 0xfeff)
+  )
+}
+
+function isLtrCodePoint(codePoint) {
+  return (
+    (codePoint >= 0x0041 && codePoint <= 0x005a) ||
+    (codePoint >= 0x0061 && codePoint <= 0x007a) ||
+    (codePoint >= 0x00c0 && codePoint <= 0x02af) ||
+    (codePoint >= 0x0370 && codePoint <= 0x052f)
+  )
+}
+
 function firstStrongDirection(text) {
   for (const char of String(text)) {
-    if (/[֐-ࣿ]/u.test(char)) return 'rtl'
-    if (/[A-Za-zÀ-ʯͰ-ԯ]/u.test(char)) return 'ltr'
+    const codePoint = char.codePointAt(0)
+    if (isRtlCodePoint(codePoint)) return 'rtl'
+    if (isLtrCodePoint(codePoint)) return 'ltr'
   }
 
   return 'auto'
