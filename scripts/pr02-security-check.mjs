@@ -57,6 +57,9 @@ requireText(migration, 'SECURITY DEFINER', 'secured RPC boundary')
 requireText(migration, 'SET search_path = pg_catalog', 'fixed SECURITY DEFINER search_path')
 requireText(migration, 'REVOKE ALL ON TABLE public.comic_message FROM anon, authenticated', 'message direct-write revocation')
 requireText(migration, 'GRANT SELECT ON TABLE public.comic_message TO authenticated', 'message read grant')
+requireText(migration, 'DO $', 'valid PostgreSQL DO block opener')
+requireText(migration, 'END $;', 'valid PostgreSQL DO block closer')
+forbidText(migration, 'DO $\n', 'truncated PostgreSQL DO delimiter')
 forbidText(migration, 'WITH CHECK (true)', 'permissive RLS insertion')
 forbidText(migration, 'getPublicUrl', 'public media URL')
 forbidText(migration, 'recipientEmail', 'caller-controlled notification recipient')
@@ -65,7 +68,7 @@ if (/GRANT\s+(INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\.comic_message\s+T
   failures.push('forbidden: authenticated direct write grant on comic_message')
 }
 
-if (/CREATE\\s+POLICY\\s+[^\\n]+\\s+ON\\s+public\\.comic_membership/i.test(migration)) {
+if (/CREATE\s+POLICY\s+[^\n]+\s+ON\s+public\.comic_membership/i.test(migration)) {
   failures.push('forbidden: browser-facing comic_membership policy')
 }
 
