@@ -105,10 +105,28 @@ if (
   failures.push('forbidden: authenticated direct write grant on comic_message')
 }
 
+requireText(
+  migration,
+  'CREATE POLICY comic_membership_select_own',
+  'own-membership SELECT policy'
+)
+requireText(
+  migration,
+  'USING (user_id = auth.uid())',
+  'own-membership RLS predicate'
+)
+requireText(
+  migration,
+  'GRANT SELECT ON TABLE public.comic_membership TO authenticated',
+  'own-membership SELECT grant'
+)
+
 if (
-  /CREATE\s+POLICY\s+[^\n]+\s+ON\s+public\.comic_membership/i.test(migration)
+  /GRANT\s+(INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\.comic_membership\s+TO\s+authenticated/i.test(
+    migration
+  )
 ) {
-  failures.push('forbidden: browser-facing comic_membership policy')
+  failures.push('forbidden: authenticated direct write grant on comic_membership')
 }
 
 if (!/DO \$\$\s*BEGIN[\s\S]*END \$\$;/.test(migration)) {
