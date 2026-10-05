@@ -49,8 +49,22 @@ function firstStrongDirection(text) {
   return 'auto'
 }
 
+function isEmojiCodePoint(codePoint) {
+  return (
+    (codePoint >= 0x1f300 && codePoint <= 0x1faff) ||
+    (codePoint >= 0x2600 && codePoint <= 0x27bf) ||
+    (codePoint >= 0x2300 && codePoint <= 0x23ff)
+  )
+}
+
 function countEmoji(text) {
-  return (String(text).match(/p{Extended_Pictographic}/gu) || []).length
+  let count = 0
+
+  for (const char of String(text)) {
+    if (isEmojiCodePoint(char.codePointAt(0))) count += 1
+  }
+
+  return count
 }
 
 export function getBubbleLayout(text) {
