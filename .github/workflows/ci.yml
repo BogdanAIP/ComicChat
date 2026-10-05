@@ -38,6 +38,9 @@ jobs:
       - name: PR-04 TemplateRenderer goldens
         run: npm run renderer:pr04
 
+      - name: PR-05 generation pipeline boundaries
+        run: npm run pipeline:pr05
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -80,6 +83,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
           CREATE ROLE anon NOLOGIN;
           CREATE ROLE authenticated NOLOGIN;
+          CREATE ROLE service_role NOLOGIN;
           CREATE SCHEMA auth;
           CREATE SCHEMA realtime;
 
@@ -127,13 +131,20 @@ jobs:
           );
 
           GRANT USAGE ON SCHEMA public TO authenticated;
+          GRANT USAGE ON SCHEMA public TO service_role;
           SQL
 
       - name: Apply PR-02 migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261005_pr02_secure_private_chat.sql
 
+      - name: Apply PR-05 migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261005_pr05_generation_pipeline.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
+
+      - name: Run PR-05 generation pipeline integration
+        run: bash supabase/tests/pr05_generation_pipeline_integration.sh
 
       - name: Run two-user authorization integration
         run: bash supabase/tests/pr02_two_user_integration.sh
@@ -212,4 +223,3 @@ jobs:
       - name: Stop isolated local Supabase
         if: always()
         run: supabase stop --no-backup || true
-
