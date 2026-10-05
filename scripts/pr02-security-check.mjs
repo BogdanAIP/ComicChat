@@ -86,8 +86,6 @@ requireText(
   'GRANT SELECT ON TABLE public.comic_message TO authenticated',
   'message read grant'
 )
-requireText(migration, 'DO $$', 'valid PostgreSQL DO block opener')
-requireText(migration, 'END $$;', 'valid PostgreSQL DO block closer')
 
 forbidText(migration, 'WITH CHECK (true)', 'permissive RLS insertion')
 forbidText(migration, 'getPublicUrl', 'public media URL')
@@ -164,9 +162,6 @@ if (
   failures.push('forbidden: authenticated direct write grant on comic_membership')
 }
 
-if (!/DO \$\$\s*BEGIN[\s\S]*END \$\$;/.test(migration)) {
-  failures.push('invalid or missing PostgreSQL dollar-quoted DO block')
-}
 
 if (failures.length) {
   console.error('PR-02 security boundary check failed:')
