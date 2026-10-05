@@ -103,6 +103,28 @@ async function subscribe(channel, label) {
   )
 }
 
+async function expectSubscriptionRejected(channel, label) {
+  await withTimeout(
+    new Promise((resolve, reject) => {
+      channel.subscribe((status, error) => {
+        console.log(`${label}: ${status}`)
+        if (
+          status === 'CHANNEL_ERROR' ||
+          status === 'TIMED_OUT' ||
+          status === 'CLOSED'
+        ) {
+          resolve(error || status)
+        }
+        if (status === 'SUBSCRIBED') {
+          reject(new Error(`${label} unexpectedly subscribed`))
+        }
+      })
+    }),
+    10000,
+    `${label} rejection`
+  )
+}
+
 async function cleanupClient(client) {
   try {
     await client.removeAllChannels()
@@ -152,36 +174,24 @@ try {
   let cMembershipEvents = 0
 
   const bMembershipChannel = b
-    .channel('pr02-b-memberships')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comic_membership',
-        filter: `user_id=eq.${bId}`,
-      },
-      (payload) => bMembershipResolve(payload.new)
-    )
+    .channel(`user:${bId}`, {
+      config: { private: true },
+    })
+    .on('broadcast', { event: 'INSERT' }, (payload) => {
+      bMembershipResolve(payload)
+    })
 
   const cMembershipChannel = c
-    .channel('pr02-c-memberships')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comic_membership',
-        filter: `user_id=eq.${cId}`,
-      },
-      () => {
-        cMembershipEvents += 1
-      }
-    )
+    .channel(`user:${cId}`, {
+      config: { private: true },
+    })
+    .on('broadcast', { event: 'INSERT' }, () => {
+      cMembershipEvents += 1
+    })
 
   await Promise.all([
-    subscribe(bMembershipChannel, 'B conversation channel'),
-    subscribe(cMembershipChannel, 'C conversation channel'),
+    subscribe(bMembershipChannel, 'B user Broadcast channel'),
+    subscribe(cMembershipChannel, 'C user Broadcast channel'),
   ])
 
   const { data: conversationId, error: ensureError } = await a.rpc(
@@ -214,17 +224,11 @@ try {
     throw new Error('C can read another user membership row through JWT/RLS')
   }
 
-  const bMembership = await withTimeout(
+  await withTimeout(
     bMembershipPromise,
     10000,
-    'B realtime membership INSERT'
+    'B private membership Broadcast'
   )
-  if (
-    bMembership.conversation_id !== conversationId ||
-    bMembership.user_id !== bId
-  ) {
-    throw new Error('B received the wrong membership event')
-  }
 
   await sleep(1200)
   if (cMembershipEvents !== 0) {
@@ -243,40 +247,24 @@ try {
   const bMessagePromise = new Promise((resolve) => {
     bMessageResolve = resolve
   })
-  let cMessageEvents = 0
 
   const bMessageChannel = b
-    .channel('pr02-b-messages')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comic_message',
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      (payload) => bMessageResolve(payload.new)
-    )
+    .channel(`conversation:${conversationId}`, {
+      config: { private: true },
+    })
+    .on('broadcast', { event: 'INSERT' }, (payload) => {
+      bMessageResolve(payload)
+    })
 
-  const cMessageChannel = c
-    .channel('pr02-c-messages')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comic_message',
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      () => {
-        cMessageEvents += 1
-      }
-    )
+  const cMessageChannel = c.channel(`conversation:${conversationId}`, {
+    config: { private: true },
+  })
 
-  await Promise.all([
-    subscribe(bMessageChannel, 'B message channel'),
-    subscribe(cMessageChannel, 'C message channel'),
-  ])
+  await subscribe(bMessageChannel, 'B private conversation Broadcast channel')
+  await expectSubscriptionRejected(
+    cMessageChannel,
+    'C forbidden conversation Broadcast channel'
+  )
 
   const nonce = crypto.randomUUID()
   const { data: firstSend, error: firstSendError } = await a.rpc(
@@ -292,18 +280,20 @@ try {
   const firstMessage = Array.isArray(firstSend) ? firstSend[0] : firstSend
   if (!firstMessage?.id) throw new Error('first message id missing')
 
-  const realtimeMessage = await withTimeout(
+  await withTimeout(
     bMessagePromise,
     10000,
-    'B realtime message INSERT'
+    'B private message Broadcast'
   )
-  if (realtimeMessage.id !== firstMessage.id) {
-    throw new Error('B realtime message id differs from sender persistent id')
-  }
 
-  await sleep(1200)
-  if (cMessageEvents !== 0) {
-    throw new Error('non-member C received private message realtime event')
+  const { data: bFirstHistory, error: bFirstHistoryError } = await b
+    .from('comic_message')
+    .select('id, client_nonce, original_text')
+    .eq('conversation_id', conversationId)
+    .eq('id', firstMessage.id)
+  if (bFirstHistoryError) throw bFirstHistoryError
+  if (bFirstHistory?.length !== 1) {
+    throw new Error('B received Broadcast but cannot resolve the persistent message row')
   }
 
   const { data: duplicateSend, error: duplicateError } = await a.rpc(
@@ -346,8 +336,12 @@ try {
   if (secondSendError) throw secondSendError
   const secondMessage = Array.isArray(secondSend) ? secondSend[0] : secondSend
 
-  const reconnectedChannel = b.channel('pr02-b-messages-reconnected')
-  await subscribe(reconnectedChannel, 'B reconnected message channel')
+  const reconnectedChannel = b
+    .channel(`conversation:${conversationId}`, {
+      config: { private: true },
+    })
+    .on('broadcast', { event: 'INSERT' }, () => {})
+  await subscribe(reconnectedChannel, 'B reconnected private conversation channel')
 
   const { data: history, error: historyError } = await b
     .from('comic_message')
