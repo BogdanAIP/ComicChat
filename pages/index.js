@@ -16,23 +16,21 @@ const tabTransition = {
 
 export default function Home({ currentUser, session, supabase }) {
   const { t, locale, toggleLanguage } = useTranslation()
-  const [loggedIn, setLoggedIn] = useState(false)
   const [tab, setTab] = useState('public')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isDesktop, setIsDesktop] = useState(true)
+  const loggedIn = !!session
 
   const directMessagesRef = useRef(null)
 
   useEffect(() => {
-    setLoggedIn(!!session)
-
     const checkDesktop = () => {
       setIsDesktop(window.innerWidth > 768)
     }
     checkDesktop()
     window.addEventListener('resize', checkDesktop)
     return () => window.removeEventListener('resize', checkDesktop)
-  }, [session])
+  }, [])
 
   const handleOpenDirectMessages = (userId) => {
     setTab('private')
