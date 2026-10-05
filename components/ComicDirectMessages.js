@@ -128,22 +128,14 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
   useEffect(() => {
     const channel = supabase
-      .channel(`comic-conversation-list:${myUserId}`)
+      .channel(`comic-memberships:${myUserId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'comic_conversation',
-        },
-        () => loadConversations()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'comic_conversation',
+          table: 'comic_membership',
+          filter: `user_id=eq.${myUserId}`,
         },
         () => loadConversations()
       )
