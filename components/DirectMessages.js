@@ -8,9 +8,15 @@ import { PaperclipIcon, MicIcon, StopIcon, CloseIcon, SingleTickIcon, DoubleTick
 import useTranslation from '../utils/useTranslation'
 import { motion } from 'framer-motion'
 
-const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
+const DirectMessages = forwardRef((props, ref) => {
+  if (!props.session?.user?.id) return null
+  return <DirectMessagesContent {...props} forwardedRef={ref} />
+})
+
+DirectMessages.displayName = 'DirectMessages'
+
+const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef }) => {
   const { t } = useTranslation()
-  if (!session?.user?.id) return null
 
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -67,7 +73,7 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
     setCurrentThread(thread)
   }
 
-  useImperativeHandle(ref, () => ({
+  useImperativeHandle(forwardedRef, () => ({
     openThreadWith: async (partnerId) => {
       await openWithUser(partnerId)
       setShowSidebar(false)
@@ -1295,10 +1301,6 @@ const DirectMessages = forwardRef(({ currentUser, session, supabase }, ref) => {
       </div>
     </div>
   )
-})
-
-DirectMessages.displayName = 'DirectMessages'
+}
 
 export default DirectMessages
-
-
