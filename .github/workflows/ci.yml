@@ -41,6 +41,9 @@ jobs:
       - name: PR-05 generation pipeline boundaries
         run: npm run pipeline:pr05
 
+      - name: PR-06 Sites portability boundaries
+        run: npm run portability:pr06
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
