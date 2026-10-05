@@ -42,6 +42,7 @@ const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef })
   const recordingCancelledRef = useRef(false)
   const deliveredMarkedRef = useRef(new Set())
   const readMarkedRef = useRef(new Set())
+  const tempMessageCounterRef = useRef(0)
 
   const myUserId = session.user.id
 
@@ -311,6 +312,7 @@ const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef })
     return () => { if (ch) supabase.removeChannel(ch) }
   }, [supabase, currentThread])
 
+  /* eslint-disable react-hooks/set-state-in-effect -- inherited denormalized thread preview cache; PR-02 will replace this state shape */
   useEffect(() => {
     if (!currentThread?.id || dmMessages.length === 0) return
 
@@ -384,6 +386,7 @@ const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef })
       return updated
     })
   }, [dmMessages, currentThread?.id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const loadAudioDuration = (url) => new Promise((resolve) => {
     const audio = document.createElement('audio')
@@ -501,7 +504,7 @@ const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef })
     })
   }
 
-  const clearPendingFiles = () => {
+  function clearPendingFiles() {
     setPendingFiles(prev => {
       prev.forEach(file => {
         if (file.previewUrl) URL.revokeObjectURL(file.previewUrl)
@@ -611,7 +614,8 @@ const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef })
     }
 
     if (!tempId) {
-      tempId = `temp-${Date.now()}`
+      tempMessageCounterRef.current += 1
+      tempId = `temp-${tempMessageCounterRef.current}`
       const temp = { 
         id: tempId, 
         content: content || '', 
@@ -744,7 +748,7 @@ const DirectMessagesContent = ({ currentUser, session, supabase, forwardedRef })
     return name[0].toUpperCase()
   }
 
-  const getMessagePreview = (message) => {
+  function getMessagePreview(message) {
     if (!message) return ''
     if (message.file_type?.startsWith('audio/')) return '🎤 Audio clip'
     if (message.file_type?.startsWith('image/')) return message.content || '🖼️ Image'
