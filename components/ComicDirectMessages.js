@@ -119,7 +119,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   }, [supabase])
 
   useEffect(() => {
-    loadConversations()
+    const timer = setTimeout(() => {
+      loadConversations()
+    }, 0)
+
+    return () => clearTimeout(timer)
   }, [loadConversations])
 
   useEffect(() => {
@@ -174,11 +178,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   }, [supabase])
 
   useEffect(() => {
-    if (!selectedConversationId) {
-      setMessages([])
-      setConnectionState('idle')
-      return undefined
-    }
+    if (!selectedConversationId) return undefined
 
     let cancelled = false
 
@@ -302,10 +302,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   useEffect(() => {
     const trimmed = query.trim()
 
-    if (trimmed.length < 2) {
-      setSearchResults([])
-      return undefined
-    }
+    if (trimmed.length < 2) return undefined
 
     let cancelled = false
 
@@ -355,6 +352,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
           unread_count: 0,
         }
 
+      setMessages([])
       setSelectedConversation(row)
       setQuery('')
       setSearchResults([])
@@ -423,6 +421,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     }
   }
 
+  const visibleSearchResults = query.trim().length >= 2 ? searchResults : []
+
   const selectedTitle = useMemo(() => {
     if (!selectedConversation) return 'Private comics'
     return selectedConversation.other_username || 'Private conversation'
@@ -450,9 +450,9 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
           />
         </label>
 
-        {searchResults.length > 0 && (
+        {visibleSearchResults.length > 0 && (
           <div className={styles.searchResults}>
-            {searchResults.map((user) => (
+            {visibleSearchResults.map((user) => (
               <button
                 type="button"
                 key={user.user_id}
@@ -484,7 +484,10 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                     ? `${styles.conversationButton} ${styles.activeConversation}`
                     : styles.conversationButton
                 }
-                onClick={() => setSelectedConversation(conversation)}
+                onClick={() => {
+                  setMessages([])
+                  setSelectedConversation(conversation)
+                }}
               >
                 <span className={styles.avatar}>
                   {(conversation.other_username || '?').slice(0, 1).toUpperCase()}
