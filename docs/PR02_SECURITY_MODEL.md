@@ -55,7 +55,7 @@ History is sorted by `created_at, id`. The client subscribes to Realtime and the
 
 ## Realtime and status ownership
 
-`comic_message` is added to the Supabase Realtime publication. RLS remains the read boundary.
+`comic_conversation` and `comic_message` are added to the Supabase Realtime publication. RLS remains the read boundary, so a participant can discover a newly created conversation and then receive its messages without exposing other users' conversations.
 
 Browser users cannot directly update message status. PR-02 leaves new messages in `queued`; later render-worker PRs will move the same row through `queued -> rendering -> ready | failed` from a trusted server/provider boundary.
 
