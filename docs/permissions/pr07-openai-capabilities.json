@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "assessedAt": "2026-10-05",
+  "baseCommit": "0d10573a40766e041d1c10799e81210ccf5e86b2",
+  "localIdentity": {
+    "authority": "comicchat-supabase-user",
+    "openAIAccountRole": "optional-linked-external-identity",
+    "emailMayBeLinkKey": false,
+    "stableOpenAIIdentityKey": "verified-oidc-sub",
+    "implementationStatus": "design-only-until-approved-client"
+  },
+  "signInWithChatGPT": {
+    "identityAvailability": "selected-commercial-partners-limited-trial",
+    "websiteIntegrationStatus": "approval-or-client-registration-required",
+    "conversationAccess": false,
+    "apiResourceAccessFromIdentityScopes": false
+  },
+  "chatGPTPlanUsage": {
+    "remoteHostedApp": "approval-required",
+    "eligiblePlanRequestType": "responses-api-with-approved-scopes",
+    "imageGeneration": "unsupported-in-current-preview",
+    "supportedForComicImageSenderPays": false,
+    "requiredScope": "chatgpt.tokens.use.direct"
+  },
+  "tokenSecurity": {
+    "browserStorage": "forbidden",
+    "urls": "forbidden",
+    "sourceControl": "forbidden",
+    "logsAnalyticsSupportTranscripts": "forbidden",
+    "trustedBackendOrApprovedLocalRuntimeOnly": true
+  },
+  "providerDecision": {
+    "currentProvider": "mock",
+    "officialImageProvider": "disabled",
+    "senderPaysChatGPTPlanImages": "blocked",
+    "futureAllowedPaths": [
+      "approved-chatgpt-plan-image-capability-if-openai-enables-it",
+      "comicchat-owned-api-billing-with-explicit-user-facing-credits",
+      "other-explicitly-approved-provider-with-sender-attributed-ledger"
+    ]
+  },
+  "requiredEvidenceBeforeEnablingSenderPaysImages": [
+    "remote-hosted-commercial-or-private-client-access-approved",
+    "image-generation-supported-for-chatgpt-plan-usage",
+    "two-independent-user-oauth-and-usage-test",
+    "sender-a-request-never-consumes-sender-b-plan-or-credits",
+    "revocation-expiry-and-usage-limit-recovery-tested",
+    "ui-shows-which-billing-source-is-used-before-generation"
+  ],
+  "officialReferences": [
+    "https://developers.openai.com/siwc/quickstart",
+    "https://developers.openai.com/siwc/token-sharing-open-source",
+    "https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations",
+    "https://developers.openai.com/siwc/token-sharing-open-source/profiles-and-sessions",
+    "https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery"
+  ]
+}
