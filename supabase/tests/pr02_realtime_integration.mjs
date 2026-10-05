@@ -54,6 +54,24 @@ function withTimeout(promise, ms, label) {
   ])
 }
 
+async function probeUntilReceived(sendProbe, receivedPromise, label) {
+  for (let attempt = 1; attempt <= 12; attempt += 1) {
+    sendProbe()
+
+    const received = await Promise.race([
+      receivedPromise.then(() => true),
+      sleep(1000).then(() => false),
+    ])
+
+    if (received) {
+      console.log(`${label}: ready after probe ${attempt}`)
+      return
+    }
+  }
+
+  throw new Error(`timeout waiting for ${label} after 12 probes`)
+}
+
 function createRealtimeClient() {
   return createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -213,13 +231,18 @@ try {
     subscribe(cMembershipChannel, 'C user Broadcast channel'),
   ])
 
-  // A direct DB Broadcast proves that the local Broadcast replication path is
-  // fully ready before exercising the business triggers. This avoids racing
-  // the first Realtime replication-slot startup on a fresh CI stack.
-  dbScalar(
-    `select realtime.send('{"control":true}'::jsonb, 'CONTROL', 'user:${bId}', true)`
+  // Realtime reports SUBSCRIBED before a freshly created local replication
+  // slot is always ready to forward the first database Broadcast. Probe the
+  // same private topic repeatedly and continue only after B receives one.
+  // This hardens CI startup without weakening any authorization assertion.
+  await probeUntilReceived(
+    () =>
+      dbScalar(
+        `select realtime.send('{"control":true}'::jsonb, 'CONTROL', 'user:${bId}', true)`
+      ),
+    bControlPromise,
+    'B control DB Broadcast'
   )
-  await withTimeout(bControlPromise, 10000, 'B control DB Broadcast')
 
   const realtimeRowsBeforeEnsure = Number(
     dbScalar('select count(*) from realtime.messages')
