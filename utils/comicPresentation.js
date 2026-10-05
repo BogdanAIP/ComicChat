@@ -78,8 +78,3 @@ export function getComicStatus(status, optimistic = false) {
   }
 }
 
-export function getComicAriaLabel({ speaker, text, status, optimistic = false }) {
-  const state = getComicStatus(status, optimistic)
-  const exactText = String(text ?? '')
-  return `${speaker}. ${state.announcement}. Message: ${exactText}`
-}
