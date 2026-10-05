@@ -25,8 +25,19 @@ BEGIN
         RAISE EXCEPTION 'PR02_ASSERT: authenticated has % unsafe direct table grants', unsafe_grants;
     END IF;
 
-    IF has_table_privilege('authenticated', 'public.comic_membership', 'SELECT') THEN
-        RAISE EXCEPTION 'PR02_ASSERT: authenticated must not read comic_membership directly';
+    IF NOT has_table_privilege('authenticated', 'public.comic_membership', 'SELECT') THEN
+        RAISE EXCEPTION 'PR02_ASSERT: authenticated needs RLS-filtered SELECT on own comic_membership';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'comic_membership'
+          AND policyname = 'comic_membership_select_own'
+          AND COALESCE(qual, '') LIKE '%auth.uid()%'
+    ) THEN
+        RAISE EXCEPTION 'PR02_ASSERT: own-membership RLS policy is missing';
     END IF;
 
     IF NOT has_table_privilege('authenticated', 'public.comic_message', 'SELECT') THEN
