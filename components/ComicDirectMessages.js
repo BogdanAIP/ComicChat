@@ -10,12 +10,18 @@ import {
 import styles from '../styles/ComicDirectMessages.module.css'
 
 function makeUuid() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
+  const browserCrypto = globalThis.crypto
+
+  if (browserCrypto?.randomUUID) {
+    return browserCrypto.randomUUID()
+  }
+
+  if (!browserCrypto?.getRandomValues) {
+    throw new Error('Secure random UUID generation is unavailable')
   }
 
   const bytes = new Uint8Array(16)
-  crypto.getRandomValues(bytes)
+  browserCrypto.getRandomValues(bytes)
   bytes[6] = (bytes[6] & 0x0f) | 0x40
   bytes[8] = (bytes[8] & 0x3f) | 0x80
 
@@ -115,6 +121,34 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   useEffect(() => {
     loadConversations()
   }, [loadConversations])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`comic-conversation-list:${myUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comic_conversation',
+        },
+        () => loadConversations()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'comic_conversation',
+        },
+        () => loadConversations()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [loadConversations, myUserId, supabase])
 
   const markReceipts = useCallback(async (conversationId, markRead) => {
     if (!conversationId) return
