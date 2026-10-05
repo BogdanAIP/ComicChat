@@ -88,8 +88,8 @@ forbidText(migration, 'WITH CHECK (true)', 'permissive RLS insertion')
 forbidText(migration, 'getPublicUrl', 'public media URL')
 forbidText(migration, 'recipientEmail', 'caller-controlled notification recipient')
 
-const definerCount = (migration.match(/SECURITY DEFINER/g) || []).length
-const fixedSearchPathCount = (migration.match(/SET search_path = pg_catalog/g) || []).length
+const definerCount = (migration.match(/\nSECURITY DEFINER\n/g) || []).length
+const fixedSearchPathCount = (migration.match(/\nSET search_path = pg_catalog\n/g) || []).length
 
 if (definerCount === 0 || definerCount !== fixedSearchPathCount) {
   failures.push(
