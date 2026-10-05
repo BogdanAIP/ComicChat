@@ -17,6 +17,8 @@ Verified on the paired Windows host from a clean clone:
 - `npm ci`: **PASS**; 353 packages installed, 354 audited.
 - `npm run build` with placeholder public Supabase values: **PASS** on Next.js `16.3.6`.
 - Legacy `npm run lint`: **FAIL** before this PR because `next lint --dir .` is not a valid Next.js 16 lint command.
+- Final PR-01 lint after migration/fixes: **PASS** with 0 errors and 8 non-blocking warnings.
+- Final PR-01 production build after lint fixes: **PASS**.
 
 The build emitted a host-specific warning about a separate `C:\Users\eahra\package-lock.json` outside this repository. It did not affect the successful ComicChat build and must not be "fixed" by touching unrelated files outside the project.
 
@@ -37,11 +39,11 @@ The preserved upstream README still advertises Next.js 14.x. Runtime/lockfile ev
 
 ## 2. Package-manager and CI findings
 
-The repository contains both `package-lock.json` and `yarn.lock`. ComicChat CI uses npm and `npm ci`; therefore `package-lock.json` is the baseline lockfile. The second lockfile is inherited ambiguity and should not be treated as an independent source of truth.
+The inherited repository contained both `package-lock.json` and `yarn.lock`. ComicChat CI uses npm and `npm ci`; PR-01 removes `yarn.lock` so `package-lock.json` is the single baseline lockfile.
 
 The existing CI workflow is structurally appropriate for a baseline gate: clean checkout, Node setup, `npm ci`, lint, and production build with placeholder public Supabase values. Before PR-01, GitHub reported **zero workflow runs** for the fork, so CI had not been empirically demonstrated on ComicChat.
 
-PR-01 migrates linting to ESLint 9 flat config and `eslint .`, matching the current Next.js guidance. The legacy `.eslintrc.json` is removed.
+PR-01 migrates linting to ESLint 9 flat config and `eslint .`, matching the current Next.js guidance. The legacy `.eslintrc.json` is removed. The new rules exposed 61 inherited errors; the conditional Hooks were fixed structurally rather than disabling `rules-of-hooks`. One narrow suppression remains around the inherited denormalized thread-preview cache and is explicitly tagged for PR-02. Final lint result is 0 errors / 8 warnings.
 
 The inherited `update-packages.yml` scheduled `npm update` / `npm audit fix` and pushed changes directly. ComicChat already has Dependabot configured for npm PRs, so the direct-push updater is removed in this PR to preserve reviewable dependency changes.
 
