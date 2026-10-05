@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  getComicAriaLabel,
   getComicScene,
   getComicStatus,
 } from '../utils/comicPresentation'
@@ -53,14 +52,7 @@ export default function ComicPanel({
   }, [])
 
   const exactText = String(text ?? '')
-  const ariaLabel = preview
-    ? `${speaker}. Comic message preview. Message: ${exactText}`
-    : getComicAriaLabel({
-        speaker,
-        text: exactText,
-        status,
-        optimistic,
-      })
+  const accessibleId = `comic-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`
 
   const retryPreview = () => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
@@ -87,25 +79,28 @@ export default function ComicPanel({
       data-message-id={messageId}
       data-message-status={preview ? 'draft' : persistedState.key}
       data-visual-state={state.key}
-      aria-label={ariaLabel}
+      aria-labelledby={`${accessibleId}-speaker`}
+      aria-describedby={`${accessibleId}-status`}
     >
       <figure className={styles.comicFigure}>
-        <div
-          className={`${styles.comicScene} ${styles[`scene_${scene.key}`]}`}
-          role="img"
-          aria-label={`Decorative ${scene.label} placeholder for ${speaker}`}
-        >
-          <div className={styles.sceneTexture} aria-hidden="true" />
+        <div className={`${styles.comicScene} ${styles[`scene_${scene.key}`]}`}>
           <div
-            className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]}`}
-            aria-hidden="true"
+            className={styles.sceneArtwork}
+            role="img"
+            aria-label={`Decorative ${scene.label} placeholder for ${speaker}`}
           >
-            <span className={styles.characterHead} />
-            <span className={styles.characterBody} />
+            <div className={styles.sceneTexture} aria-hidden="true" />
+            <div
+              className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]}`}
+              aria-hidden="true"
+            >
+              <span className={styles.characterHead} />
+              <span className={styles.characterBody} />
+            </div>
+            <span className={styles.sceneSymbol} aria-hidden="true">
+              {scene.symbol}
+            </span>
           </div>
-          <span className={styles.sceneSymbol} aria-hidden="true">
-            {scene.symbol}
-          </span>
 
           <div className={styles.speechBubble}>
             <p>{exactText || 'Your message will appear here exactly as typed.'}</p>
@@ -119,7 +114,9 @@ export default function ComicPanel({
 
         <figcaption className={styles.comicCaption}>
           <div className={styles.comicIdentity}>
-            <span className={styles.comicSpeaker}>{speaker}</span>
+            <span id={`${accessibleId}-speaker`} className={styles.comicSpeaker}>
+              {speaker}
+            </span>
             {!preview && createdAt && (
               <time dateTime={createdAt}>{formatTime(createdAt)}</time>
             )}
@@ -151,7 +148,12 @@ export default function ComicPanel({
         </figcaption>
       </figure>
 
-      <span className={styles.srOnly} role="status" aria-live="polite">
+      <span
+        id={`${accessibleId}-status`}
+        className={styles.srOnly}
+        role="status"
+        aria-live="polite"
+      >
         {state.announcement}
       </span>
 
