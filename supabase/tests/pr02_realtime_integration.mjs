@@ -91,6 +91,7 @@ async function subscribe(channel, label) {
   await withTimeout(
     new Promise((resolve, reject) => {
       channel.subscribe((status, error) => {
+        console.log(`${label}: ${status}`)
         if (status === 'SUBSCRIBED') resolve()
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           reject(error || new Error(`${label} subscription failed: ${status}`))
@@ -189,6 +190,29 @@ try {
   )
   if (ensureError) throw ensureError
   if (!conversationId) throw new Error('conversation id missing')
+
+  const { data: bMembershipRows, error: bMembershipReadError } = await b
+    .from('comic_membership')
+    .select('conversation_id, user_id, role')
+    .eq('conversation_id', conversationId)
+  if (bMembershipReadError) throw bMembershipReadError
+  console.log('B membership rows after ensure:', bMembershipRows)
+  if (
+    bMembershipRows?.length !== 1 ||
+    bMembershipRows[0].user_id !== bId
+  ) {
+    throw new Error('B cannot read exactly its own membership row through JWT/RLS')
+  }
+
+  const { data: cMembershipRows, error: cMembershipReadError } = await c
+    .from('comic_membership')
+    .select('conversation_id, user_id, role')
+    .eq('conversation_id', conversationId)
+  if (cMembershipReadError) throw cMembershipReadError
+  console.log('C membership rows after ensure:', cMembershipRows)
+  if ((cMembershipRows || []).length !== 0) {
+    throw new Error('C can read another user membership row through JWT/RLS')
+  }
 
   const bMembership = await withTimeout(
     bMembershipPromise,
