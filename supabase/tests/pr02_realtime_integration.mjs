@@ -1,11 +1,23 @@
+import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 
 const url = process.env.SUPABASE_URL
 const anonKey = process.env.SUPABASE_ANON_KEY
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const dbUrl = process.env.DB_URL
 
-if (!url || !anonKey || !serviceRoleKey) {
-  throw new Error('SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are required')
+if (!url || !anonKey || !serviceRoleKey || !dbUrl) {
+  throw new Error(
+    'SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY and DB_URL are required'
+  )
+}
+
+function dbScalar(sql) {
+  return execFileSync(
+    'psql',
+    [dbUrl, '-v', 'ON_ERROR_STOP=1', '-qAt', '-c', sql],
+    { encoding: 'utf8' }
+  ).trim()
 }
 
 const service = createClient(url, serviceRoleKey, {
@@ -171,11 +183,18 @@ try {
   const bMembershipPromise = new Promise((resolve) => {
     bMembershipResolve = resolve
   })
+  let bControlResolve
+  const bControlPromise = new Promise((resolve) => {
+    bControlResolve = resolve
+  })
   let cMembershipEvents = 0
 
   const bMembershipChannel = b
     .channel(`user:${bId}`, {
       config: { private: true },
+    })
+    .on('broadcast', { event: 'CONTROL' }, (payload) => {
+      bControlResolve(payload)
     })
     .on('broadcast', { event: 'INSERT' }, (payload) => {
       bMembershipResolve(payload)
@@ -193,6 +212,18 @@ try {
     subscribe(bMembershipChannel, 'B user Broadcast channel'),
     subscribe(cMembershipChannel, 'C user Broadcast channel'),
   ])
+
+  // A direct DB Broadcast proves that the local Broadcast replication path is
+  // fully ready before exercising the business triggers. This avoids racing
+  // the first Realtime replication-slot startup on a fresh CI stack.
+  dbScalar(
+    `select realtime.send('{"control":true}'::jsonb, 'CONTROL', 'user:${bId}', true)`
+  )
+  await withTimeout(bControlPromise, 10000, 'B control DB Broadcast')
+
+  const realtimeRowsBeforeEnsure = Number(
+    dbScalar('select count(*) from realtime.messages')
+  )
 
   const { data: conversationId, error: ensureError } = await a.rpc(
     'comic_ensure_direct_conversation',
@@ -222,6 +253,15 @@ try {
   console.log('C membership rows after ensure:', cMembershipRows)
   if ((cMembershipRows || []).length !== 0) {
     throw new Error('C can read another user membership row through JWT/RLS')
+  }
+
+  const realtimeRowsAfterEnsure = Number(
+    dbScalar('select count(*) from realtime.messages')
+  )
+  if (realtimeRowsAfterEnsure < realtimeRowsBeforeEnsure + 2) {
+    throw new Error(
+      'membership triggers did not write both private Broadcast messages'
+    )
   }
 
   await withTimeout(
