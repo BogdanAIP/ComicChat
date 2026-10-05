@@ -65,7 +65,7 @@ if (/GRANT\s+(INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\.comic_message\s+T
   failures.push('forbidden: authenticated direct write grant on comic_message')
 }
 
-if (/CREATE\s+POLICY[\s\S]*?comic_membership[\s\S]*?TO\s+authenticated/i.test(migration)) {
+if (/CREATE\\s+POLICY\\s+[^\\n]+\\s+ON\\s+public\\.comic_membership/i.test(migration)) {
   failures.push('forbidden: browser-facing comic_membership policy')
 }
 
