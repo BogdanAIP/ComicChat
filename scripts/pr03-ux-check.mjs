@@ -5,7 +5,7 @@ const read = (path) =>
 
 const chat = read('components/ComicDirectMessages.js')
 const panel = read('components/ComicPanel.js')
-const presentation = read('utils/comicPresentation.js')
+const presentation = read('utils/templateRenderer.mjs')
 const css = read('styles/ComicDirectMessages.module.css')
 
 const failures = []
@@ -83,7 +83,7 @@ forbidText(panel, 'writeText(exactText.trim', 'copy must not trim original text'
 forbidText(panel, 'writeText(exactText.slice', 'copy must not truncate original text')
 
 for (const status of ['queued', 'rendering', 'ready', 'failed']) {
-  requireText(presentation, `normalized === '${status}'`, `presentation state ${status}`)
+  requireText(presentation, `${status}: {`, `presentation state ${status}`)
 }
 
 requireText(css, 'white-space: pre-wrap', 'long text preserves line breaks')
