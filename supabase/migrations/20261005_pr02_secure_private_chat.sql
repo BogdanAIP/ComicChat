@@ -2,10 +2,8 @@
 -- This migration creates a new private-message path instead of weakening or
 -- silently reusing the inherited direct_message* authorization model.
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE IF NOT EXISTS public.comic_conversation (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     kind TEXT NOT NULL DEFAULT 'direct' CHECK (kind IN ('direct', 'group')),
     created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     direct_key TEXT,
@@ -34,7 +32,7 @@ CREATE INDEX IF NOT EXISTS comic_membership_user_id_idx
     ON public.comic_membership(user_id, conversation_id);
 
 CREATE TABLE IF NOT EXISTS public.comic_message (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID NOT NULL REFERENCES public.comic_conversation(id) ON DELETE CASCADE,
     sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     client_nonce UUID NOT NULL,
