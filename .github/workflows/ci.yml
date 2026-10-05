@@ -75,6 +75,31 @@ jobs:
           CREATE ROLE anon NOLOGIN;
           CREATE ROLE authenticated NOLOGIN;
           CREATE SCHEMA auth;
+          CREATE SCHEMA realtime;
+
+          CREATE TABLE realtime.messages (
+            extension TEXT
+          );
+
+          CREATE OR REPLACE FUNCTION realtime.topic()
+          RETURNS TEXT
+          LANGUAGE sql
+          STABLE
+          AS $
+            SELECT pg_catalog.current_setting('realtime.topic', true)
+          $;
+
+          CREATE OR REPLACE FUNCTION realtime.send(
+            payload JSONB,
+            event TEXT,
+            topic TEXT,
+            private BOOLEAN DEFAULT TRUE
+          )
+          RETURNS VOID
+          LANGUAGE sql
+          AS $
+            SELECT
+          $;
 
           CREATE TABLE auth.users (
             id UUID PRIMARY KEY,
@@ -99,7 +124,6 @@ jobs:
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
           );
 
-          CREATE PUBLICATION supabase_realtime;
           GRANT USAGE ON SCHEMA public TO authenticated;
           SQL
 
@@ -156,14 +180,17 @@ jobs:
           );
           SQL
 
-      - name: Verify Realtime publication
+      - name: Verify private Broadcast authorization
         env:
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: |
-          tables="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select tablename from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename in ('comic_membership','comic_message') order by tablename")"
-          printf '%s\n' "$tables"
-          grep -qx 'comic_membership' <<<"$tables"
-          grep -qx 'comic_message' <<<"$tables"
+          policy="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select policyname from pg_policies where schemaname='realtime' and tablename='messages' and policyname='comicchat_receive_broadcast'")"
+          test "$policy" = "comicchat_receive_broadcast"
+
+          triggers="$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select tgname from pg_trigger where not tgisinternal and tgname in ('comic_membership_broadcast_insert','comic_message_broadcast_change') order by tgname")"
+          printf '%s\n' "$triggers"
+          grep -qx 'comic_membership_broadcast_insert' <<<"$triggers"
+          grep -qx 'comic_message_broadcast_change' <<<"$triggers"
 
       - name: Run Auth + Realtime + reconnect integration
         env:
