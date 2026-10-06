@@ -48,13 +48,7 @@ export default function OAuthConsent() {
   }, [authorizationId])
 
   useEffect(() => {
-    if (!router.isReady) return
-
-    if (!authorizationId) {
-      setError('Missing authorization_id.')
-      setPhase('error')
-      return
-    }
+    if (!router.isReady || !authorizationId) return
 
     loadAuthorization()
 
@@ -110,7 +104,13 @@ export default function OAuthConsent() {
           <p style={styles.eyebrow}>ComicChat OAuth 2.1</p>
           <h1 style={styles.title}>Connect your ComicChat account</h1>
 
-          {phase === 'loading' && <p>Loading authorization request…</p>}
+          {router.isReady && !authorizationId && (
+            <p style={styles.error}>Missing authorization_id.</p>
+          )}
+
+          {(!router.isReady || (authorizationId && phase === 'loading')) && (
+            <p>Loading authorization request…</p>
+          )}
 
           {phase === 'signin' && (
             <>
