@@ -62,6 +62,9 @@ jobs:
       - name: PR-12 web blocking UX boundaries
         run: npm run ux:pr12
 
+      - name: PR-13 private abuse reporting boundaries
+        run: npm run safety:pr13
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -164,6 +167,9 @@ jobs:
       - name: Apply PR-11 blocking migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261006193000_pr11_blocking_boundary.sql
 
+      - name: Apply PR-13 abuse reporting migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261006202000_pr13_abuse_reports.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -175,6 +181,9 @@ jobs:
 
       - name: Run PR-11 blocking integration
         run: bash supabase/tests/pr11_blocking_integration.sh
+
+      - name: Run PR-13 abuse report integration
+        run: bash supabase/tests/pr13_abuse_report_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration

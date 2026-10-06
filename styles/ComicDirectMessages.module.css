@@ -445,11 +445,18 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+.comicAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .comicAction:focus-visible,
 .safetyButton:focus-visible,
 .sendButton:focus-visible,
 .searchInput:focus-visible,
 .textarea:focus-visible,
+.reportSelect:focus-visible,
+.reportTextarea:focus-visible,
 .searchResult:focus-visible,
 .conversationButton:focus-visible {
   outline: 3px solid rgba(207, 222, 255, 0.92);
@@ -515,6 +522,72 @@
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   font-size: 30px;
+}
+
+.reportDialog {
+  display: grid;
+  gap: 14px;
+  margin: 16px 22px 0;
+  border: 1px solid rgba(255, 190, 110, 0.32);
+  border-radius: 14px;
+  padding: 16px;
+  background: rgba(255, 190, 110, 0.06);
+}
+
+.reportHeader,
+.reportFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reportHeader h3 {
+  margin: 0;
+}
+
+.reportField {
+  display: grid;
+  gap: 7px;
+  color: #c8d0e4;
+  font-size: 13px;
+}
+
+.reportSelect,
+.reportTextarea {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #0b1020;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.reportTextarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.reportSelect:disabled,
+.reportTextarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.reportFooter {
+  color: #9da9c5;
+  font-size: 12px;
+}
+
+.reportStatus {
+  margin: 12px 22px 0;
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: rgba(132, 204, 22, 0.1);
+  color: #e5f7c8;
+  font-size: 13px;
 }
 
 .composer {
@@ -627,6 +700,16 @@
     flex-direction: column;
   }
 
+  .reportHeader,
+  .reportFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reportDialog {
+    margin-inline: 14px;
+  }
+
   .composerNote {
     align-items: flex-start;
     flex-direction: column;
@@ -656,6 +739,8 @@
   .safetyButton,
   .searchInput,
   .textarea,
+  .reportSelect,
+  .reportTextarea,
   .sendButton {
     border: 1px solid CanvasText;
   }

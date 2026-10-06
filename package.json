@@ -17,7 +17,8 @@
     "extension:pr09": "node scripts/pr09-extension-ui-check.mjs",
     "activation:pr10": "node scripts/pr10-production-readiness-check.mjs",
     "safety:pr11": "node scripts/pr11-blocking-check.mjs",
-    "ux:pr12": "node scripts/pr12-blocking-ui-check.mjs"
+    "ux:pr12": "node scripts/pr12-blocking-ui-check.mjs",
+    "safety:pr13": "node scripts/pr13-abuse-report-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
