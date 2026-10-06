@@ -525,11 +525,15 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       console.error('comic_send_message failed', sendError)
       setMessages((current) => current.filter((message) => message.id !== tempId))
       setDraft(originalText)
-      const blocked = String(sendError?.message || '').includes('interaction_blocked')
+      const serverMessage = String(sendError?.message || '')
+      const blocked = serverMessage.includes('interaction_blocked')
+      const rateLimited = serverMessage.includes('send_rate_limited')
       setError(
         blocked
           ? 'New messages are blocked for this conversation. Your text is still in the composer.'
-          : 'Message was not sent. Your text is still in the composer.'
+          : rateLimited
+            ? 'Too many messages were sent recently. Try again shortly; your text is still in the composer.'
+            : 'Message was not sent. Your text is still in the composer.'
       )
     } finally {
       setBusy(false)
