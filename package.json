@@ -15,7 +15,8 @@
     "permissions:pr07": "node scripts/pr07-identity-provider-check.mjs",
     "plugin:pr08": "node scripts/pr08-plugin-mcp-check.mjs",
     "extension:pr09": "node scripts/pr09-extension-ui-check.mjs",
-    "activation:pr10": "node scripts/pr10-production-readiness-check.mjs"
+    "activation:pr10": "node scripts/pr10-production-readiness-check.mjs",
+    "safety:pr11": "node scripts/pr11-blocking-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
