@@ -22,6 +22,8 @@ export default function ComicPanel({
   optimistic = false,
   createdAt = null,
   preview = false,
+  onReport = null,
+  reporting = false,
 }) {
   const [copyState, setCopyState] = useState('idle')
   const [retryPreviewing, setRetryPreviewing] = useState(false)
@@ -143,6 +145,18 @@ export default function ComicPanel({
                 aria-label={`Copy original text from ${speaker}`}
               >
                 Copy original text
+              </button>
+            )}
+
+            {!preview && !mine && onReport && (
+              <button
+                type="button"
+                className={styles.comicAction}
+                onClick={() => onReport(messageId)}
+                disabled={reporting}
+                aria-label={`Report message from ${speaker}`}
+              >
+                {reporting ? 'Reporting…' : 'Report'}
               </button>
             )}
 
