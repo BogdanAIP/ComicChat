@@ -56,6 +56,9 @@ jobs:
       - name: PR-10 production activation boundaries
         run: npm run activation:pr10
 
+      - name: PR-11 beta safety blocking boundaries
+        run: npm run safety:pr11
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -155,6 +158,9 @@ jobs:
       - name: Apply PR-05 migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261005130000_pr05_generation_pipeline.sql
 
+      - name: Apply PR-11 blocking migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261006193000_pr11_blocking_boundary.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -163,6 +169,9 @@ jobs:
 
       - name: Run two-user authorization integration
         run: bash supabase/tests/pr02_two_user_integration.sh
+
+      - name: Run PR-11 blocking integration
+        run: bash supabase/tests/pr11_blocking_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
