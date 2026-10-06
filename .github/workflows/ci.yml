@@ -158,6 +158,49 @@ jobs:
       - name: Run two-user authorization integration
         run: bash supabase/tests/pr02_two_user_integration.sh
 
+  mcp-oauth:
+    name: MCP OAuth discovery integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.119.0
+
+      - name: Start local Supabase with Edge Runtime
+        run: supabase start --exclude studio,storage-api,imgproxy,inbucket,logflare,vector,supavisor
+
+      - name: Serve authenticated ComicChat MCP function
+        run: |
+          supabase functions serve comicchat-mcp > /tmp/comicchat-mcp.log 2>&1 &
+          echo $! > /tmp/comicchat-mcp.pid
+
+      - name: Verify OAuth protected-resource handshake
+        run: bash supabase/tests/pr08_mcp_oauth_smoke.sh
+
+      - name: Show MCP diagnostics on failure
+        if: failure()
+        run: |
+          cat /tmp/comicchat-mcp.log || true
+          supabase status || true
+          docker ps -a || true
+
+      - name: Stop isolated local Supabase
+        if: always()
+        run: |
+          test ! -f /tmp/comicchat-mcp.pid || kill "$(cat /tmp/comicchat-mcp.pid)" || true
+          supabase stop --no-backup || true
+
   realtime:
     name: Local Supabase realtime integration
     runs-on: ubuntu-latest
