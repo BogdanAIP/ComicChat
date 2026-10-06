@@ -152,6 +152,33 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.chatHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.safetyButton {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #dce3f5;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.safetyButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.safetyButtonActive {
+  border-color: rgba(255, 164, 164, 0.58);
+  background: rgba(255, 80, 80, 0.12);
+  color: #ffd4d4;
+}
+
 .connection {
   color: #b7c3df;
 }
@@ -419,6 +446,7 @@
 }
 
 .comicAction:focus-visible,
+.safetyButton:focus-visible,
 .sendButton:focus-visible,
 .searchInput:focus-visible,
 .textarea:focus-visible,
@@ -518,7 +546,9 @@
 }
 
 .sendButton:disabled,
-.searchResult:disabled {
+.searchResult:disabled,
+.safetyButton:disabled,
+.textarea:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
@@ -527,6 +557,17 @@
   margin-top: 8px;
   color: #8793af;
   font-size: 11px;
+}
+
+.safetyNotice {
+  margin: 0 0 10px;
+  border: 1px solid rgba(255, 164, 164, 0.35);
+  border-radius: 10px;
+  padding: 9px 11px;
+  background: rgba(255, 80, 80, 0.08);
+  color: #ffe2e2;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .error {
@@ -577,6 +618,15 @@
     justify-content: flex-start;
   }
 
+  .chatHeader {
+    align-items: flex-start;
+  }
+
+  .chatHeaderActions {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+
   .composerNote {
     align-items: flex-start;
     flex-direction: column;
@@ -592,6 +642,7 @@
 
   .main,
   .comicAction,
+  .safetyButton,
   .sendButton {
     scroll-behavior: auto;
     transition: none;
@@ -602,6 +653,7 @@
   .comicCard,
   .speechBubble,
   .comicAction,
+  .safetyButton,
   .searchInput,
   .textarea,
   .sendButton {
