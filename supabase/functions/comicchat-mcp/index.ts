@@ -340,6 +340,89 @@ Deno.serve(
           }
         )
 
+
+        server.registerTool(
+          'list_blocked_users',
+          {
+            title: 'List blocked ComicChat users',
+            description:
+              'List ComicChat users blocked by the authenticated user. The database only exposes blocks owned by the caller.',
+            inputSchema: {},
+            outputSchema: {
+              blockedUsers: z.array(z.record(z.string(), z.unknown())),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_list_blocked_users')
+            if (error) fail(error)
+            return jsonResult({ blockedUsers: data || [] })
+          }
+        )
+
+        server.registerTool(
+          'block_user',
+          {
+            title: 'Block ComicChat user',
+            description:
+              'Block an exact ComicChat user ID. Existing history is preserved, but new search/open/send interactions between the two users are rejected until all relevant blocks are removed.',
+            inputSchema: {
+              userId: z.string().uuid(),
+            },
+            outputSchema: {
+              blocked: z.boolean(),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: true,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ userId }) => {
+            const { data, error } = await supabase.rpc('comic_block_user', {
+              p_user_id: userId,
+            })
+            if (error) fail(error)
+            return jsonResult({ blocked: Boolean(data) })
+          }
+        )
+
+        server.registerTool(
+          'unblock_user',
+          {
+            title: 'Unblock ComicChat user',
+            description:
+              'Remove a block created by the authenticated user. Interaction resumes only if the other user has not independently blocked the caller.',
+            inputSchema: {
+              userId: z.string().uuid(),
+            },
+            outputSchema: {
+              unblocked: z.boolean(),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ userId }) => {
+            const { data, error } = await supabase.rpc('comic_unblock_user', {
+              p_user_id: userId,
+            })
+            if (error) fail(error)
+            return jsonResult({ unblocked: Boolean(data) })
+          }
+        )
+
         return server
       })
 
