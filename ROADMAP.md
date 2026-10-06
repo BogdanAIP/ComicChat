@@ -130,6 +130,7 @@
 | PR-09 | Plugin Extension UI (sidebar/thread) + MCP Apps bridge | PR-08 |
 | PR-10 | Production activation preflight + manual HTTPS MCP smoke | PR-09 |
 | PR-11 | Beta safety: database-enforced user blocking + MCP controls | PR-10 |
+| PR-12 | Web UX for block/unblock with preserved history and fail-closed send | PR-11 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
