@@ -9,6 +9,16 @@ import {
 import ComicPanel from './ComicPanel'
 import styles from '../styles/ComicDirectMessages.module.css'
 
+const REPORT_REASONS = [
+  ['spam', 'Spam'],
+  ['harassment', 'Harassment'],
+  ['threats', 'Threats'],
+  ['sexual_content', 'Sexual content'],
+  ['hate', 'Hate or hateful conduct'],
+  ['self_harm', 'Self-harm concern'],
+  ['other', 'Other'],
+]
+
 function makeUuid() {
   const browserCrypto = globalThis.crypto
 
@@ -91,6 +101,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   const [connectionState, setConnectionState] = useState('idle')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [reportTargetId, setReportTargetId] = useState(null)
+  const [reportReason, setReportReason] = useState('other')
+  const [reportDetails, setReportDetails] = useState('')
+  const [reportRequestId, setReportRequestId] = useState(null)
+  const [reportBusy, setReportBusy] = useState(false)
+  const [reportStatus, setReportStatus] = useState('')
 
   const selectedConversationId = selectedConversation?.conversation_id || null
   const selectedPartnerId = selectedConversation?.other_user_id || null
@@ -412,6 +428,55 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     }
   }
 
+  const openReport = (messageId) => {
+    setReportTargetId(messageId)
+    setReportReason('other')
+    setReportDetails('')
+    setReportRequestId(makeUuid())
+    setReportStatus('')
+  }
+
+  const cancelReport = () => {
+    if (reportBusy) return
+    setReportTargetId(null)
+    setReportDetails('')
+    setReportRequestId(null)
+  }
+
+  const submitReport = async (event) => {
+    event.preventDefault()
+    if (!reportTargetId || reportBusy) return
+
+    const requestId = reportRequestId || makeUuid()
+    if (!reportRequestId) setReportRequestId(requestId)
+
+    setReportBusy(true)
+    setReportStatus('')
+
+    try {
+      const { data, error: reportError } = await supabase.rpc('comic_report_message', {
+        p_message_id: reportTargetId,
+        p_client_nonce: requestId,
+        p_reason: reportReason,
+        p_details: reportDetails.trim() || null,
+      })
+      if (reportError) throw reportError
+
+      const row = Array.isArray(data) ? data[0] : data
+      if (!row?.id) throw new Error('comic_report_message returned no report')
+
+      setReportStatus('Report submitted. The other user cannot see your report through ComicChat.')
+      setReportTargetId(null)
+      setReportDetails('')
+      setReportRequestId(null)
+    } catch (reportError) {
+      console.error('comic_report_message failed', reportError)
+      setReportStatus('Report was not submitted. You can retry without creating a duplicate.')
+    } finally {
+      setReportBusy(false)
+    }
+  }
+
   const send = async (event) => {
     event.preventDefault()
 
@@ -625,11 +690,84 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                     mine={mine}
                     optimistic={message.optimistic}
                     createdAt={message.created_at}
+                    onReport={mine ? null : openReport}
+                    reporting={reportBusy && reportTargetId === message.id}
                   />
                 )
               })}
               <div ref={messagesEndRef} />
             </div>
+
+            {reportTargetId && (
+              <form
+                className={styles.reportDialog}
+                onSubmit={submitReport}
+                role="dialog"
+                aria-modal="false"
+                aria-labelledby="comic-report-title"
+              >
+                <div className={styles.reportHeader}>
+                  <div>
+                    <p className={styles.eyebrow}>Private safety report</p>
+                    <h3 id="comic-report-title">Report this message</h3>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.comicAction}
+                    onClick={cancelReport}
+                    disabled={reportBusy}
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <label className={styles.reportField}>
+                  Reason
+                  <select
+                    className={styles.reportSelect}
+                    value={reportReason}
+                    onChange={(event) => setReportReason(event.target.value)}
+                    disabled={reportBusy}
+                  >
+                    {REPORT_REASONS.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className={styles.reportField}>
+                  Optional details
+                  <textarea
+                    className={styles.reportTextarea}
+                    value={reportDetails}
+                    onChange={(event) => setReportDetails(event.target.value.slice(0, 1000))}
+                    rows={3}
+                    maxLength={1000}
+                    disabled={reportBusy}
+                    placeholder="Add context for the safety review"
+                  />
+                </label>
+
+                <div className={styles.reportFooter}>
+                  <span>{reportDetails.length}/1000</span>
+                  <button
+                    type="submit"
+                    className={styles.sendButton}
+                    disabled={reportBusy}
+                  >
+                    {reportBusy ? 'Submitting…' : 'Submit report'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {reportStatus && (
+              <p className={styles.reportStatus} role="status">
+                {reportStatus}
+              </p>
+            )}
 
             <form className={styles.composer} onSubmit={send}>
               {error && <p className={styles.error}>{error}</p>}
