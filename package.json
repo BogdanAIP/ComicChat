@@ -12,10 +12,11 @@
     "renderer:pr04": "node scripts/pr04-renderer-check.mjs && node scripts/pr04-template-golden.mjs",
     "pipeline:pr05": "node scripts/pr05-generation-check.mjs",
     "portability:pr06": "node scripts/pr06-portability-check.mjs",
-    "permissions:pr07": "node scripts/pr07-identity-provider-check.mjs"
+    "permissions:pr07": "node scripts/pr07-identity-provider-check.mjs",
+    "plugin:pr08": "node scripts/pr08-plugin-mcp-check.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
+    "@supabase/supabase-js": "2.109.0",
     "framer-motion": "^11.18.2",
     "next": "^16.2.3",
     "nodemailer": "^8.0.5",
