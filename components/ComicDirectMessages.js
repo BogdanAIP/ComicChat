@@ -3,7 +3,6 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -474,10 +473,9 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
   const visibleSearchResults = query.trim().length >= 2 ? searchResults : []
 
-  const selectedTitle = useMemo(() => {
-    if (!selectedConversation) return 'Private comics'
-    return selectedConversation.other_username || 'Private conversation'
-  }, [selectedConversation])
+  const selectedTitle = selectedConversation
+    ? selectedConversation.other_username || 'Private conversation'
+    : 'Private comics'
 
   return (
     <section className={styles.shell} aria-label="ComicChat private messages">
