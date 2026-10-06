@@ -131,6 +131,7 @@
 | PR-10 | Production activation preflight + manual HTTPS MCP smoke | PR-09 |
 | PR-11 | Beta safety: database-enforced user blocking + MCP controls | PR-10 |
 | PR-12 | Web UX for block/unblock with preserved history and fail-closed send | PR-11 |
+| PR-13 | Private message abuse reports with reporter-only visibility and IDOR guards | PR-12 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
