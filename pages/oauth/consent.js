@@ -50,7 +50,7 @@ export default function OAuthConsent() {
   useEffect(() => {
     if (!router.isReady || !authorizationId) return
 
-    loadAuthorization()
+    const initialLoad = setTimeout(loadAuthorization, 0)
 
     const {
       data: { subscription },
@@ -60,7 +60,10 @@ export default function OAuthConsent() {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(initialLoad)
+      subscription.unsubscribe()
+    }
   }, [authorizationId, loadAuthorization, router.isReady])
 
   const decide = async (approved) => {
