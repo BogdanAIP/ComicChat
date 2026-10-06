@@ -129,6 +129,7 @@
 | PR-08 | Authenticated MCP/OAuth integration | PR-05 + deployment decision |
 | PR-09 | Plugin Extension UI (sidebar/thread) + MCP Apps bridge | PR-08 |
 | PR-10 | Production activation preflight + manual HTTPS MCP smoke | PR-09 |
+| PR-11 | Beta safety: database-enforced user blocking + MCP controls | PR-10 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
