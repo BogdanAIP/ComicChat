@@ -30,3 +30,12 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 enable_confirmations = false
+
+[auth.oauth_server]
+enabled = true
+authorization_url_path = "/oauth/consent"
+allow_dynamic_registration = true
+
+[functions.comicchat-mcp]
+# OAuth middleware validates the user token. The Edge gateway must not consume it first.
+verify_jwt = false
