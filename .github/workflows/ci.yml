@@ -53,6 +53,9 @@ jobs:
       - name: PR-09 Plugin Extension UI boundaries
         run: npm run extension:pr09
 
+      - name: PR-10 production activation boundaries
+        run: npm run activation:pr10
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.

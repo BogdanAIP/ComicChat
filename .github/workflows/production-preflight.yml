@@ -1,0 +1,38 @@
+name: Production MCP preflight
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      mcp_url:
+        description: Public HTTPS ComicChat MCP endpoint
+        required: true
+        type: string
+
+jobs:
+  protected-resource-smoke:
+    name: Public MCP OAuth challenge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate production URL
+        env:
+          COMICCHAT_MCP_URL: ${{ inputs.mcp_url }}
+        run: |
+          case "$COMICCHAT_MCP_URL" in
+            https://*) ;;
+            *) echo "Production preflight requires an https:// endpoint" >&2; exit 1 ;;
+          esac
+          if grep -Eq 'your-project|placeholder|example\.com' <<<"$COMICCHAT_MCP_URL"; then
+            echo "Refusing placeholder endpoint" >&2
+            exit 1
+          fi
+
+      - name: Verify OAuth protected-resource discovery
+        env:
+          COMICCHAT_MCP_URL: ${{ inputs.mcp_url }}
+        run: bash supabase/tests/pr08_mcp_oauth_smoke.sh "$COMICCHAT_MCP_URL"
