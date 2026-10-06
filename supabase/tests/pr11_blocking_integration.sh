@@ -62,6 +62,14 @@ A_SEARCH_B="$(user_scalar "${A}" "SELECT COUNT(*) FROM public.comic_search_users
 B_SEARCH_A="$(user_scalar "${B}" "SELECT COUNT(*) FROM public.comic_search_users('blockalpha');")"
 [[ "${B_SEARCH_A}" == "0" ]]
 
+RETRY_ID="$(user_scalar "${A}" "SELECT id FROM public.comic_send_message('${CONVERSATION_ID}'::uuid, '${BEFORE_NONCE}'::uuid, 'before block');")"
+[[ "${RETRY_ID}" == "${MESSAGE_ID}" ]]
+
+if user_scalar "${A}" "SELECT id FROM public.comic_send_message('${CONVERSATION_ID}'::uuid, '${BEFORE_NONCE}'::uuid, 'changed after block');" >/dev/null 2>&1; then
+  echo "blocked retry with conflicting text bypassed nonce conflict" >&2
+  exit 1
+fi
+
 A_SEARCH_C="$(user_scalar "${A}" "SELECT COUNT(*) FROM public.comic_search_users('blockcharlie');")"
 [[ "${A_SEARCH_C}" == "1" ]]
 
