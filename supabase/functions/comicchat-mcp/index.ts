@@ -423,6 +423,76 @@ Deno.serve(
           }
         )
 
+
+        server.registerTool(
+          'list_my_reports',
+          {
+            title: 'List my ComicChat reports',
+            description:
+              'List abuse reports submitted by the authenticated ComicChat user. Reports submitted by other users are not exposed.',
+            inputSchema: {},
+            outputSchema: {
+              reports: z.array(z.record(z.string(), z.unknown())),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_list_my_reports')
+            if (error) fail(error)
+            return jsonResult({ reports: data || [] })
+          }
+        )
+
+        server.registerTool(
+          'report_message',
+          {
+            title: 'Report ComicChat message',
+            description:
+              'Submit an abuse report for one exact incoming ComicChat message. Use only when the user explicitly asks to report that specific message. requestId is a stable UUID idempotency key.',
+            inputSchema: {
+              messageId: z.string().uuid(),
+              requestId: z.string().uuid(),
+              reason: z.enum([
+                'spam',
+                'harassment',
+                'threats',
+                'sexual_content',
+                'hate',
+                'self_harm',
+                'other',
+              ]),
+              details: z.string().trim().max(1000).optional(),
+            },
+            outputSchema: {
+              report: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: true,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ messageId, requestId, reason, details }) => {
+            const { data, error } = await supabase.rpc('comic_report_message', {
+              p_message_id: messageId,
+              p_client_nonce: requestId,
+              p_reason: reason,
+              p_details: details || null,
+            })
+            if (error) fail(error)
+            const report = Array.isArray(data) ? data[0] : data
+            if (!report?.id) throw new Error('comic_report_message returned no report')
+            return jsonResult({ report })
+          }
+        )
+
         return server
       })
 
