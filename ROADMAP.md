@@ -128,6 +128,7 @@
 | PR-07 | Identity and provider-permission spikes | PR-02 |
 | PR-08 | Authenticated MCP/OAuth integration | PR-05 + deployment decision |
 | PR-09 | Plugin Extension UI (sidebar/thread) + MCP Apps bridge | PR-08 |
+| PR-10 | Production activation preflight + manual HTTPS MCP smoke | PR-09 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
