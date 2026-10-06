@@ -59,6 +59,9 @@ jobs:
       - name: PR-11 beta safety blocking boundaries
         run: npm run safety:pr11
 
+      - name: PR-12 web blocking UX boundaries
+        run: npm run ux:pr12
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
