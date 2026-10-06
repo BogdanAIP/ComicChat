@@ -44,6 +44,9 @@ jobs:
       - name: PR-06 Sites portability boundaries
         run: npm run portability:pr06
 
+      - name: PR-07 identity/provider permission boundaries
+        run: npm run permissions:pr07
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
