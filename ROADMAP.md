@@ -126,7 +126,8 @@
 | PR-05 | Async generation pipeline and usage ledger | PR-04 |
 | PR-06 | Sites deployment spike + compatibility decision | PR-01; можно параллельно с PR-03 |
 | PR-07 | Identity and provider-permission spikes | PR-02 |
-| PR-08 | Plugin Extensions / MCP integration | PR-05 + deployment decision |
+| PR-08 | Authenticated MCP/OAuth integration | PR-05 + deployment decision |
+| PR-09 | Plugin Extension UI (sidebar/thread) + MCP Apps bridge | PR-08 |
 
 ### Ссылки/границы, проверенные при составлении плана
 

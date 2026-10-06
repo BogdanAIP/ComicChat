@@ -50,6 +50,9 @@ jobs:
       - name: PR-08 plugin/MCP OAuth boundaries
         run: npm run plugin:pr08
 
+      - name: PR-09 Plugin Extension UI boundaries
+        run: npm run extension:pr09
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
