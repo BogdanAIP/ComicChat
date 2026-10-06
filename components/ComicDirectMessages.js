@@ -87,12 +87,17 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   const [messages, setMessages] = useState([])
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
+  const [blockedUserIds, setBlockedUserIds] = useState([])
   const [draft, setDraft] = useState('')
   const [connectionState, setConnectionState] = useState('idle')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const selectedConversationId = selectedConversation?.conversation_id || null
+  const selectedPartnerId = selectedConversation?.other_user_id || null
+  const selectedBlockedByMe = selectedPartnerId
+    ? blockedUserIds.includes(selectedPartnerId)
+    : false
 
   useEffect(() => {
     selectedConversationRef.current = selectedConversation
@@ -119,13 +124,28 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     return rows
   }, [supabase])
 
+  const loadBlockedUsers = useCallback(async () => {
+    const { data, error: rpcError } = await supabase.rpc('comic_list_blocked_users')
+
+    if (rpcError) {
+      console.error('comic_list_blocked_users failed', rpcError)
+      setError('Unable to load blocked users.')
+      return []
+    }
+
+    const ids = (data || []).map((row) => row.blocked_user_id)
+    setBlockedUserIds(ids)
+    return ids
+  }, [supabase])
+
   useEffect(() => {
     const timer = setTimeout(() => {
       loadConversations()
+      loadBlockedUsers()
     }, 0)
 
     return () => clearTimeout(timer)
-  }, [loadConversations])
+  }, [loadBlockedUsers, loadConversations])
 
   useEffect(() => {
     let cancelled = false
@@ -356,11 +376,53 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     [openConversationWith]
   )
 
+  const toggleBlock = async () => {
+    if (!selectedPartnerId || busy) return
+
+    if (
+      !selectedBlockedByMe &&
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        `Block ${selectedTitle}? Existing history stays visible, but neither side can send new ComicChat messages until you unblock them.`
+      )
+    ) {
+      return
+    }
+
+    setError('')
+    setBusy(true)
+
+    try {
+      const rpcName = selectedBlockedByMe ? 'comic_unblock_user' : 'comic_block_user'
+      const { error: blockError } = await supabase.rpc(rpcName, {
+        p_user_id: selectedPartnerId,
+      })
+      if (blockError) throw blockError
+
+      await loadBlockedUsers()
+      setSearchResults([])
+    } catch (blockError) {
+      console.error('ComicChat block state update failed', blockError)
+      setError(
+        selectedBlockedByMe
+          ? 'Unable to unblock this user.'
+          : 'Unable to block this user.'
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const send = async (event) => {
     event.preventDefault()
 
     const originalText = draft
-    if (!selectedConversationId || !originalText.trim() || busy) return
+    if (
+      !selectedConversationId ||
+      !originalText.trim() ||
+      busy ||
+      selectedBlockedByMe
+    ) return
 
     const clientNonce = makeUuid()
     const tempId = `temp-${clientNonce}`
@@ -399,7 +461,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       console.error('comic_send_message failed', sendError)
       setMessages((current) => current.filter((message) => message.id !== tempId))
       setDraft(originalText)
-      setError('Message was not sent. Your text is still in the composer.')
+      const blocked = String(sendError?.message || '').includes('interaction_blocked')
+      setError(
+        blocked
+          ? 'New messages are blocked for this conversation. Your text is still in the composer.'
+          : 'Message was not sent. Your text is still in the composer.'
+      )
     } finally {
       setBusy(false)
     }
@@ -500,9 +567,26 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
             <p className={styles.eyebrow}>Comic-first private chat</p>
             <h2>{selectedTitle}</h2>
           </div>
-          <span className={styles.connection}>
-            {connectionState === 'connected' ? 'Live' : connectionState}
-          </span>
+          <div className={styles.chatHeaderActions}>
+            {selectedConversation && (
+              <button
+                type="button"
+                className={
+                  selectedBlockedByMe
+                    ? `${styles.safetyButton} ${styles.safetyButtonActive}`
+                    : styles.safetyButton
+                }
+                onClick={toggleBlock}
+                disabled={busy}
+                aria-pressed={selectedBlockedByMe}
+              >
+                {selectedBlockedByMe ? 'Unblock' : 'Block'}
+              </button>
+            )}
+            <span className={styles.connection}>
+              {connectionState === 'connected' ? 'Live' : connectionState}
+            </span>
+          </div>
         </header>
 
         {!selectedConversation ? (
@@ -551,6 +635,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
             <form className={styles.composer} onSubmit={send}>
               {error && <p className={styles.error}>{error}</p>}
+              {selectedBlockedByMe && (
+                <p className={styles.safetyNotice} role="status">
+                  You blocked {selectedTitle}. Existing history stays visible. Unblock this user to resume messaging.
+                </p>
+              )}
 
               {draft.length > 0 && (
                 <div className={styles.composerPreview} aria-label="Comic message preview">
@@ -570,13 +659,16 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                   className={styles.textarea}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value.slice(0, 4000))}
-                  placeholder="Write a message…"
+                  placeholder={
+                    selectedBlockedByMe ? 'Unblock this user to send a message' : 'Write a message…'
+                  }
                   rows={2}
+                  disabled={selectedBlockedByMe}
                 />
                 <button
                   className={styles.sendButton}
                   type="submit"
-                  disabled={busy || !draft.trim()}
+                  disabled={busy || selectedBlockedByMe || !draft.trim()}
                 >
                   Send
                 </button>
