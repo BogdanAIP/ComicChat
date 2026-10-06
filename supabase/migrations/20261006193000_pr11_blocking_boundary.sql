@@ -235,6 +235,7 @@ DECLARE
     me UUID := auth.uid();
     existing_message public.comic_message%ROWTYPE;
     created_message public.comic_message%ROWTYPE;
+    interaction_blocked BOOLEAN := FALSE;
 BEGIN
     IF me IS NULL THEN
         RAISE EXCEPTION 'not_authenticated' USING ERRCODE = '42501';
@@ -259,7 +260,7 @@ BEGIN
         RAISE EXCEPTION 'conversation_forbidden' USING ERRCODE = '42501';
     END IF;
 
-    IF EXISTS (
+    SELECT EXISTS (
         SELECT 1
         FROM public.comic_conversation AS c
         JOIN public.comic_membership AS other_m
@@ -270,9 +271,8 @@ BEGIN
           OR (b.blocker_id = other_m.user_id AND b.blocked_id = me)
         WHERE c.id = p_conversation_id
           AND c.kind = 'direct'
-    ) THEN
-        RAISE EXCEPTION 'interaction_blocked' USING ERRCODE = '42501';
-    END IF;
+    )
+    INTO interaction_blocked;
 
     SELECT *
     INTO existing_message
@@ -286,14 +286,20 @@ BEGIN
             RAISE EXCEPTION 'client_nonce_conflict' USING ERRCODE = '23505';
         END IF;
 
-        PERFORM public.comic_enqueue_generation_for_message(
-            existing_message.id,
-            existing_message.conversation_id,
-            existing_message.sender_id
-        );
+        IF NOT interaction_blocked THEN
+            PERFORM public.comic_enqueue_generation_for_message(
+                existing_message.id,
+                existing_message.conversation_id,
+                existing_message.sender_id
+            );
+        END IF;
 
         RETURN NEXT existing_message;
         RETURN;
+    END IF;
+
+    IF interaction_blocked THEN
+        RAISE EXCEPTION 'interaction_blocked' USING ERRCODE = '42501';
     END IF;
 
     INSERT INTO public.comic_message(
