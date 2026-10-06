@@ -8,7 +8,7 @@ import { pipeline } from 'npm:@supabase/middleware@^1.0.0'
 import { withOAuthProtectedResource, withSupabase } from 'npm:@supabase/server@^1.6.0'
 import { z } from 'npm:zod@^4.3.6'
 
-const oauth = [{ type: 'oauth2', scopes: ['openid', 'email', 'profile'] }]
+const oauth = [{ type: 'oauth2' as const, scopes: ['openid', 'email', 'profile'] }]
 
 function jsonResult(value: unknown) {
   return {
