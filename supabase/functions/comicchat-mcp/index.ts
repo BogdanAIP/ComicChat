@@ -7,8 +7,10 @@ import { createMcpHandler, McpServer } from 'npm:@modelcontextprotocol/server@^2
 import { pipeline } from 'npm:@supabase/middleware@^1.0.0'
 import { withOAuthProtectedResource, withSupabase } from 'npm:@supabase/server@^1.6.0'
 import { z } from 'npm:zod@^4.3.6'
+import { COMICCHAT_APP_HTML } from './ui.ts'
 
 const oauth = [{ type: 'oauth2' as const, scopes: ['openid', 'email', 'profile'] }]
+const COMICCHAT_APP_URI = 'ui://comicchat/app-v1.html'
 
 function jsonResult(value: unknown) {
   return {
@@ -37,6 +39,108 @@ Deno.serve(
           {
             instructions:
               'ComicChat is a private comic-first messenger. Resolve the authenticated profile before account-sensitive work. List or find a conversation before reading or sending. Never invent conversation IDs, user IDs, message IDs, or text.',
+          }
+        )
+
+        server.registerResource(
+          'comicchat-app',
+          COMICCHAT_APP_URI,
+          {},
+          async () => ({
+            contents: [
+              {
+                uri: COMICCHAT_APP_URI,
+                mimeType: 'text/html;profile=mcp-app',
+                text: COMICCHAT_APP_HTML,
+                _meta: {
+                  ui: {
+                    prefersBorder: false,
+                  },
+                  'openai/ui': {
+                    availableDisplayModes: ['inline', 'fullscreen'],
+                  },
+                },
+              },
+            ],
+          })
+        )
+
+        server.registerTool(
+          'open_comicchat_app',
+          {
+            title: 'Open ComicChat',
+            description:
+              'Open the authenticated ComicChat inbox UI. Optionally focus one known conversation while preserving the existing RLS/RPC authorization boundary.',
+            inputSchema: {
+              conversationId: z.string().uuid().optional(),
+            },
+            outputSchema: {
+              profile: z.record(z.string(), z.unknown()),
+              conversations: z.array(z.record(z.string(), z.unknown())),
+              selectedConversationId: z.string().uuid().nullable(),
+              messages: z.array(z.record(z.string(), z.unknown())),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+            _meta: {
+              ui: { resourceUri: COMICCHAT_APP_URI },
+              'openai/ui': {
+                entrypoints: [{ type: 'global' }, { type: 'thread' }],
+              },
+              'openai/toolInvocation/invoking': 'Opening ComicChat…',
+              'openai/toolInvocation/invoked': 'ComicChat opened.',
+            },
+          },
+          async ({ conversationId }) => {
+            const { data: authData, error: authError } = await supabase.auth.getUser()
+            if (authError || !authData.user) fail(authError || 'Authenticated user missing')
+
+            const { data: profileRow, error: profileError } = await supabase
+              .from('user')
+              .select('id, username, email')
+              .eq('id', authData.user.id)
+              .maybeSingle()
+            if (profileError) fail(profileError)
+
+            const { data: conversationRows, error: conversationsError } = await supabase.rpc(
+              'comic_list_direct_conversations'
+            )
+            if (conversationsError) fail(conversationsError)
+
+            let messages: Record<string, unknown>[] = []
+            if (conversationId) {
+              const { data: messageRows, error: messagesError } = await supabase
+                .from('comic_message')
+                .select(
+                  'id, conversation_id, sender_id, original_text, status, created_at, updated_at'
+                )
+                .eq('conversation_id', conversationId)
+                .order('created_at', { ascending: true })
+                .order('id', { ascending: true })
+                .limit(100)
+              if (messagesError) fail(messagesError)
+              messages = messageRows || []
+            }
+
+            const profile = {
+              id: authData.user.id,
+              ...(profileRow?.username ? { name: profileRow.username } : {}),
+              ...(profileRow?.email || authData.user.email
+                ? { email: profileRow?.email || authData.user.email }
+                : {}),
+              nickname: profileRow?.username || authData.user.email || 'ComicChat account',
+            }
+
+            return jsonResult({
+              profile,
+              conversations: conversationRows || [],
+              selectedConversationId: conversationId || null,
+              messages,
+            })
           }
         )
 
