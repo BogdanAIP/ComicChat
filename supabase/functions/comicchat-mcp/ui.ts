@@ -71,6 +71,7 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
       messages: [],
       selectedConversationId: null,
       pendingRequestId: null,
+      pendingText: null,
     };
 
     const profileEl = document.getElementById('profile');
@@ -257,8 +258,10 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
       const text = messageTextEl.value;
       if (!state.selectedConversationId || !text.trim()) return;
 
-      const requestId = state.pendingRequestId || crypto.randomUUID();
+      const reusePending = state.pendingRequestId && state.pendingText === text;
+      const requestId = reusePending ? state.pendingRequestId : crypto.randomUUID();
       state.pendingRequestId = requestId;
+      state.pendingText = text;
       sendButtonEl.disabled = true;
       statusEl.textContent = 'Sending…';
       try {
@@ -268,6 +271,7 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
           text: text,
         });
         state.pendingRequestId = null;
+        state.pendingText = null;
         messageTextEl.value = '';
         const response = await callTool('get_messages', {
           conversationId: state.selectedConversationId,

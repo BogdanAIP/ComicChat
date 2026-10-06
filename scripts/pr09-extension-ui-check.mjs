@@ -37,6 +37,8 @@ for (const required of [
   "callTool('list_conversations'",
   'crypto.randomUUID()',
   'pendingRequestId',
+  'pendingText',
+  'state.pendingText === text',
 ]) {
   assertIncludes(ui, required, 'MCP Apps bridge')
 }
