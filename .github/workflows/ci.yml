@@ -47,6 +47,9 @@ jobs:
       - name: PR-07 identity/provider permission boundaries
         run: npm run permissions:pr07
 
+      - name: PR-08 plugin/MCP OAuth boundaries
+        run: npm run plugin:pr08
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
