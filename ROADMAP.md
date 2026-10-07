@@ -2,6 +2,15 @@
 
 **Версия плана:** 2026-10-01 · **Статус:** план, а не отчёт о выполненной реализации.
 
+
+## Reuse-first fast-track — обязательный gate разработки
+
+ComicChat остаётся отдельным продуктом и репозиторием. Rakazo/Market Skills/Market Resolver разрешены и рекомендуются как **инструменты разработки**, но не становятся runtime-зависимостью ComicChat автоматически.
+
+Перед существенным новым функционалом действует порядок: **reuse first → adapt second → create last**. Сначала ищем готовую реализацию через Market Resolver, затем готовый workflow через Market Skills, затем официальные SDK/репозитории. Самописный commodity-код допускается только после фиксации причины несовместимости с готовыми вариантами.
+
+Полная процедура и текущая матрица решений: [docs/FAST_TRACK_REUSE.md](docs/FAST_TRACK_REUSE.md).
+
 ## Цель
 
 Сделать работающую приватную двустороннюю переписку, где каждое введённое текстовое сообщение немедленно занимает место **визуального** комикс-кадра, затем обновляется готовой иллюстрацией; обоим участникам доступна одинаковая история, но AI-расходы отправителей полностью разделены. После этого добавить интеграцию в ChatGPT и развивать социальные функции.
@@ -142,6 +151,7 @@
 | PR-21 | Deterministic load/abuse concurrency harness for sender quota, nonce idempotency and generation-job dedupe | PR-20 |
 | PR-22 | Closed-beta safety disclosure, explicit retention/provider limitations and incident-response runbook | PR-21 |
 | PR-23 | Authenticated MCP two-account transport acceptance with cross-account tool isolation | PR-22 |
+| PR-24 | Reuse-first fast-track audit + mandatory Market Skills/Resolver development gate | PR-23 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
