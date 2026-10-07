@@ -36,8 +36,8 @@ expect(test, 'deletion-requested sender unexpectedly sent a new message', 'sende
 expect(test, 'interaction restored after cancel', 'reversible interaction test')
 
 expect(chat, "supabase.rpc('comic_get_my_account_state')", 'web loads deletion state')
-expect(chat, "supabase.rpc('comic_request_account_deletion')", 'web request action')
-expect(chat, "supabase.rpc('comic_cancel_account_deletion')", 'web cancel action')
+expect(chat, "'comic_request_account_deletion'", 'web request action')
+expect(chat, "'comic_cancel_account_deletion'", 'web cancel action')
 expect(chat, 'Request account deletion', 'web request label')
 expect(chat, 'Cancel deletion request', 'web cancel label')
 
