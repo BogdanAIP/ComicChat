@@ -139,6 +139,7 @@
 | PR-18 | Negative-security matrix + explicit receive-only Realtime guard with end-to-end client Broadcast non-delivery test | PR-17 |
 | PR-19 | Fail-closed media boundary: no locators/storage/public URLs until reviewed private media provider exists | PR-18 |
 | PR-20 | Snapshot-scoped bilateral consent for future public sharing; publication endpoint remains disabled | PR-19 |
+| PR-21 | Deterministic load/abuse concurrency harness for sender quota, nonce idempotency and generation-job dedupe | PR-20 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
