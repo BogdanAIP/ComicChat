@@ -68,6 +68,9 @@ jobs:
       - name: PR-14 atomic send rate-limit boundaries
         run: npm run safety:pr14
 
+      - name: PR-15 self-service data export boundaries
+        run: npm run privacy:pr15
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -176,6 +179,9 @@ jobs:
       - name: Apply PR-14 send rate-limit migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261006211500_pr14_send_rate_limit.sql
 
+      - name: Apply PR-15 self-service data export migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007163000_pr15_self_service_data_export.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -193,6 +199,9 @@ jobs:
 
       - name: Run PR-14 send rate-limit integration
         run: bash supabase/tests/pr14_send_rate_limit_integration.sh
+
+      - name: Run PR-15 self-service data export integration
+        run: bash supabase/tests/pr15_data_export_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration

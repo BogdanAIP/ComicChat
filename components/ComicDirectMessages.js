@@ -107,6 +107,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   const [reportRequestId, setReportRequestId] = useState(null)
   const [reportBusy, setReportBusy] = useState(false)
   const [reportStatus, setReportStatus] = useState('')
+  const [exportBusy, setExportBusy] = useState(false)
+  const [exportStatus, setExportStatus] = useState('')
 
   const selectedConversationId = selectedConversation?.conversation_id || null
   const selectedPartnerId = selectedConversation?.other_user_id || null
@@ -477,6 +479,40 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     }
   }
 
+  const exportMyData = async () => {
+    if (exportBusy) return
+
+    setError('')
+    setExportStatus('')
+    setExportBusy(true)
+
+    try {
+      const { data, error: exportError } = await supabase.rpc('comic_export_my_data')
+      if (exportError) throw exportError
+      if (!data || typeof document === 'undefined') {
+        throw new Error('comic_export_my_data returned no export')
+      }
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: 'application/json',
+      })
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = `comicchat-export-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+      setExportStatus('Your ComicChat export was downloaded as JSON.')
+    } catch (exportError) {
+      console.error('comic_export_my_data failed', exportError)
+      setError('Unable to export your ComicChat data.')
+    } finally {
+      setExportBusy(false)
+    }
+  }
+
   const send = async (event) => {
     event.preventDefault()
 
@@ -567,6 +603,22 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
             autoComplete="off"
           />
         </label>
+
+        <div className={styles.exportActions}>
+          <button
+            type="button"
+            className={styles.safetyButton}
+            onClick={exportMyData}
+            disabled={exportBusy}
+          >
+            {exportBusy ? 'Preparing export…' : 'Export my data'}
+          </button>
+          {exportStatus && (
+            <p className={styles.exportStatus} role="status">
+              {exportStatus}
+            </p>
+          )}
+        </div>
 
         {visibleSearchResults.length > 0 && (
           <div className={styles.searchResults}>
