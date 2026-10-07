@@ -70,7 +70,7 @@ Deno.serve(
           {
             title: 'Open ComicChat',
             description:
-              'Open the authenticated ComicChat inbox UI. Optionally focus one known conversation while preserving the existing RLS/RPC authorization boundary.',
+              'Open the authenticated ComicChat inbox UI. Optionally focus one known conversation through the explicit membership-checked read RPC. Foreign and unknown conversation IDs fail uniformly.',
             inputSchema: {
               conversationId: z.string().uuid().optional(),
             },
@@ -113,15 +113,13 @@ Deno.serve(
 
             let messages: Record<string, unknown>[] = []
             if (conversationId) {
-              const { data: messageRows, error: messagesError } = await supabase
-                .from('comic_message')
-                .select(
-                  'id, conversation_id, sender_id, original_text, status, created_at, updated_at'
-                )
-                .eq('conversation_id', conversationId)
-                .order('created_at', { ascending: true })
-                .order('id', { ascending: true })
-                .limit(100)
+              const { data: messageRows, error: messagesError } = await supabase.rpc(
+                'comic_read_conversation_messages',
+                {
+                  p_conversation_id: conversationId,
+                  p_limit: 100,
+                }
+              )
               if (messagesError) fail(messagesError)
               messages = messageRows || []
             }
@@ -220,7 +218,7 @@ Deno.serve(
           {
             title: 'Read ComicChat messages',
             description:
-              'Read recent messages in one private conversation. Existing row-level security limits access to members.',
+              'Read recent messages through the explicit membership-checked conversation RPC. Foreign and unknown conversation IDs fail with the same authorization error.',
             inputSchema: {
               conversationId: z.string().uuid(),
               limit: z.number().int().min(1).max(100).default(30),
@@ -236,15 +234,15 @@ Deno.serve(
             securitySchemes: oauth,
           },
           async ({ conversationId, limit }) => {
-            const { data, error } = await supabase
-              .from('comic_message')
-              .select('id, conversation_id, sender_id, original_text, status, created_at, updated_at')
-              .eq('conversation_id', conversationId)
-              .order('created_at', { ascending: false })
-              .order('id', { ascending: false })
-              .limit(limit)
+            const { data, error } = await supabase.rpc(
+              'comic_read_conversation_messages',
+              {
+                p_conversation_id: conversationId,
+                p_limit: limit,
+              }
+            )
             if (error) fail(error)
-            return jsonResult({ messages: (data || []).reverse() })
+            return jsonResult({ messages: data || [] })
           }
         )
 
