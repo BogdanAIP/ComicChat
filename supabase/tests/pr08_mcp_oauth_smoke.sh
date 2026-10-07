@@ -48,4 +48,29 @@ node -e '
   if (!Array.isArray(doc.authorization_servers) || doc.authorization_servers.length < 1) process.exit(3);
 ' "$metadata"
 
+if printf '%s' "$metadata" | grep -Eqi 'service_role|SUPABASE_SERVICE_ROLE_KEY|OPENAI_API_KEY'; then
+  echo "Protected-resource metadata leaked a secret-key marker" >&2
+  exit 1
+fi
+
+status_bad="$(curl -sS -D "$headers" -o "$body" -w '%{http_code}' \
+  -X POST "$base_url" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -H 'Authorization: Bearer definitely-not-a-valid-jwt' \
+  -d "$payload" || true)"
+
+if [[ "$status_bad" != "401" ]]; then
+  echo "Expected malformed bearer MCP initialize to return 401, got: $status_bad" >&2
+  cat "$headers" >&2 || true
+  cat "$body" >&2 || true
+  exit 1
+fi
+
+bad_challenge="$(tr -d '\r' < "$headers" | grep -i '^www-authenticate:' | head -n1 || true)"
+if [[ "$bad_challenge" != *"Bearer"* || "$bad_challenge" != *"resource_metadata="* ]]; then
+  echo "Malformed bearer response lost OAuth challenge: $bad_challenge" >&2
+  exit 1
+fi
+
 echo "PR-08 MCP OAuth discovery smoke: PASS"
