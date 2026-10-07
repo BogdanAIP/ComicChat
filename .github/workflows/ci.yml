@@ -86,6 +86,9 @@ jobs:
       - name: PR-20 snapshot-scoped public sharing consent boundaries
         run: npm run privacy:pr20
 
+      - name: PR-21 load abuse concurrency boundaries
+        run: npm run stress:pr21
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -247,6 +250,9 @@ jobs:
 
       - name: Run PR-20 public snapshot consent integration
         run: bash supabase/tests/pr20_public_snapshot_consent_integration.sh
+
+      - name: Run PR-21 load abuse concurrency integration
+        run: bash supabase/tests/pr21_load_abuse_concurrency.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
