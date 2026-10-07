@@ -64,12 +64,12 @@ CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SET search_path = pg_catalog
-AS $
+AS $comic_profile_updated_at$
 BEGIN
     NEW.updated_at := TIMEZONE('utc', NOW());
     RETURN NEW;
 END;
-$;
+$comic_profile_updated_at$;
 
 DROP TRIGGER IF EXISTS set_updated_at ON public."user";
 CREATE TRIGGER set_updated_at
@@ -82,7 +82,7 @@ RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog
-AS $
+AS $comic_profile_new_user$
 BEGIN
     INSERT INTO public."user"(id, username, email)
     VALUES (NEW.id, NULL, NEW.email)
@@ -93,7 +93,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$;
+$comic_profile_new_user$;
 
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 
