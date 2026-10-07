@@ -267,6 +267,13 @@ if (!message?.id || message.original_text !== privateText) {
   throw new Error('MCP send_message returned an unexpected message')
 }
 
+const sendRenderDispatch = toolData(sent)?.renderDispatch
+if (sendRenderDispatch?.status !== 'provider_not_applicable') {
+  throw new Error(
+    'MCP send_message did not reach the shared render dispatch boundary'
+  )
+}
+
 const bList = await callTool(accounts.b.token, 'list_conversations', { limit: 20 })
 expectSuccess(bList, 'B list conversations')
 if (
