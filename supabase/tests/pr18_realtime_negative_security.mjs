@@ -95,6 +95,8 @@ let b
 let c
 let anonymous
 
+let testError = null
+
 try {
   const aId = await createUser(users.a)
   const bId = await createUser(users.b)
@@ -157,13 +159,28 @@ try {
   }
 
   console.log('PR-18 Realtime negative-security matrix passed.')
+} catch (error) {
+  testError = error
 } finally {
-  for (const c0 of [a, b, c, anonymous].filter(Boolean)) {
-    try { await Promise.race([c0.removeAllChannels(), sleep(3000)]) } catch {}
-    try { await Promise.race([c0.auth.signOut(), sleep(3000)]) } catch {}
-  }
-  for (const id of ids) {
-    try { await Promise.race([service.auth.admin.deleteUser(id), sleep(3000)]) } catch {}
-  }
+  const clientCleanup = [a, b, c, anonymous]
+    .filter(Boolean)
+    .map(async (c0) => {
+      try { await Promise.race([c0.removeAllChannels(), sleep(3000)]) } catch {}
+      try { await Promise.race([c0.auth.signOut(), sleep(3000)]) } catch {}
+    })
+  await Promise.allSettled(clientCleanup)
+
+  await Promise.allSettled(
+    ids.map(async (id) => {
+      try { await Promise.race([service.auth.admin.deleteUser(id), sleep(3000)]) } catch {}
+    })
+  )
   try { await Promise.race([service.removeAllChannels(), sleep(3000)]) } catch {}
 }
+
+if (testError) {
+  console.error(testError)
+  process.exit(1)
+}
+
+process.exit(0)
