@@ -34,9 +34,9 @@ for (const forbidden of ['push:', 'pull_request:', 'schedule:', 'SUPABASE_SERVIC
 }
 
 for (const required of [
-  'PR-01…PR-09',
   'Production-развёртывание',
   'реальное подключение плагина в ChatGPT ещё не подтверждены',
+  'Личная оплата из ChatGPT-плана не заявляется',
 ]) {
   assertIncludes(readme, required, 'truthful repository status')
 }

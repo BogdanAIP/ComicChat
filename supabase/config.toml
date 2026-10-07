@@ -16,7 +16,7 @@ enabled = false
 enabled = false
 
 [storage]
-enabled = false
+enabled = true
 
 [analytics]
 enabled = false
@@ -38,4 +38,10 @@ allow_dynamic_registration = true
 
 [functions.comicchat-mcp]
 # OAuth middleware validates the user token. The Edge gateway must not consume it first.
+verify_jwt = false
+
+
+[functions.comicchat-render]
+# The function validates the bearer with auth.getUser(), then uses service_role
+# only after proving the caller owns the sender-attributed generation job.
 verify_jwt = false
