@@ -92,6 +92,9 @@ jobs:
       - name: PR-22 beta safety disclosure boundaries
         run: npm run safety:pr22
 
+      - name: PR-23 authenticated MCP two-account boundaries
+        run: npm run acceptance:pr23
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -282,8 +285,34 @@ jobs:
         with:
           version: 2.119.0
 
-      - name: Start local Supabase with Edge Runtime
-        run: supabase start --exclude studio,storage-api,imgproxy,inbucket,logflare,vector,supavisor
+      - id: supabase
+        name: Start local Supabase with Edge Runtime
+        run: |
+          supabase start --exclude studio,storage-api,imgproxy,inbucket,logflare,vector,supavisor
+          supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
+
+      - name: Bootstrap least-privilege legacy profile table for MCP acceptance
+        env:
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: |
+          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE TABLE IF NOT EXISTS public."user" (
+            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+            username TEXT,
+            email TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          );
+
+          ALTER TABLE public."user" ENABLE ROW LEVEL SECURITY;
+          GRANT SELECT ON public."user" TO authenticated;
+
+          DROP POLICY IF EXISTS pr23_user_select_self ON public."user";
+          CREATE POLICY pr23_user_select_self
+            ON public."user"
+            FOR SELECT
+            TO authenticated
+            USING (id = auth.uid());
+          SQL
 
       - name: Serve authenticated ComicChat MCP function
         run: |
@@ -292,6 +321,13 @@ jobs:
 
       - name: Verify OAuth protected-resource handshake
         run: bash supabase/tests/pr08_mcp_oauth_smoke.sh
+
+      - name: Run PR-23 authenticated MCP two-account isolation
+        env:
+          SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: node supabase/tests/pr23_mcp_two_account_integration.mjs
 
       - name: Show MCP diagnostics on failure
         if: failure()

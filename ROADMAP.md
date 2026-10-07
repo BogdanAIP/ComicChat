@@ -141,6 +141,7 @@
 | PR-20 | Snapshot-scoped bilateral consent for future public sharing; publication endpoint remains disabled | PR-19 |
 | PR-21 | Deterministic load/abuse concurrency harness for sender quota, nonce idempotency and generation-job dedupe | PR-20 |
 | PR-22 | Closed-beta safety disclosure, explicit retention/provider limitations and incident-response runbook | PR-21 |
+| PR-23 | Authenticated MCP two-account transport acceptance with cross-account tool isolation | PR-22 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
