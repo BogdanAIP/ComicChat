@@ -18,7 +18,14 @@ well-documented, and easy to review.
 - Share expected behavior and actual behavior
 - Add screenshots or logs only when they help explain the issue
 
+## Reuse-First Development
+
+ComicChat is a separate product. External developer tooling, including Rakazo Market Skills/Resolver, may accelerate implementation but does not become a ComicChat runtime dependency by default.
+
+Before substantial feature work, follow [the reuse-first fast-track](../docs/FAST_TRACK_REUSE.md): search for a maintained implementation and reusable Skill/workflow first, adapt second, and create custom infrastructure only when a documented ComicChat-specific incompatibility remains.
+
 ## Pull Requests
+
 
 - Use a dedicated branch for each change
 - Keep pull requests scoped and easy to validate
