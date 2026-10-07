@@ -29,7 +29,8 @@
     "stress:pr21": "node scripts/pr21-load-abuse-check.mjs",
     "safety:pr22": "node scripts/pr22-beta-safety-check.mjs",
     "acceptance:pr23": "node scripts/pr23-mcp-two-account-check.mjs",
-    "media:pr25": "node scripts/pr25-private-image-check.mjs"
+    "media:pr25": "node scripts/pr25-private-image-check.mjs",
+    "character:pr26": "node scripts/pr26-character-reference-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
