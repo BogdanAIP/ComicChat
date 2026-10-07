@@ -53,6 +53,8 @@ async function signIn(spec) {
   return c
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
 function timeout(ms, label) {
   return new Promise((_, reject) =>
     setTimeout(() => reject(new Error(`timeout: ${label}`)), ms)
@@ -126,6 +128,14 @@ try {
   await subscribeRejected(unknownConversation, 'unknown conversation topic')
   await subscribeRejected(anonymousConversation, 'anonymous private conversation topic')
 
+  let peerReceivedClientInject = false
+  const peerConversation = b
+    .channel(`conversation:${conversationId}`, { config: { private: true } })
+    .on('broadcast', { event: 'CLIENT_INJECT' }, () => {
+      peerReceivedClientInject = true
+    })
+  await subscribeAllowed(peerConversation, 'peer member conversation topic')
+
   const ownConversation = a.channel(`conversation:${conversationId}`, {
     config: { private: true },
   })
@@ -134,10 +144,13 @@ try {
   const sendStatus = await ownConversation.send({
     type: 'broadcast',
     event: 'CLIENT_INJECT',
-    payload: { should_not_be_accepted: true },
+    payload: { should_not_be_delivered: true },
   })
-  if (sendStatus === 'ok') {
-    throw new Error('authenticated client unexpectedly sent a private ComicChat Broadcast')
+  console.log(`client Broadcast transport status: ${sendStatus}`)
+
+  await sleep(1500)
+  if (peerReceivedClientInject) {
+    throw new Error('authenticated client Broadcast injection reached another ComicChat member')
   }
 
   console.log('PR-18 Realtime negative-security matrix passed.')
