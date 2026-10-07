@@ -60,4 +60,11 @@ SQL implementation and row-level permissions depend on chosen DB; model above is
 
 ## Project boundary
 
+### Development tooling is not runtime architecture
+
+Rakazo, Rakazo Market Skills, Market Resolver, coding agents and MCP developer tools may be used to discover, compare, implement and test ComicChat. They are **development-side accelerators only** unless a separate architecture decision explicitly adopts a runtime dependency.
+
+For new capabilities, follow [FAST_TRACK_REUSE.md](FAST_TRACK_REUSE.md): reuse first, adapt second, create last. Prefer maintained SDKs/components for commodity infrastructure and keep custom code concentrated on ComicChat's message/comic/privacy/billing invariants.
+
+
 ComicChat is a separate repository and product. Do not pull in unrelated local execution infrastructure or dependencies from other projects just to build the chat. Keep the original upstream [MIT License](../LICENSE) and preserved [README](UPSTREAM_README.md).
