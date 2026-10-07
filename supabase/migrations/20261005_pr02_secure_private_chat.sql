@@ -63,7 +63,6 @@ GRANT SELECT, INSERT, UPDATE ON TABLE public."user" TO authenticated;
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SET search_path = pg_catalog
 AS $comic_profile_updated_at$
 BEGIN
     NEW.updated_at := TIMEZONE('utc', NOW());
