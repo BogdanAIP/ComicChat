@@ -12,7 +12,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 import { createClient } from 'npm:@supabase/supabase-js@2.109.0'
-import OpenAI from 'npm:openai@7.28.0'
+import OpenAI, { toFile } from 'npm:openai@7.28.0'
 
 const BUCKET = 'comicchat-art'
 const PROVIDER = 'openai-image'
@@ -86,12 +86,20 @@ function buildPrompt(input: {
   conversationId: string
   senderId: string
   originalText: string
+  hasReference: boolean
 }) {
   const sceneText = input.originalText.slice(0, 1800)
   return [
     'Create one square comic-panel illustration for a private messenger.',
     `Visual style: ${styleProfile(input.conversationId)}.`,
     `Keep the speaking character visually consistent with this fixed profile: ${characterProfile(input.senderId)}.`,
+    ...(input.hasReference
+      ? [
+          'A private earlier artwork from this same conversation is supplied as the character reference.',
+          'Preserve the speaking character identity from that reference: face, apparent age, hairstyle, glasses/accessories, clothing silhouette, color anchors, and overall rendering style.',
+          'Create a new composition and scene for the current message. Do not copy incidental background objects or scene details unless they fit the new message.',
+        ]
+      : []),
     'Show an expressive scene that matches the meaning and mood of the quoted private message below.',
     'IMPORTANT: artwork only. Do not render letters, words, numbers, captions, subtitles, labels, watermarks, logos, or speech/thought bubbles.',
     'The application will overlay the exact user message separately after generation.',
@@ -181,17 +189,63 @@ async function renderMessage(input: {
       timeout: 120_000,
     })
 
-    const result = await openai.images.generate({
-      model: config.model,
-      prompt: buildPrompt({
-        conversationId: message.conversation_id,
-        senderId: message.sender_id,
-        originalText: message.original_text,
-      }),
-      size: '1024x1024',
-      quality: 'low',
-      output_format: 'webp',
+    const { data: reference, error: referenceError } = await service
+      .from('comic_character_reference')
+      .select('source_message_id')
+      .eq('user_id', message.sender_id)
+      .eq('conversation_id', message.conversation_id)
+      .maybeSingle()
+
+    if (referenceError) throw new Error('character_reference_lookup_failed')
+
+    let referenceFile = null
+    if (
+      reference?.source_message_id &&
+      reference.source_message_id !== message.id
+    ) {
+      const referencePath =
+        `${message.conversation_id}/${reference.source_message_id}.webp`
+      const { data: referenceBlob, error: referenceDownloadError } =
+        await service.storage.from(BUCKET).download(referencePath)
+
+      if (referenceDownloadError || !referenceBlob) {
+        throw new Error('character_reference_unavailable')
+      }
+
+      const referenceBytes = new Uint8Array(await referenceBlob.arrayBuffer())
+      referenceFile = await toFile(
+        referenceBytes,
+        'character-reference.webp',
+        { type: 'image/webp' }
+      )
+    }
+
+    const prompt = buildPrompt({
+      conversationId: message.conversation_id,
+      senderId: message.sender_id,
+      originalText: message.original_text,
+      hasReference: Boolean(referenceFile),
     })
+
+    // Do not fall back from edit -> generate inside one attempt. A provider
+    // failure must go through the existing retry ledger so one attempt cannot
+    // silently consume two provider image calls.
+    const result = referenceFile
+      ? await openai.images.edit({
+          model: config.model,
+          image: referenceFile,
+          prompt,
+          size: '1024x1024',
+          quality: 'low',
+          output_format: 'webp',
+        })
+      : await openai.images.generate({
+          model: config.model,
+          prompt,
+          size: '1024x1024',
+          quality: 'low',
+          output_format: 'webp',
+        })
 
     const encoded = result.data?.[0]?.b64_json
     if (!encoded) throw new Error('provider_returned_no_image')
@@ -222,6 +276,9 @@ async function renderMessage(input: {
             mime_type: 'image/webp',
             containsText: false,
             model: config.model,
+            character_reference_mode: referenceFile
+              ? 'conversation-reference'
+              : 'seed-profile',
           },
         },
         // Sponsored closed-beta accounting: one provider image was consumed,
@@ -232,6 +289,16 @@ async function renderMessage(input: {
     )
 
     if (completeError) throw new Error('generation_complete_failed')
+
+    const { error: pinError } = await service.rpc(
+      'comic_pin_character_reference',
+      { p_message_id: message.id }
+    )
+    if (pinError) {
+      // The artwork is already ready. Reference pinning is a continuity
+      // optimization and must not roll back or fail the completed message.
+      console.error('comicchat-render character reference pin failed')
+    }
   } catch (error) {
     const code =
       error instanceof Error && /^[a-z0-9_]+$/.test(error.message)
