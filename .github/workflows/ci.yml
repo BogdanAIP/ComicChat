@@ -89,6 +89,9 @@ jobs:
       - name: PR-21 load abuse concurrency boundaries
         run: npm run stress:pr21
 
+      - name: PR-22 beta safety disclosure boundaries
+        run: npm run safety:pr22
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -215,6 +218,9 @@ jobs:
       - name: Apply PR-20 public snapshot consent migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007231000_pr20_public_snapshot_consent.sql
 
+      - name: Apply PR-22 beta safety disclosure migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007234500_pr22_beta_safety_disclosure.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -253,6 +259,9 @@ jobs:
 
       - name: Run PR-21 load abuse concurrency integration
         run: bash supabase/tests/pr21_load_abuse_concurrency.sh
+
+      - name: Run PR-22 beta safety disclosure integration
+        run: bash supabase/tests/pr22_beta_safety_disclosure_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
