@@ -197,6 +197,9 @@ jobs:
       - name: Apply PR-17 conversation-read migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007182000_pr17_conversation_read_boundary.sql
 
+      - name: Apply PR-18 receive-only Realtime migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007211000_pr18_realtime_receive_only.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
