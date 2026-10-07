@@ -701,11 +701,13 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       if (jobError || !job) throw jobError || new Error('generation_job_not_found')
       if (job.status !== 'failed') return
 
+      const retryRequestId = makeUuid()
       const { data, error: retryError } = await supabase.rpc(
         'comic_retry_failed_generation',
         {
           p_message_id: messageId,
           p_expected_attempt_no: job.attempt_count,
+          p_request_id: retryRequestId,
         }
       )
 
