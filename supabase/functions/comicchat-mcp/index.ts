@@ -33,6 +33,26 @@ Deno.serve(
       withSupabase({ auth: 'user' }),
     ],
     async (req, { supabase }) => {
+      const dispatchComicRender = async (messageId: string) => {
+        const { data, error } = await supabase.functions.invoke('comicchat-render', {
+          body: { messageId },
+        })
+
+        if (error) {
+          return {
+            accepted: false,
+            status: 'deferred',
+          }
+        }
+
+        return data && typeof data === 'object'
+          ? data as Record<string, unknown>
+          : {
+              accepted: false,
+              status: 'unknown',
+            }
+      }
+
       const handler = createMcpHandler(() => {
         const server = new McpServer(
           { name: 'comicchat', version: '0.1.0' },
@@ -316,6 +336,7 @@ Deno.serve(
             },
             outputSchema: {
               message: z.record(z.string(), z.unknown()),
+              renderDispatch: z.record(z.string(), z.unknown()),
             },
             annotations: {
               readOnlyHint: false,
@@ -334,11 +355,68 @@ Deno.serve(
             if (error) fail(error)
             const message = Array.isArray(data) ? data[0] : data
             if (!message?.id) throw new Error('comic_send_message returned no message')
-            return jsonResult({ message })
+
+            const renderDispatch = await dispatchComicRender(message.id)
+            return jsonResult({ message, renderDispatch })
           }
         )
 
+        server.registerTool(
+          'retry_generation',
+          {
+            title: 'Retry failed ComicChat render',
+            description:
+              'Retry rendering one failed message owned by the authenticated sender. requestId is a stable UUID idempotency key; reuse it if the same retry request is repeated. Each accepted manual retry permits exactly one additional provider attempt, bounded by the server retry limit.',
+            inputSchema: {
+              messageId: z.string().uuid(),
+              requestId: z.string().uuid(),
+            },
+            outputSchema: {
+              job: z.record(z.string(), z.unknown()),
+              renderDispatch: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ messageId, requestId }) => {
+            const { data: currentJob, error: currentJobError } = await supabase
+              .from('comic_generation_job')
+              .select('attempt_count, status')
+              .eq('message_id', messageId)
+              .maybeSingle()
 
+            if (currentJobError) fail(currentJobError)
+            if (!currentJob) throw new Error('generation_job_not_found')
+
+            const { data, error } = await supabase.rpc(
+              'comic_retry_failed_generation',
+              {
+                p_message_id: messageId,
+                p_expected_attempt_no: currentJob.attempt_count,
+                p_request_id: requestId,
+              }
+            )
+            if (error) fail(error)
+
+            const job = Array.isArray(data) ? data[0] : data
+            if (!job?.id) throw new Error('comic_retry_failed_generation returned no job')
+
+            const renderDispatch =
+              job.status === 'queued'
+                ? await dispatchComicRender(messageId)
+                : {
+                    accepted: false,
+                    status: String(job.status || 'not_queued'),
+                  }
+
+            return jsonResult({ job, renderDispatch })
+          }
+        )
 
         server.registerTool(
           'list_public_snapshot_requests',
