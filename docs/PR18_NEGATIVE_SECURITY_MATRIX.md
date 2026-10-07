@@ -33,6 +33,14 @@ A live local Supabase test verifies that:
 
 The existing MCP OAuth smoke is extended so both no token and a malformed bearer token must fail with HTTP 401 rather than reaching the MCP tool surface. The protected-resource metadata must not contain known secret-key markers.
 
+## Finding and fix: client Broadcast injection
+
+The live Realtime negative test found a real gap: a valid conversation member could call the client `channel.send({ type: 'broadcast', ... })` successfully even though ComicChat intends all conversation Broadcasts to originate from database triggers.
+
+Supabase authorizes Broadcast receive and send separately on `realtime.messages`; send authorization is governed by INSERT policies. To make ComicChat receive-only even if a platform/default permissive INSERT policy exists, PR-18 adds a restrictive INSERT policy for the `anon` and `authenticated` client roles with `WITH CHECK (FALSE)`.
+
+Database-triggered `realtime.send()` remains the allowed event-production path.
+
 ## Scope
 
-This PR is intentionally test-hardening only. It does not weaken RLS, add service-role paths to clients, enable media, or claim production deployment readiness.
+PR-18 began as test hardening and keeps all successful existing authorization semantics. The only production change is the explicit receive-only Realtime enforcement discovered by the new live negative test. It does not add service-role paths to clients, enable media, or claim production deployment readiness.
