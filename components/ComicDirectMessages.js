@@ -368,6 +368,16 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
     let cancelled = false
 
+    // A retryable worker failure moves rendering -> queued. Clear the local
+    // dispatch marker as soon as the message leaves queued so the later queued
+    // transition can safely invoke the exact same job again.
+    for (const messageId of renderDispatchRef.current) {
+      const current = messages.find((message) => message.id === messageId)
+      if (!current || current.status !== 'queued') {
+        renderDispatchRef.current.delete(messageId)
+      }
+    }
+
     for (const message of messages) {
       if (
         message.sender_id !== myUserId ||
