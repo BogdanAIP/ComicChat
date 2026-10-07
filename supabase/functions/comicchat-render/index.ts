@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
   }
 
   if (job.provider !== PROVIDER) {
-    return json({ error: 'external_generation_not_enabled' }, 409)
+    return json({ accepted: false, status: 'provider_not_applicable' })
   }
 
   if (job.status === 'ready') {
