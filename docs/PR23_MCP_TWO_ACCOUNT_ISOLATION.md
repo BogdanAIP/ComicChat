@@ -31,12 +31,13 @@ The test verifies:
 3. A opens an A↔B direct conversation and sends exact private text.
 4. B can list that conversation and read the message through MCP.
 5. C cannot enumerate the A↔B conversation in `list_conversations`.
-6. C's `get_messages` call for the A↔B ID fails with `conversation_forbidden` and does not leak private text.
-7. C cannot focus the A↔B ID through `open_comicchat_app`.
-8. C cannot send a message into A↔B.
-9. A's self-service export contains its authorized A↔B data.
-10. C's self-service export contains neither the A↔B conversation ID nor its private text.
-11. Read-only beta safety status remains independently available to A and C.
+6. C's `get_messages` call for the A↔B ID fails and does not leak private text.
+7. The external MCP error surface for that foreign-existing ID is byte-for-byte identical to a random nonexistent conversation ID, so MCP does not become an existence oracle even when it sanitizes the internal database error text.
+8. C cannot focus the A↔B ID through `open_comicchat_app`.
+9. C cannot send a message into A↔B.
+10. A's self-service export contains its authorized A↔B data.
+11. C's self-service export contains neither the A↔B conversation ID nor its private text.
+12. Read-only beta safety status remains independently available to A and C.
 
 ## Why raw HTTP is intentional
 
