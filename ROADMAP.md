@@ -154,6 +154,7 @@ ComicChat остаётся отдельным продуктом и репози
 | PR-24 | Reuse-first fast-track audit + mandatory Market Skills/Resolver development gate | PR-23 |
 | PR-25 | Opt-in official image generation + private Supabase media vertical slice | PR-24 |
 | PR-26 | Provider-native conversation character reference continuity with private edit inputs | PR-25 |
+| PR-27 | Manual Supabase staging activation harness with plan-first deploy and explicit provider switch | PR-26 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
