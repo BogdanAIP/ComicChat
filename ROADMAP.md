@@ -136,7 +136,7 @@
 | PR-15 | Authenticated self-service data export across web + MCP with privacy isolation tests | PR-14 |
 | PR-16 | Reversible account deletion request, interaction tombstone and hard-delete cascade guards | PR-15 |
 | PR-17 | Explicit private conversation-read RPC with uniform anti-enumeration failure across web + MCP | PR-16 |
-| PR-18 | Negative-security matrix for RPC anti-oracles, private Realtime topics/client injection and malformed OAuth bearer handling | PR-17 |
+| PR-18 | Negative-security matrix + explicit receive-only Realtime enforcement after live client Broadcast injection finding | PR-17 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
