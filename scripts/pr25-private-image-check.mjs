@@ -34,7 +34,7 @@ expect(
   'comic_claim_generation_job_for_message',
   'exact-message service-role claim'
 )
-expect(migration, "'comicchat-art', 'comicchat-art', FALSE", 'private storage bucket')
+expect(migration, "VALUES (''comicchat-art'', ''comicchat-art'', FALSE)", 'private storage bucket')
 expect(migration, 'comicchat_private_art_select', 'private media SELECT policy')
 expect(migration, 'public.comic_is_member(', 'conversation membership storage authorization')
 expect(migration, 'client_upload_enabled BOOLEAN', 'client upload capability remains explicit')
