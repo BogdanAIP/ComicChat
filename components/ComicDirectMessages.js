@@ -246,17 +246,18 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     let cancelled = false
 
     const loadHistory = async () => {
-      const { data, error: loadError } = await supabase
-        .from('comic_message')
-        .select('id, conversation_id, sender_id, client_nonce, original_text, status, created_at, updated_at')
-        .eq('conversation_id', selectedConversationId)
-        .order('created_at', { ascending: true })
-        .order('id', { ascending: true })
+      const { data, error: loadError } = await supabase.rpc(
+        'comic_read_conversation_messages',
+        {
+          p_conversation_id: selectedConversationId,
+          p_limit: 1000,
+        }
+      )
 
       if (cancelled) return
 
       if (loadError) {
-        console.error('comic_message history load failed', loadError)
+        console.error('comic_read_conversation_messages failed', loadError)
         setError('Unable to load this conversation.')
         return
       }

@@ -88,11 +88,12 @@ requireText(
   "supabase.rpc('comic_",
   'ComicChat RPC coupling'
 )
-requireText(
-  chat,
-  ".from('comic_message')",
-  'ComicChat PostgREST message coupling'
-)
+if (
+  !chat.includes(".from('comic_message')") &&
+  !chat.includes("'comic_read_conversation_messages'")
+) {
+  failures.push('missing: ComicChat Supabase message-read coupling')
+}
 requireText(
   chat,
   '.channel(',
