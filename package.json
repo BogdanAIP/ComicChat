@@ -22,7 +22,8 @@
     "safety:pr14": "node scripts/pr14-send-rate-limit-check.mjs",
     "privacy:pr15": "node scripts/pr15-data-export-check.mjs",
     "privacy:pr16": "node scripts/pr16-deletion-request-check.mjs",
-    "privacy:pr17": "node scripts/pr17-conversation-read-check.mjs"
+    "privacy:pr17": "node scripts/pr17-conversation-read-check.mjs",
+    "security:pr18": "node scripts/pr18-negative-security-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
