@@ -30,7 +30,7 @@ export default function ComicPanel({
 }) {
   const [copyState, setCopyState] = useState('idle')
   const [retryPreviewing, setRetryPreviewing] = useState(false)
-  const [artUrl, setArtUrl] = useState(null)
+  const [privateArt, setPrivateArt] = useState(null)
   const retryTimerRef = useRef(null)
   const renderModel = renderTemplate({
     messageId,
@@ -56,31 +56,29 @@ export default function ComicPanel({
     }
   }, [])
 
+  const privateArtKey =
+    !preview &&
+    status === 'ready' &&
+    mediaStorageEnabled &&
+    supabase &&
+    conversationId &&
+    messageId &&
+    !String(messageId).startsWith('temp-')
+      ? `${conversationId}/${messageId}.webp`
+      : null
+  const artUrl =
+    privateArtKey && privateArt?.key === privateArtKey ? privateArt.url : null
+
   useEffect(() => {
+    if (!privateArtKey || !supabase) return undefined
+
     let cancelled = false
     let objectUrl = null
 
-    setArtUrl(null)
-
-    if (
-      preview ||
-      status !== 'ready' ||
-      !mediaStorageEnabled ||
-      !supabase ||
-      !conversationId ||
-      !messageId ||
-      String(messageId).startsWith('temp-')
-    ) {
-      return () => {
-        cancelled = true
-      }
-    }
-
     const loadPrivateArt = async () => {
-      const objectPath = `${conversationId}/${messageId}.webp`
       const { data, error } = await supabase.storage
         .from('comicchat-art')
-        .download(objectPath)
+        .download(privateArtKey)
 
       if (cancelled || error || !data) return
 
@@ -91,7 +89,7 @@ export default function ComicPanel({
         return
       }
 
-      setArtUrl(objectUrl)
+      setPrivateArt({ key: privateArtKey, url: objectUrl })
     }
 
     loadPrivateArt()
@@ -100,15 +98,7 @@ export default function ComicPanel({
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [
-    conversationId,
-    mediaStorageEnabled,
-    messageId,
-    preview,
-    status,
-    supabase,
-  ])
-
+  }, [privateArtKey, supabase])
 
   const exactText = renderModel.text
   const accessibleId = `comic-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`
