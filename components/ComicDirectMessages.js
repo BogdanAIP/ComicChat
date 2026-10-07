@@ -117,6 +117,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   })
   const [accountStateBusy, setAccountStateBusy] = useState(false)
   const [betaSafety, setBetaSafety] = useState(null)
+  const [retryingMessageId, setRetryingMessageId] = useState(null)
 
   const selectedConversationId = selectedConversation?.conversation_id || null
   const selectedPartnerId = selectedConversation?.other_user_id || null
@@ -678,6 +679,76 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     }
   }
 
+  const retryGeneration = async (messageId) => {
+    if (
+      !messageId ||
+      retryingMessageId ||
+      deletionPending ||
+      selectedBlockedByMe ||
+      !betaSafety?.external_generation_enabled
+    ) return
+
+    setError('')
+    setRetryingMessageId(messageId)
+
+    try {
+      const { data: job, error: jobError } = await supabase
+        .from('comic_generation_job')
+        .select('attempt_count, status')
+        .eq('message_id', messageId)
+        .maybeSingle()
+
+      if (jobError || !job) throw jobError || new Error('generation_job_not_found')
+      if (job.status !== 'failed') return
+
+      const { data, error: retryError } = await supabase.rpc(
+        'comic_retry_failed_generation',
+        {
+          p_message_id: messageId,
+          p_expected_attempt_no: job.attempt_count,
+        }
+      )
+
+      if (retryError) throw retryError
+
+      const retried = Array.isArray(data) ? data[0] : data
+      if (retried?.status === 'queued') {
+        // Clear any stale dispatch marker from the prior failed attempt. The
+        // existing render-dispatch effect will start exactly this same job.
+        renderDispatchRef.current.delete(messageId)
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === messageId
+              ? {
+                  ...message,
+                  status: 'queued',
+                  updated_at: new Date().toISOString(),
+                }
+              : message
+          )
+        )
+      }
+    } catch (retryError) {
+      console.error('comic_retry_failed_generation failed', retryError)
+      const serverMessage = String(retryError?.message || '')
+      setError(
+        serverMessage.includes('generation_retry_limit_reached')
+          ? 'This comic reached the closed-beta retry limit. The original message is still preserved.'
+          : serverMessage.includes('generation_provider_not_enabled')
+            ? 'Comic rendering is currently disabled, so this message cannot be retried yet.'
+            : serverMessage.includes('account_deletion_pending')
+              ? 'Cancel the account deletion request before retrying a comic.'
+              : serverMessage.includes('account_unavailable')
+                ? 'This conversation is unavailable for a new render attempt.'
+                : serverMessage.includes('interaction_blocked')
+                  ? 'Rendering is blocked for this conversation.'
+                  : 'Comic retry was not scheduled. The original message is still preserved.'
+      )
+    } finally {
+      setRetryingMessageId(null)
+    }
+  }
+
   const send = async (event) => {
     event.preventDefault()
 
@@ -961,6 +1032,15 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                     createdAt={message.created_at}
                     onReport={mine ? null : openReport}
                     reporting={reportBusy && reportTargetId === message.id}
+                    onRetryGeneration={
+                      mine &&
+                      betaSafety?.external_generation_enabled &&
+                      !deletionPending &&
+                      !selectedBlockedByMe
+                        ? retryGeneration
+                        : null
+                    }
+                    retrying={retryingMessageId === message.id}
                     supabase={supabase}
                     mediaStorageEnabled={Boolean(betaSafety?.media_storage_enabled)}
                   />
