@@ -132,6 +132,7 @@
 | PR-11 | Beta safety: database-enforced user blocking + MCP controls | PR-10 |
 | PR-12 | Web UX for block/unblock with preserved history and fail-closed send | PR-11 |
 | PR-13 | Private message abuse reports with reporter-only visibility and IDOR guards | PR-12 |
+| PR-14 | Closed-beta per-sender message rate limit with retry-safe atomic enforcement | PR-13 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
