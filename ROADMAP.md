@@ -134,6 +134,7 @@
 | PR-13 | Private message abuse reports with reporter-only visibility and IDOR guards | PR-12 |
 | PR-14 | Closed-beta per-sender message rate limit with retry-safe atomic enforcement | PR-13 |
 | PR-15 | Authenticated self-service data export across web + MCP with privacy isolation tests | PR-14 |
+| PR-16 | Reversible account deletion request, interaction tombstone and hard-delete cascade guards | PR-15 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
