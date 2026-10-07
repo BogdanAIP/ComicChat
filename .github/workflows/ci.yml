@@ -105,6 +105,9 @@ jobs:
       - name: PR-26 character reference continuity boundaries
         run: npm run character:pr26
 
+      - name: PR-27 staging activation boundaries
+        run: npm run activation:pr27
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
