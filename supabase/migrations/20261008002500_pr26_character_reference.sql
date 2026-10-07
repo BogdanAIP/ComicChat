@@ -30,6 +30,14 @@ REVOKE ALL ON TABLE public.comic_character_reference
     FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON TABLE public.comic_character_reference TO service_role;
 
+DROP POLICY IF EXISTS comic_character_reference_service_role_select
+    ON public.comic_character_reference;
+CREATE POLICY comic_character_reference_service_role_select
+    ON public.comic_character_reference
+    FOR SELECT
+    TO service_role
+    USING (TRUE);
+
 -- Pin the first successful OpenAI-backed panel for this sender inside this
 -- conversation. ON CONFLICT intentionally never replaces the pinned source.
 CREATE OR REPLACE FUNCTION public.comic_pin_character_reference(
