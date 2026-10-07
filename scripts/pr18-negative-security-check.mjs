@@ -34,7 +34,7 @@ expect(realtime, 'anonymous private conversation topic', 'anonymous topic reject
 expect(realtime, 'CLIENT_INJECT', 'client Broadcast injection attempt')
 expect(oauth, 'definitely-not-a-valid-jwt', 'malformed bearer negative check')
 expect(oauth, 'Expected malformed bearer MCP initialize to return 401', 'malformed bearer assertion')
-expect(docs, 'client Broadcast injection', 'documented live Realtime finding')
+expect(docs, 'Realtime send probe', 'documented live Realtime send probe')
 expect(roadmap, '| PR-18 |', 'roadmap milestone')
 expect(ci, '20261007211000_pr18_realtime_receive_only.sql', 'receive-only migration in CI')
 expect(ci, 'pr18_negative_security_matrix.sh', 'PostgreSQL matrix in CI')
