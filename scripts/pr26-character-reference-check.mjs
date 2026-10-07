@@ -27,6 +27,7 @@ expect(migration, 'ON CONFLICT (user_id, conversation_id) DO NOTHING', 'immutabl
 expect(migration, "source_job.status <> 'ready'", 'ready-only reference source')
 expect(migration, "source_job.provider <> 'openai-image'", 'provider-bound reference source')
 expect(migration, 'GRANT SELECT ON TABLE public.comic_character_reference TO service_role', 'service-only lookup')
+expect(migration, 'comic_character_reference_service_role_select', 'service-role RLS lookup policy')
 expect(migration, 'comic_pin_character_reference', 'trusted pin RPC')
 
 expect(edge, "OpenAI, { toFile }", 'official SDK file helper')
