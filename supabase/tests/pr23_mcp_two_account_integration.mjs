@@ -350,6 +350,12 @@ const cSend = await callTool(accounts.c.token, 'send_message', {
 })
 expectError(cSend, privateText, 'C send into A-B')
 
+const cRetry = await callTool(accounts.c.token, 'retry_generation', {
+  messageId: message.id,
+  requestId: crypto.randomUUID(),
+})
+expectError(cRetry, privateText, 'C retry A-B generation')
+
 const aExport = await callTool(accounts.a.token, 'export_my_data')
 expectSuccess(aExport, 'A export')
 const aExportText = JSON.stringify(toolData(aExport)?.export)
