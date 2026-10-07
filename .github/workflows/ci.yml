@@ -83,6 +83,9 @@ jobs:
       - name: PR-19 fail-closed media boundaries
         run: npm run security:pr19
 
+      - name: PR-20 snapshot-scoped public sharing consent boundaries
+        run: npm run privacy:pr20
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -206,6 +209,9 @@ jobs:
       - name: Apply PR-19 fail-closed media migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007223000_pr19_fail_closed_media.sql
 
+      - name: Apply PR-20 public snapshot consent migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007231000_pr20_public_snapshot_consent.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -238,6 +244,9 @@ jobs:
 
       - name: Run PR-19 fail-closed media integration
         run: bash supabase/tests/pr19_fail_closed_media_integration.sh
+
+      - name: Run PR-20 public snapshot consent integration
+        run: bash supabase/tests/pr20_public_snapshot_consent_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
