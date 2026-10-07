@@ -189,18 +189,25 @@ function expectSuccess(call, label) {
   }
 }
 
-function expectError(call, marker, privateText, label) {
+function errorSurface(call) {
+  return JSON.stringify({
+    rpcError: call.rpcError || null,
+    isError: Boolean(call.result?.isError),
+    content: call.result?.content || [],
+  })
+}
+
+function expectError(call, privateText, label) {
   if (!call.rpcError && !call.result?.isError) {
     throw new Error(`${label} unexpectedly succeeded`)
   }
 
-  const text = [call.rpcError?.message || '', toolText(call)].join('\n')
-  if (!text.includes(marker)) {
-    throw new Error(`${label} missing error marker ${marker}: ${text}`)
-  }
-  if (privateText && text.includes(privateText)) {
+  const surface = errorSurface(call)
+  if (privateText && surface.includes(privateText)) {
     throw new Error(`${label} leaked private message text`)
   }
+
+  return surface
 }
 
 const accounts = {}
@@ -297,14 +304,34 @@ const cMessages = await callTool(accounts.c.token, 'get_messages', {
   conversationId,
   limit: 30,
 })
-expectError(cMessages, 'conversation_forbidden', privateText, 'C read A-B messages')
+const foreignReadSurface = expectError(
+  cMessages,
+  privateText,
+  'C read A-B messages'
+)
+
+const unknownConversationId = '23232323-dddd-4ddd-8ddd-dddddddddddd'
+const cUnknownMessages = await callTool(accounts.c.token, 'get_messages', {
+  conversationId: unknownConversationId,
+  limit: 30,
+})
+const unknownReadSurface = expectError(
+  cUnknownMessages,
+  privateText,
+  'C read unknown conversation'
+)
+
+if (foreignReadSurface !== unknownReadSurface) {
+  throw new Error(
+    `MCP conversation existence oracle detected: ${foreignReadSurface} !== ${unknownReadSurface}`
+  )
+}
 
 const cFocusedApp = await callTool(accounts.c.token, 'open_comicchat_app', {
   conversationId,
 })
 expectError(
   cFocusedApp,
-  'conversation_forbidden',
   privateText,
   'C focus A-B conversation'
 )
@@ -314,7 +341,7 @@ const cSend = await callTool(accounts.c.token, 'send_message', {
   requestId: crypto.randomUUID(),
   text: 'C must not enter A-B',
 })
-expectError(cSend, 'conversation_forbidden', privateText, 'C send into A-B')
+expectError(cSend, privateText, 'C send into A-B')
 
 const aExport = await callTool(accounts.a.token, 'export_my_data')
 expectSuccess(aExport, 'A export')
