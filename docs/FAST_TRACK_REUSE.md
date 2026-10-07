@@ -127,3 +127,19 @@ Such Skills must not be able to bypass conversation authorization, alter the ver
 ## Current execution rule
 
 Before PR-25 or any further feature expansion, apply this audit to the next planned capability and prefer a ready-made component/provider where it produces a net reduction in implementation and maintenance work.
+
+
+## First gate execution — 2026-10-07
+
+The policy was exercised immediately against the next development areas rather than being recorded only for future use.
+
+Rakazo Market searches found:
+
+- browser/E2E: relevant curated first-party `ChromeDevTools/chrome-devtools-mcp` Skills are available and should be reused for browser debugging/automation workflows;
+- chat/realtime UI: no relevant resolver entry was returned;
+- observability/readiness: no relevant resolver entry was returned;
+- image generation/character consistency: no relevant resolver entry was returned.
+
+Some broad Skill searches returned unrelated trading entries, confirming that ranking/catalog coverage is not yet sufficient for these ComicChat domains. Therefore the fallback rule applies: use official vendor repositories/docs and maintained open-source projects for these gaps, record the comparison, then reuse/adapt/create.
+
+This also changes priority: do not add another infrastructure-only milestone merely because it is next numerically. Prefer the shortest path from the current tested backend to a real end-to-end comic generation experience.
