@@ -765,9 +765,13 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
             <div className={styles.accountNotice} aria-label="Closed beta limits">
               <strong>Closed beta limits</strong>
               <br />
-              Generation uses the mock provider. External generation, media storage,
-              public publication, hard deletion, and automated purge are disabled.
-              Retention duration is not defined.
+              Generation provider: {betaSafety.generation_provider || 'unknown'}.
+              {' '}External generation: {betaSafety.external_generation_enabled ? 'enabled' : 'disabled'}.
+              {' '}Media storage: {betaSafety.media_storage_enabled ? 'enabled' : 'disabled'}.
+              {' '}Public publication: {betaSafety.public_publication_enabled ? 'enabled' : 'disabled'}.
+              {' '}Hard deletion: {betaSafety.hard_delete_enabled ? 'enabled' : 'disabled'}.
+              {' '}Automated purge: {betaSafety.automated_retention_purge_enabled ? 'enabled' : 'disabled'}.
+              {' '}Retention duration {betaSafety.retention_duration_defined ? 'is defined' : 'is not defined'}.
             </div>
           )}
         </div>
