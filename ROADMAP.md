@@ -133,6 +133,7 @@
 | PR-12 | Web UX for block/unblock with preserved history and fail-closed send | PR-11 |
 | PR-13 | Private message abuse reports with reporter-only visibility and IDOR guards | PR-12 |
 | PR-14 | Closed-beta per-sender message rate limit with retry-safe atomic enforcement | PR-13 |
+| PR-15 | Authenticated self-service data export across web + MCP with privacy isolation tests | PR-14 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
