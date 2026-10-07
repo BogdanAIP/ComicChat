@@ -25,7 +25,7 @@ expect(test, 'public_url unexpectedly persisted', 'public URL integration reject
 expect(test, 'object_key unexpectedly persisted', 'object-key integration rejection')
 expect(test, 'false|false|false|false|none|65536', 'disabled capability assertion')
 expect(mcp, "'get_media_capabilities'", 'MCP media capability tool')
-expect(mcp, 'media storage and public media URLs are disabled', 'MCP fail-closed description')
+expect(mcp, 'public media URLs are disabled', 'MCP fail-closed description')
 forbid(web, 'supabase.storage', 'secure web path must not use Supabase Storage')
 forbid(web, 'getPublicUrl', 'secure web path must not create public URLs')
 forbid(web, 'fileUpload', 'secure web path must not use legacy upload helper')
