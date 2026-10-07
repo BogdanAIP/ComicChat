@@ -102,6 +102,9 @@ jobs:
       - name: PR-25 private image generation boundaries
         run: npm run media:pr25
 
+      - name: PR-26 character reference continuity boundaries
+        run: npm run character:pr26
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -234,6 +237,9 @@ jobs:
       - name: Apply PR-25 private image migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007235500_pr25_private_image_generation.sql
 
+      - name: Apply PR-26 character reference migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261008002500_pr26_character_reference.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -278,6 +284,9 @@ jobs:
 
       - name: Run PR-25 generation provider integration
         run: bash supabase/tests/pr25_generation_provider_integration.sh
+
+      - name: Run PR-26 character reference integration
+        run: bash supabase/tests/pr26_character_reference_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
