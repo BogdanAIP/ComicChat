@@ -97,7 +97,7 @@ SET search_path = pg_catalog
 AS $$
 DECLARE
     me UUID := auth.uid();
-    request_id UUID;
+    v_request_id UUID;
 BEGIN
     IF me IS NULL THEN
         RAISE EXCEPTION 'not_authenticated' USING ERRCODE = '42501';
@@ -152,14 +152,14 @@ BEGIN
         WHERE cancelled_at IS NULL
     DO UPDATE SET
         conversation_id = EXCLUDED.conversation_id
-    RETURNING id INTO request_id;
+    RETURNING id INTO v_request_id;
 
     INSERT INTO public.comic_publication_consent(request_id, user_id)
-    VALUES (request_id, me)
+    VALUES (v_request_id, me)
     ON CONFLICT (request_id, user_id) DO UPDATE
     SET consented_at = EXCLUDED.consented_at;
 
-    RETURN request_id;
+    RETURN v_request_id;
 END;
 $$;
 
