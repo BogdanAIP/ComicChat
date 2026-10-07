@@ -15,6 +15,7 @@ function formatTime(value) {
 
 export default function ComicPanel({
   messageId,
+  conversationId,
   speaker,
   text,
   status = 'queued',
@@ -24,9 +25,12 @@ export default function ComicPanel({
   preview = false,
   onReport = null,
   reporting = false,
+  supabase = null,
+  mediaStorageEnabled = false,
 }) {
   const [copyState, setCopyState] = useState('idle')
   const [retryPreviewing, setRetryPreviewing] = useState(false)
+  const [artUrl, setArtUrl] = useState(null)
   const retryTimerRef = useRef(null)
   const renderModel = renderTemplate({
     messageId,
@@ -51,6 +55,60 @@ export default function ComicPanel({
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl = null
+
+    setArtUrl(null)
+
+    if (
+      preview ||
+      status !== 'ready' ||
+      !mediaStorageEnabled ||
+      !supabase ||
+      !conversationId ||
+      !messageId ||
+      String(messageId).startsWith('temp-')
+    ) {
+      return () => {
+        cancelled = true
+      }
+    }
+
+    const loadPrivateArt = async () => {
+      const objectPath = `${conversationId}/${messageId}.webp`
+      const { data, error } = await supabase.storage
+        .from('comicchat-art')
+        .download(objectPath)
+
+      if (cancelled || error || !data) return
+
+      objectUrl = URL.createObjectURL(data)
+      if (cancelled) {
+        URL.revokeObjectURL(objectUrl)
+        objectUrl = null
+        return
+      }
+
+      setArtUrl(objectUrl)
+    }
+
+    loadPrivateArt()
+
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [
+    conversationId,
+    mediaStorageEnabled,
+    messageId,
+    preview,
+    status,
+    supabase,
+  ])
+
 
   const exactText = renderModel.text
   const accessibleId = `comic-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`
@@ -90,20 +148,35 @@ export default function ComicPanel({
           <div
             className={styles.sceneArtwork}
             role="img"
-            aria-label={`Decorative ${scene.label} placeholder for ${speaker}`}
+            aria-label={
+              artUrl
+                ? `Private generated comic artwork for ${speaker}`
+                : `Decorative ${scene.label} placeholder for ${speaker}`
+            }
           >
-            <div className={styles.sceneTexture} aria-hidden="true" />
-            <div
-              className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]}`}
-              data-character-template={renderModel.character.silhouette}
-              aria-hidden="true"
-            >
-              <span className={styles.characterHead} />
-              <span className={styles.characterBody} />
-            </div>
-            <span className={styles.sceneSymbol} aria-hidden="true">
-              {scene.symbol}
-            </span>
+            {artUrl ? (
+              <img
+                className={styles.generatedArtwork}
+                src={artUrl}
+                alt=""
+                aria-hidden="true"
+              />
+            ) : (
+              <>
+                <div className={styles.sceneTexture} aria-hidden="true" />
+                <div
+                  className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]}`}
+                  data-character-template={renderModel.character.silhouette}
+                  aria-hidden="true"
+                >
+                  <span className={styles.characterHead} />
+                  <span className={styles.characterBody} />
+                </div>
+                <span className={styles.sceneSymbol} aria-hidden="true">
+                  {scene.symbol}
+                </span>
+              </>
+            )}
           </div>
 
           <div
