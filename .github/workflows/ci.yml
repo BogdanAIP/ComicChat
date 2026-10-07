@@ -190,13 +190,6 @@ jobs:
             )::UUID
           $$;
 
-          CREATE TABLE public."user" (
-            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-            username TEXT,
-            email TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-
           GRANT USAGE ON SCHEMA public TO authenticated;
           GRANT USAGE ON SCHEMA public TO service_role;
           SQL
@@ -319,29 +312,6 @@ jobs:
           supabase start --exclude studio,inbucket,logflare,vector,supavisor
           supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
 
-      - name: Bootstrap least-privilege legacy profile table for MCP acceptance
-        env:
-          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
-        run: |
-          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE TABLE IF NOT EXISTS public."user" (
-            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-            username TEXT,
-            email TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-
-          ALTER TABLE public."user" ENABLE ROW LEVEL SECURITY;
-          GRANT SELECT ON public."user" TO authenticated;
-
-          DROP POLICY IF EXISTS pr23_user_select_self ON public."user";
-          CREATE POLICY pr23_user_select_self
-            ON public."user"
-            FOR SELECT
-            TO authenticated
-            USING (id = auth.uid());
-          SQL
-
       - name: Serve authenticated ComicChat MCP function
         run: |
           supabase functions serve comicchat-mcp > /tmp/comicchat-mcp.log 2>&1 &
@@ -411,19 +381,6 @@ jobs:
         run: |
           supabase start --exclude studio,storage-api,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
           supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
-
-      - name: Bootstrap legacy profile table required by user discovery
-        env:
-          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
-        run: |
-          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE TABLE IF NOT EXISTS public."user" (
-            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-            username TEXT,
-            email TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-          SQL
 
       - name: Verify private Broadcast authorization
         env:
