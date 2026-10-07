@@ -102,9 +102,13 @@ BEGIN
         WHERE schemaname = 'realtime'
           AND tablename = 'messages'
           AND cmd = 'INSERT'
-          AND roles @> ARRAY['authenticated']::NAME[]
+          AND permissive = 'PERMISSIVE'
+          AND (
+              roles @> ARRAY['authenticated']::NAME[]
+              OR roles @> ARRAY['public']::NAME[]
+          )
     ) THEN
-        RAISE EXCEPTION 'PR02_ASSERT: authenticated clients must not send ComicChat Broadcasts directly';
+        RAISE EXCEPTION 'PR02_ASSERT: permissive authenticated/public Broadcast INSERT policy defeats receive-only intent';
     END IF;
 
     IF NOT EXISTS (

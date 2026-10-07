@@ -77,6 +77,9 @@ jobs:
       - name: PR-17 explicit conversation-read boundaries
         run: npm run privacy:pr17
 
+      - name: PR-18 negative-security matrix boundaries
+        run: npm run security:pr18
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -194,6 +197,9 @@ jobs:
       - name: Apply PR-17 conversation-read migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007182000_pr17_conversation_read_boundary.sql
 
+      - name: Apply PR-18 receive-only Realtime migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007211000_pr18_realtime_receive_only.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -220,6 +226,9 @@ jobs:
 
       - name: Run PR-17 conversation-read IDOR integration
         run: bash supabase/tests/pr17_conversation_read_integration.sh
+
+      - name: Run PR-18 PostgreSQL negative-security matrix
+        run: bash supabase/tests/pr18_negative_security_matrix.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
@@ -327,6 +336,13 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: node supabase/tests/pr02_realtime_integration.mjs
+
+      - name: Run PR-18 Realtime negative-security matrix
+        env:
+          SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
+        run: node supabase/tests/pr18_realtime_negative_security.mjs
 
       - name: Show local Supabase diagnostics on failure
         if: failure()
