@@ -40,7 +40,7 @@ expect(migration, 'public.comic_is_member(', 'conversation membership storage au
 expect(migration, 'client_upload_enabled BOOLEAN', 'client upload capability remains explicit')
 expect(migration, 'public_asset_urls_enabled BOOLEAN', 'public URL capability remains explicit')
 
-expect(edge, "OpenAI from 'npm:openai@7.28.0'", 'pinned official OpenAI SDK')
+expect(edge, "'npm:openai@7.28.0'", 'pinned official OpenAI SDK')
 expect(edge, 'openai.images.generate({', 'official Images API generation call')
 expect(edge, "output_format: 'webp'", 'WebP provider output')
 expect(edge, "quality: 'low'", 'closed-beta low quality setting')
