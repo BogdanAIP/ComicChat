@@ -13,8 +13,8 @@ const roadmap = read('ROADMAP.md')
 const ci = read('.github/workflows/ci.yml')
 const pkg = read('package.json')
 
-expect(test, '/auth/v1/admin/users', 'isolated fixture account creation')
-expect(test, '/auth/v1/token?grant_type=password', 'independent real user sign-in')
+expect(test, '/auth/v1/signup', 'ordinary fixture signup')
+expect(test, '/auth/v1/token?grant_type=password', 'independent user sign-in')
 expect(test, "method: 'tools/call'", 'actual MCP tool transport')
 expect(test, "authorization: `Bearer ${token}`", 'per-user bearer token')
 expect(test, "'comicchat_profile'", 'profile identity check')
@@ -27,12 +27,12 @@ expect(test, "'export_my_data'", 'export isolation')
 expect(test, 'C export leaked A-B conversation data', 'negative export assertion')
 expect(test, 'PR-23 authenticated MCP two-account isolation checks passed.', 'success marker')
 
-if (test.includes('console.log(tokens') || test.includes('console.log(serviceRoleKey')) {
+if (/console\.log\([^\n]*(token|password|anonKey|dbUrl)/i.test(test)) {
   throw new Error('PR-23 invariant missing: credentials must not be logged')
 }
 
 expect(docs, 'local/CI acceptance test', 'local-only scope')
-expect(docs, 'No service-role credential is sent to the MCP endpoint', 'service-role boundary')
+expect(docs, 'No database-admin credential is sent to the MCP endpoint', 'fixture privilege boundary')
 expect(docs, 'does not:', 'explicit non-goals')
 expect(roadmap, '| PR-23 |', 'roadmap PR-23 row')
 expect(ci, 'pr23_mcp_two_account_integration.mjs', 'MCP two-account test in CI')
