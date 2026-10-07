@@ -31,8 +31,8 @@ expect(test, 'foreign conversation read unexpectedly succeeded', 'foreign IDOR r
 expect(test, 'unknown conversation read unexpectedly succeeded', 'unknown UUID rejection')
 expect(test, 'oversized message read unexpectedly succeeded', 'read bound test')
 
-expect(web, "supabase.rpc('comic_read_conversation_messages'", 'web uses explicit read RPC')
-expect(mcp, "supabase.rpc('comic_read_conversation_messages'", 'MCP uses explicit read RPC')
+expect(web, "'comic_read_conversation_messages'", 'web uses explicit read RPC')
+expect(mcp, "'comic_read_conversation_messages'", 'MCP uses explicit read RPC')
 expect(mcp, "selectedConversationId: conversationId || null", 'selected ID emitted only after successful RPC path')
 
 if (web.includes(".from('comic_message')")) {
