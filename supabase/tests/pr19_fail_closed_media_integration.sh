@@ -116,11 +116,13 @@ READY="$(service_scalar "SELECT status FROM public.comic_complete_generation_job
 );")"
 [[ "${READY}" == "ready" ]]
 
-LOCATOR_COUNT="$("${PSQL[@]}" -c "
+LOCATOR_COUNT="$({
+  cat <<'SQL'
 SELECT COUNT(*)
 FROM public.comic_generation_job
 WHERE output_descriptor::text ~* '"(url|uri|public_url|signed_url|download_url|object_key|storage_key|bucket|storage_bucket)"[[:space:]]*:';
-")"
+SQL
+} | "${PSQL[@]}" | tail -n 1)"
 [[ "${LOCATOR_COUNT}" == "0" ]]
 
 CAPS="$(user_scalar "${A}" "SELECT client_upload_enabled::text || '|' || private_asset_storage_enabled::text || '|' || signed_asset_access_enabled::text || '|' || public_asset_urls_enabled::text || '|' || COALESCE(active_media_provider, 'none') || '|' || max_output_descriptor_bytes::text FROM public.comic_get_media_capabilities();")"
