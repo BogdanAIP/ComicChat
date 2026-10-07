@@ -8,6 +8,14 @@
 -- remains bounded at 5 by the existing comic_generation_job constraint.
 
 ALTER TABLE public.comic_usage_ledger
+    ADD COLUMN IF NOT EXISTS request_id UUID;
+
+CREATE UNIQUE INDEX IF NOT EXISTS comic_usage_ledger_retry_request_id_idx
+    ON public.comic_usage_ledger(job_id, request_id)
+    WHERE event_type = 'retry_requested'
+      AND request_id IS NOT NULL;
+
+ALTER TABLE public.comic_usage_ledger
     DROP CONSTRAINT IF EXISTS comic_usage_ledger_event_type_check;
 
 ALTER TABLE public.comic_usage_ledger
@@ -23,7 +31,8 @@ ALTER TABLE public.comic_usage_ledger
 
 CREATE OR REPLACE FUNCTION public.comic_retry_failed_generation(
     p_message_id UUID,
-    p_expected_attempt_no INTEGER
+    p_expected_attempt_no INTEGER,
+    p_request_id UUID
 )
 RETURNS public.comic_generation_job
 LANGUAGE plpgsql
@@ -47,7 +56,8 @@ BEGIN
 
     IF p_message_id IS NULL
        OR p_expected_attempt_no IS NULL
-       OR p_expected_attempt_no < 0 THEN
+       OR p_expected_attempt_no < 0
+       OR p_request_id IS NULL THEN
         RAISE EXCEPTION 'invalid_retry_request' USING ERRCODE = '22023';
     END IF;
 
@@ -62,6 +72,18 @@ BEGIN
         -- Keep foreign-existing and nonexistent message IDs externally
         -- indistinguishable for this sender-only action.
         RAISE EXCEPTION 'generation_job_not_found' USING ERRCODE = '42501';
+    END IF;
+
+    -- Stable cross-surface idempotency: once this request UUID was accepted
+    -- for this job, replaying it is forever a no-op even after later attempts.
+    IF EXISTS (
+        SELECT 1
+        FROM public.comic_usage_ledger AS l
+        WHERE l.job_id = current_job.id
+          AND l.event_type = 'retry_requested'
+          AND l.request_id = p_request_id
+    ) THEN
+        RETURN current_job;
     END IF;
 
     -- A duplicate network request that arrives after the accepted retry has
@@ -139,6 +161,7 @@ BEGIN
         billing_source,
         attempt_no,
         event_type,
+        request_id,
         billable_units,
         cost_microunits,
         metadata
@@ -151,6 +174,7 @@ BEGIN
         current_job.billing_source,
         current_job.attempt_count,
         'retry_requested',
+        p_request_id,
         0,
         0,
         pg_catalog.jsonb_build_object(
@@ -185,7 +209,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.comic_retry_failed_generation(UUID, INTEGER)
+REVOKE ALL ON FUNCTION public.comic_retry_failed_generation(UUID, INTEGER, UUID)
     FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.comic_retry_failed_generation(UUID, INTEGER)
+GRANT EXECUTE ON FUNCTION public.comic_retry_failed_generation(UUID, INTEGER, UUID)
     TO authenticated;
