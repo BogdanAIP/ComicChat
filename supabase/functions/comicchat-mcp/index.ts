@@ -341,6 +341,34 @@ Deno.serve(
         )
 
 
+
+        server.registerTool(
+          'export_my_data',
+          {
+            title: 'Export my ComicChat data',
+            description:
+              'Return the authenticated user\'s self-service ComicChat export. Use only when the user explicitly asks to export or inspect their own data because the result can contain private conversation history.',
+            inputSchema: {},
+            outputSchema: {
+              export: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_export_my_data')
+            if (error) fail(error)
+            if (!data || typeof data !== 'object') {
+              throw new Error('comic_export_my_data returned no export')
+            }
+            return jsonResult({ export: data })
+          }
+        )
+
         server.registerTool(
           'list_blocked_users',
           {
