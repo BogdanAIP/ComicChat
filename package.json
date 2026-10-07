@@ -20,7 +20,8 @@
     "ux:pr12": "node scripts/pr12-blocking-ui-check.mjs",
     "safety:pr13": "node scripts/pr13-abuse-report-check.mjs",
     "safety:pr14": "node scripts/pr14-send-rate-limit-check.mjs",
-    "privacy:pr15": "node scripts/pr15-data-export-check.mjs"
+    "privacy:pr15": "node scripts/pr15-data-export-check.mjs",
+    "privacy:pr16": "node scripts/pr16-deletion-request-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
