@@ -469,6 +469,32 @@ Deno.serve(
         )
 
         server.registerTool(
+          'get_beta_safety_status',
+          {
+            title: 'Get ComicChat closed-beta safety status',
+            description:
+              'Read the authenticated ComicChat closed-beta safety disclosure. The current generation provider is mock; external generation, media storage, public publication, hard deletion and automated purge are disabled, and the retention duration is not defined.',
+            inputSchema: {},
+            outputSchema: {
+              status: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_get_beta_safety_status')
+            if (error) fail(error)
+            const status = Array.isArray(data) ? data[0] : data
+            if (!status) throw new Error('comic_get_beta_safety_status returned no state')
+            return jsonResult({ status })
+          }
+        )
+
+        server.registerTool(
           'get_media_capabilities',
           {
             title: 'Get ComicChat media capabilities',

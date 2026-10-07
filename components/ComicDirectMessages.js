@@ -115,6 +115,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     hard_delete_enabled: false,
   })
   const [accountStateBusy, setAccountStateBusy] = useState(false)
+  const [betaSafety, setBetaSafety] = useState(null)
 
   const selectedConversationId = selectedConversation?.conversation_id || null
   const selectedPartnerId = selectedConversation?.other_user_id || null
@@ -181,15 +182,29 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     return nextState
   }, [supabase])
 
+  const loadBetaSafety = useCallback(async () => {
+    const { data, error: rpcError } = await supabase.rpc('comic_get_beta_safety_status')
+
+    if (rpcError) {
+      console.error('comic_get_beta_safety_status failed', rpcError)
+      return null
+    }
+
+    const row = Array.isArray(data) ? data[0] : data
+    setBetaSafety(row || null)
+    return row || null
+  }, [supabase])
+
   useEffect(() => {
     const timer = setTimeout(() => {
       loadConversations()
       loadBlockedUsers()
       loadAccountState()
+      loadBetaSafety()
     }, 0)
 
     return () => clearTimeout(timer)
-  }, [loadAccountState, loadBlockedUsers, loadConversations])
+  }, [loadAccountState, loadBetaSafety, loadBlockedUsers, loadConversations])
 
   useEffect(() => {
     let cancelled = false
@@ -745,6 +760,19 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
             <p className={styles.accountNotice} role="status">
               Deletion requested. Existing history and data export remain available, but new chat interaction is disabled. Hard deletion is not enabled yet.
             </p>
+          )}
+          {betaSafety && (
+            <div className={styles.accountNotice} aria-label="Closed beta limits">
+              <strong>Closed beta limits</strong>
+              <br />
+              Generation provider: {betaSafety.generation_provider || 'unknown'}.
+              {' '}External generation: {betaSafety.external_generation_enabled ? 'enabled' : 'disabled'}.
+              {' '}Media storage: {betaSafety.media_storage_enabled ? 'enabled' : 'disabled'}.
+              {' '}Public publication: {betaSafety.public_publication_enabled ? 'enabled' : 'disabled'}.
+              {' '}Hard deletion: {betaSafety.hard_delete_enabled ? 'enabled' : 'disabled'}.
+              {' '}Automated purge: {betaSafety.automated_retention_purge_enabled ? 'enabled' : 'disabled'}.
+              {' '}Retention duration {betaSafety.retention_duration_defined ? 'is defined' : 'is not defined'}.
+            </div>
           )}
         </div>
 

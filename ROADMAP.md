@@ -140,6 +140,7 @@
 | PR-19 | Fail-closed media boundary: no locators/storage/public URLs until reviewed private media provider exists | PR-18 |
 | PR-20 | Snapshot-scoped bilateral consent for future public sharing; publication endpoint remains disabled | PR-19 |
 | PR-21 | Deterministic load/abuse concurrency harness for sender quota, nonce idempotency and generation-job dedupe | PR-20 |
+| PR-22 | Closed-beta safety disclosure, explicit retention/provider limitations and incident-response runbook | PR-21 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
