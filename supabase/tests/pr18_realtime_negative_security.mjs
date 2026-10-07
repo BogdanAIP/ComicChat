@@ -141,11 +141,14 @@ try {
   })
   await subscribeAllowed(ownConversation, 'member conversation topic')
 
-  const sendStatus = await ownConversation.send({
-    type: 'broadcast',
-    event: 'CLIENT_INJECT',
-    payload: { should_not_be_delivered: true },
-  })
+  const sendStatus = await Promise.race([
+    ownConversation.send({
+      type: 'broadcast',
+      event: 'CLIENT_INJECT',
+      payload: { should_not_be_delivered: true },
+    }),
+    sleep(5000).then(() => 'client_send_timeout'),
+  ])
   console.log(`client Broadcast transport status: ${sendStatus}`)
 
   await sleep(1500)
@@ -156,11 +159,11 @@ try {
   console.log('PR-18 Realtime negative-security matrix passed.')
 } finally {
   for (const c0 of [a, b, c, anonymous].filter(Boolean)) {
-    try { await c0.removeAllChannels() } catch {}
-    try { await c0.auth.signOut() } catch {}
+    try { await Promise.race([c0.removeAllChannels(), sleep(3000)]) } catch {}
+    try { await Promise.race([c0.auth.signOut(), sleep(3000)]) } catch {}
   }
   for (const id of ids) {
-    try { await service.auth.admin.deleteUser(id) } catch {}
+    try { await Promise.race([service.auth.admin.deleteUser(id), sleep(3000)]) } catch {}
   }
-  await service.removeAllChannels()
+  try { await Promise.race([service.removeAllChannels(), sleep(3000)]) } catch {}
 }
