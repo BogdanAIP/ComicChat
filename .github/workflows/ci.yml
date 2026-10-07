@@ -95,6 +95,9 @@ jobs:
       - name: PR-23 authenticated MCP two-account boundaries
         run: npm run acceptance:pr23
 
+      - name: PR-25 private image generation boundaries
+        run: npm run media:pr25
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -224,6 +227,9 @@ jobs:
       - name: Apply PR-22 beta safety disclosure migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007234500_pr22_beta_safety_disclosure.sql
 
+      - name: Apply PR-25 private image migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007235500_pr25_private_image_generation.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -266,6 +272,9 @@ jobs:
       - name: Run PR-22 beta safety disclosure integration
         run: bash supabase/tests/pr22_beta_safety_disclosure_integration.sh
 
+      - name: Run PR-25 generation provider integration
+        run: bash supabase/tests/pr25_generation_provider_integration.sh
+
   mcp-oauth:
     name: MCP OAuth discovery integration
     runs-on: ubuntu-latest
@@ -280,6 +289,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      - name: Install dependencies for private media acceptance
+        run: npm ci
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
@@ -288,7 +300,7 @@ jobs:
       - id: supabase
         name: Start local Supabase with Edge Runtime
         run: |
-          supabase start --exclude studio,storage-api,imgproxy,inbucket,logflare,vector,supavisor
+          supabase start --exclude studio,inbucket,logflare,vector,supavisor
           supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
 
       - name: Bootstrap least-privilege legacy profile table for MCP acceptance
@@ -328,6 +340,14 @@ jobs:
           SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: node supabase/tests/pr23_mcp_two_account_integration.mjs
+
+      - name: Run PR-25 private media authorization
+        env:
+          SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
+          DB_URL: ${{ steps.supabase.outputs.DB_URL }}
+        run: node supabase/tests/pr25_private_media_integration.mjs
 
       - name: Show MCP diagnostics on failure
         if: failure()
