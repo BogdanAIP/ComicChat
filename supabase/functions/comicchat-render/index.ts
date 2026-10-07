@@ -33,13 +33,9 @@ function json(value: Record<string, unknown>, status = 200) {
   })
 }
 
-function stableHash(value: string) {
-  let hash = 2166136261
-  for (const character of value) {
-    hash ^= character.codePointAt(0) || 0
-    hash = Math.imul(hash, 16777619) >>> 0
-  }
-  return hash >>> 0
+function uuidSeed(value: string) {
+  const prefix = value.replaceAll('-', '').slice(0, 8)
+  return Number.parseInt(prefix, 16) >>> 0
 }
 
 function pick<T>(items: readonly T[], hash: number, shift: number) {
@@ -47,7 +43,7 @@ function pick<T>(items: readonly T[], hash: number, shift: number) {
 }
 
 function characterProfile(senderId: string) {
-  const hash = stableHash(senderId)
+  const hash = uuidSeed(senderId)
   const hair = pick(
     ['short wavy dark hair', 'short straight dark hair', 'curly chestnut hair', 'dark bob haircut'],
     hash,
@@ -73,7 +69,7 @@ function characterProfile(senderId: string) {
 }
 
 function styleProfile(conversationId: string) {
-  const hash = stableHash(conversationId)
+  const hash = uuidSeed(conversationId)
   return pick(
     [
       'clean modern graphic-novel art, expressive faces, cinematic soft lighting',
