@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { renderTemplate } from '../utils/templateRenderer.mjs'
 import styles from '../styles/ComicDirectMessages.module.css'
 
@@ -25,13 +25,13 @@ export default function ComicPanel({
   preview = false,
   onReport = null,
   reporting = false,
+  onRetryGeneration = null,
+  retrying = false,
   supabase = null,
   mediaStorageEnabled = false,
 }) {
   const [copyState, setCopyState] = useState('idle')
-  const [retryPreviewing, setRetryPreviewing] = useState(false)
   const [privateArt, setPrivateArt] = useState(null)
-  const retryTimerRef = useRef(null)
   const renderModel = renderTemplate({
     messageId,
     text,
@@ -42,19 +42,7 @@ export default function ComicPanel({
   })
   const scene = renderModel.scene
   const persistedState = renderModel.state
-  const state = retryPreviewing
-    ? {
-        key: 'retry-preview',
-        label: 'Retry preview',
-        announcement: 'Demo visual retry is previewing on the same message',
-      }
-    : persistedState
-
-  useEffect(() => {
-    return () => {
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-    }
-  }, [])
+  const state = persistedState
 
   const privateArtKey =
     !preview &&
@@ -102,15 +90,6 @@ export default function ComicPanel({
 
   const exactText = renderModel.text
   const accessibleId = `comic-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`
-
-  const retryPreview = () => {
-    if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
-    setRetryPreviewing(true)
-    retryTimerRef.current = setTimeout(() => {
-      setRetryPreviewing(false)
-      retryTimerRef.current = null
-    }, 1200)
-  }
 
   const copyOriginal = async () => {
     try {
@@ -223,14 +202,15 @@ export default function ComicPanel({
               </button>
             )}
 
-            {!preview && state.key === 'failed' && (
+            {!preview && mine && state.key === 'failed' && onRetryGeneration && (
               <button
                 type="button"
                 className={styles.comicAction}
-                onClick={retryPreview}
-                aria-label="Preview a visual retry on this same message without changing server state"
+                onClick={() => onRetryGeneration(messageId)}
+                disabled={retrying}
+                aria-label="Retry rendering this same ComicChat message"
               >
-                Retry preview
+                {retrying ? 'Retrying…' : 'Retry render'}
               </button>
             )}
           </div>
