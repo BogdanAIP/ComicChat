@@ -24,7 +24,8 @@
     "privacy:pr16": "node scripts/pr16-deletion-request-check.mjs",
     "privacy:pr17": "node scripts/pr17-conversation-read-check.mjs",
     "security:pr18": "node scripts/pr18-negative-security-check.mjs",
-    "security:pr19": "node scripts/pr19-fail-closed-media-check.mjs"
+    "security:pr19": "node scripts/pr19-fail-closed-media-check.mjs",
+    "privacy:pr20": "node scripts/pr20-public-snapshot-consent-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
