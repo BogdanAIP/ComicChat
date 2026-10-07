@@ -27,7 +27,8 @@
     "security:pr19": "node scripts/pr19-fail-closed-media-check.mjs",
     "privacy:pr20": "node scripts/pr20-public-snapshot-consent-check.mjs",
     "stress:pr21": "node scripts/pr21-load-abuse-check.mjs",
-    "safety:pr22": "node scripts/pr22-beta-safety-check.mjs"
+    "safety:pr22": "node scripts/pr22-beta-safety-check.mjs",
+    "acceptance:pr23": "node scripts/pr23-mcp-two-account-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
