@@ -72,7 +72,13 @@ RENDERING_STATE="$("${PSQL[@]}" -c "SELECT status || '|' || lease_token::text FR
 if service_scalar "SELECT status FROM public.comic_complete_generation_job(
   '${JOB}'::uuid,
   '${LEASE}'::uuid,
-  '{"illustration":{"kind":"mock-comic-art","public_url":"https://example.invalid/a.png"}}'::jsonb
+  pg_catalog.jsonb_build_object(
+    'illustration',
+    pg_catalog.jsonb_build_object(
+      'kind', 'mock-comic-art',
+      'public_url', 'https://example.invalid/a.png'
+    )
+  )
 );" >/dev/null 2>&1; then
   echo "public_url unexpectedly persisted while media is disabled" >&2
   exit 1
@@ -84,7 +90,13 @@ STATUS_AFTER_URL="$("${PSQL[@]}" -c "SELECT status FROM public.comic_generation_
 if service_scalar "SELECT status FROM public.comic_complete_generation_job(
   '${JOB}'::uuid,
   '${LEASE}'::uuid,
-  '{"illustration":{"kind":"mock-comic-art","object_key":"private/messages/a.png"}}'::jsonb
+  pg_catalog.jsonb_build_object(
+    'illustration',
+    pg_catalog.jsonb_build_object(
+      'kind', 'mock-comic-art',
+      'object_key', 'private/messages/a.png'
+    )
+  )
 );" >/dev/null 2>&1; then
   echo "object_key unexpectedly persisted while media is disabled" >&2
   exit 1
@@ -93,7 +105,14 @@ fi
 READY="$(service_scalar "SELECT status FROM public.comic_complete_generation_job(
   '${JOB}'::uuid,
   '${LEASE}'::uuid,
-  '{"illustration":{"kind":"mock-comic-art","version":1,"containsText":false}}'::jsonb
+  pg_catalog.jsonb_build_object(
+    'illustration',
+    pg_catalog.jsonb_build_object(
+      'kind', 'mock-comic-art',
+      'version', 1,
+      'containsText', FALSE
+    )
+  )
 );")"
 [[ "${READY}" == "ready" ]]
 
@@ -117,7 +136,7 @@ SQL
   exit 1
 fi
 
-if user_scalar "${A}" "UPDATE public.comic_generation_job SET output_descriptor = '{\"public_url\":\"https://example.invalid\"}'::jsonb WHERE id = '${JOB}'::uuid;" >/dev/null 2>&1; then
+if user_scalar "${A}" "UPDATE public.comic_generation_job SET output_descriptor = pg_catalog.jsonb_build_object('public_url', 'https://example.invalid') WHERE id = '${JOB}'::uuid;" >/dev/null 2>&1; then
   echo "authenticated browser unexpectedly mutated generation output" >&2
   exit 1
 fi
