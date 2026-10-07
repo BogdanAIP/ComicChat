@@ -349,10 +349,24 @@ jobs:
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: node supabase/tests/pr25_private_media_integration.mjs
 
+      - name: Run PR-25 render Edge Runtime smoke
+        run: |
+          test ! -f /tmp/comicchat-mcp.pid || kill "$(cat /tmp/comicchat-mcp.pid)" || true
+          supabase functions serve comicchat-render > /tmp/comicchat-render.log 2>&1 &
+          echo $! > /tmp/comicchat-render.pid
+          for attempt in {1..20}; do
+            if curl -sS -o /dev/null http://127.0.0.1:54321/functions/v1/comicchat-render; then
+              break
+            fi
+            sleep 1
+          done
+          bash supabase/tests/pr25_render_edge_smoke.sh
+
       - name: Show MCP diagnostics on failure
         if: failure()
         run: |
           cat /tmp/comicchat-mcp.log || true
+          cat /tmp/comicchat-render.log || true
           supabase status || true
           docker ps -a || true
 
@@ -360,6 +374,7 @@ jobs:
         if: always()
         run: |
           test ! -f /tmp/comicchat-mcp.pid || kill "$(cat /tmp/comicchat-mcp.pid)" || true
+          test ! -f /tmp/comicchat-render.pid || kill "$(cat /tmp/comicchat-render.pid)" || true
           supabase stop --no-backup || true
 
   realtime:
