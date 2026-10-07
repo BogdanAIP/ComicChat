@@ -153,6 +153,7 @@ ComicChat остаётся отдельным продуктом и репози
 | PR-23 | Authenticated MCP two-account transport acceptance with cross-account tool isolation | PR-22 |
 | PR-24 | Reuse-first fast-track audit + mandatory Market Skills/Resolver development gate | PR-23 |
 | PR-25 | Opt-in official image generation + private Supabase media vertical slice | PR-24 |
+| PR-26 | Provider-native conversation character reference continuity with private edit inputs | PR-25 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
