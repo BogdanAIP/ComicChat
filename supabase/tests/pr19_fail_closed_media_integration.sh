@@ -43,9 +43,31 @@ CONVERSATION="$(user_scalar "${A}" "SELECT public.comic_ensure_direct_conversati
 MESSAGE="$(user_scalar "${A}" "SELECT id FROM public.comic_send_message('${CONVERSATION}'::uuid, '19190000-0000-4000-8000-000000000001'::uuid, 'media guard test');")"
 [[ -n "${CONVERSATION}" && -n "${MESSAGE}" ]]
 
-CLAIM="$(service_scalar "SELECT id::text || '|' || lease_token::text FROM public.comic_claim_generation_job('mock', 60) WHERE message_id = '${MESSAGE}'::uuid;")"
-IFS='|' read -r JOB LEASE <<< "${CLAIM}"
-[[ -n "${JOB}" && -n "${LEASE}" ]]
+JOB="$("${PSQL[@]}" -c "SELECT id FROM public.comic_generation_job WHERE message_id = '${MESSAGE}'::uuid;")"
+LEASE="19190000-0000-4000-8000-000000000099"
+[[ -n "${JOB}" ]]
+
+# Arrange only this test's job into a valid worker-owned rendering state.
+# Do not use comic_claim_generation_job() here: the shared CI database may
+# contain older queued jobs from previous integration cases, and the worker
+# claim API intentionally chooses the oldest global candidate.
+"${PSQL[@]}" <<SQL
+UPDATE public.comic_generation_job
+SET
+  status = 'rendering',
+  attempt_count = 1,
+  lease_token = '${LEASE}'::uuid,
+  lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes',
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = '${JOB}'::uuid;
+
+UPDATE public.comic_message
+SET status = 'rendering', updated_at = CURRENT_TIMESTAMP
+WHERE id = '${MESSAGE}'::uuid;
+SQL
+
+RENDERING_STATE="$("${PSQL[@]}" -c "SELECT status || '|' || lease_token::text FROM public.comic_generation_job WHERE id = '${JOB}'::uuid;")"
+[[ "${RENDERING_STATE}" == "rendering|${LEASE}" ]]
 
 if service_scalar "SELECT status FROM public.comic_complete_generation_job(
   '${JOB}'::uuid,
@@ -95,7 +117,7 @@ SQL
   exit 1
 fi
 
-if user_scalar "${A}" "UPDATE public.comic_generation_job SET output_descriptor = '{"public_url":"https://example.invalid"}'::jsonb WHERE id = '${JOB}'::uuid;" >/dev/null 2>&1; then
+if user_scalar "${A}" "UPDATE public.comic_generation_job SET output_descriptor = '{\"public_url\":\"https://example.invalid\"}'::jsonb WHERE id = '${JOB}'::uuid;" >/dev/null 2>&1; then
   echo "authenticated browser unexpectedly mutated generation output" >&2
   exit 1
 fi
