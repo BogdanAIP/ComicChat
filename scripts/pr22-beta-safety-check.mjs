@@ -34,7 +34,8 @@ expect(docs, 'does not:', 'explicit non-goals')
 
 expect(web, "'comic_get_beta_safety_status'", 'web loads safety disclosure')
 expect(web, 'Closed beta limits', 'web disclosure heading')
-expect(web, 'Retention duration is not defined', 'web retention disclosure')
+expect(web, "betaSafety.retention_duration_defined ? 'is defined' : 'is not defined'", 'web retention disclosure derives from RPC state')
+expect(web, "betaSafety.generation_provider || 'unknown'", 'web provider disclosure derives from RPC state')
 expect(mcp, "'get_beta_safety_status'", 'MCP disclosure tool')
 expect(mcp, 'retention duration is not defined', 'MCP disclosure description')
 
