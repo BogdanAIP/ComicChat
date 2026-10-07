@@ -80,6 +80,9 @@ jobs:
       - name: PR-18 negative-security matrix boundaries
         run: npm run security:pr18
 
+      - name: PR-19 fail-closed media boundaries
+        run: npm run security:pr19
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -200,6 +203,9 @@ jobs:
       - name: Apply PR-18 receive-only Realtime migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007211000_pr18_realtime_receive_only.sql
 
+      - name: Apply PR-19 fail-closed media migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261007223000_pr19_fail_closed_media.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -229,6 +235,9 @@ jobs:
 
       - name: Run PR-18 PostgreSQL negative-security matrix
         run: bash supabase/tests/pr18_negative_security_matrix.sh
+
+      - name: Run PR-19 fail-closed media integration
+        run: bash supabase/tests/pr19_fail_closed_media_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
