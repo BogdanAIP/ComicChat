@@ -155,4 +155,18 @@ A_STATE="$(user_scalar "${A}" "SELECT status FROM public.comic_get_my_account_st
 [[ "${A_EXPORT_USER}" == "${A}" ]]
 [[ "${A_STATE}" == "active" ]]
 
+REALTIME_DENY_POLICY="$("${PSQL[@]}" -c "
+SELECT COUNT(*)
+FROM pg_policies
+WHERE schemaname = 'realtime'
+  AND tablename = 'messages'
+  AND policyname = 'comicchat_deny_client_realtime_insert'
+  AND cmd = 'INSERT'
+  AND permissive = 'RESTRICTIVE'
+  AND roles @> ARRAY['authenticated']::NAME[]
+  AND roles @> ARRAY['anon']::NAME[]
+  AND COALESCE(with_check, '') ~* 'false';
+")"
+[[ "${REALTIME_DENY_POLICY}" == "1" ]]
+
 echo "PR-18 PostgreSQL negative-security matrix passed."
