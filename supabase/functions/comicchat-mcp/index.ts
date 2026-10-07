@@ -341,6 +341,32 @@ Deno.serve(
 
 
         server.registerTool(
+          'get_media_capabilities',
+          {
+            title: 'Get ComicChat media capabilities',
+            description:
+              'Read the current ComicChat media capability gate. Media storage and public media URLs are disabled; this tool does not upload, sign, publish, or fetch media.',
+            inputSchema: {},
+            outputSchema: {
+              capabilities: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_get_media_capabilities')
+            if (error) fail(error)
+            const capabilities = Array.isArray(data) ? data[0] : data
+            if (!capabilities) throw new Error('comic_get_media_capabilities returned no state')
+            return jsonResult({ capabilities })
+          }
+        )
+
+        server.registerTool(
           'get_account_deletion_status',
           {
             title: 'Get ComicChat account deletion status',
