@@ -44,6 +44,15 @@ REVOKE ALL ON TABLE public.comic_generation_config
     FROM PUBLIC, anon, authenticated;
 GRANT SELECT, UPDATE ON TABLE public.comic_generation_config TO service_role;
 
+DROP POLICY IF EXISTS comic_generation_config_service_role
+    ON public.comic_generation_config;
+CREATE POLICY comic_generation_config_service_role
+    ON public.comic_generation_config
+    FOR ALL
+    TO service_role
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
 -- Existing messages keep their original provider. Only newly-created jobs read
 -- the activation gate. The default remains mock until an operator explicitly
 -- enables external generation.
