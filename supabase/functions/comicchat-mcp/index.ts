@@ -341,6 +341,134 @@ Deno.serve(
 
 
         server.registerTool(
+          'list_public_snapshot_requests',
+          {
+            title: 'List ComicChat public-sharing snapshot requests',
+            description:
+              'List active snapshot-scoped sharing consent requests for one private conversation. This is consent state only; publication remains disabled.',
+            inputSchema: {
+              conversationId: z.string().uuid(),
+            },
+            outputSchema: {
+              requests: z.array(z.record(z.string(), z.unknown())),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ conversationId }) => {
+            const { data, error } = await supabase.rpc(
+              'comic_list_public_snapshot_requests',
+              { p_conversation_id: conversationId }
+            )
+            if (error) fail(error)
+            return jsonResult({ requests: data || [] })
+          }
+        )
+
+        server.registerTool(
+          'propose_public_snapshot',
+          {
+            title: 'Propose a ComicChat snapshot for future public sharing',
+            description:
+              'Create or reuse a sharing-consent request for one exact conversation snapshot through a known message ID. Creating the proposal records the authenticated proposer\'s consent, but publication remains disabled and the other participant must separately consent.',
+            inputSchema: {
+              conversationId: z.string().uuid(),
+              throughMessageId: z.string().uuid(),
+            },
+            outputSchema: {
+              requestId: z.string().uuid(),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ conversationId, throughMessageId }) => {
+            const { data, error } = await supabase.rpc(
+              'comic_propose_public_snapshot',
+              {
+                p_conversation_id: conversationId,
+                p_through_message_id: throughMessageId,
+              }
+            )
+            if (error) fail(error)
+            if (!data) throw new Error('comic_propose_public_snapshot returned no request')
+            return jsonResult({ requestId: data })
+          }
+        )
+
+        server.registerTool(
+          'set_public_snapshot_consent',
+          {
+            title: 'Set my ComicChat snapshot-sharing consent',
+            description:
+              'Explicitly consent to or revoke consent from one existing snapshot request. This never publishes anything; publication remains disabled.',
+            inputSchema: {
+              requestId: z.string().uuid(),
+              consented: z.boolean(),
+            },
+            outputSchema: {
+              consented: z.boolean(),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ requestId, consented }) => {
+            const { data, error } = await supabase.rpc(
+              'comic_set_public_snapshot_consent',
+              {
+                p_request_id: requestId,
+                p_consented: consented,
+              }
+            )
+            if (error) fail(error)
+            return jsonResult({ consented: Boolean(data) })
+          }
+        )
+
+        server.registerTool(
+          'cancel_public_snapshot_request',
+          {
+            title: 'Cancel a ComicChat snapshot-sharing request',
+            description:
+              'Permanently cancel one active snapshot-sharing consent request as a conversation member. A new explicit proposal is required afterward; publication remains disabled.',
+            inputSchema: {
+              requestId: z.string().uuid(),
+            },
+            outputSchema: {
+              cancelled: z.boolean(),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: true,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ requestId }) => {
+            const { data, error } = await supabase.rpc(
+              'comic_cancel_public_snapshot_request',
+              { p_request_id: requestId }
+            )
+            if (error) fail(error)
+            return jsonResult({ cancelled: Boolean(data) })
+          }
+        )
+
+        server.registerTool(
           'get_media_capabilities',
           {
             title: 'Get ComicChat media capabilities',

@@ -138,6 +138,7 @@
 | PR-17 | Explicit private conversation-read RPC with uniform anti-enumeration failure across web + MCP | PR-16 |
 | PR-18 | Negative-security matrix + explicit receive-only Realtime guard with end-to-end client Broadcast non-delivery test | PR-17 |
 | PR-19 | Fail-closed media boundary: no locators/storage/public URLs until reviewed private media provider exists | PR-18 |
+| PR-20 | Snapshot-scoped bilateral consent for future public sharing; publication endpoint remains disabled | PR-19 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
