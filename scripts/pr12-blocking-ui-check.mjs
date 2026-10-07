@@ -10,6 +10,12 @@ function expect(source, needle, label) {
   }
 }
 
+function expectOneOf(source, needles, label) {
+  if (!needles.some((needle) => source.includes(needle))) {
+    throw new Error(`PR-12 invariant missing: ${label}`)
+  }
+}
+
 const component = read('components/ComicDirectMessages.js')
 const styles = read('styles/ComicDirectMessages.module.css')
 const roadmap = read('ROADMAP.md')
@@ -22,8 +28,19 @@ expect(component, 'p_user_id: selectedPartnerId', 'exact selected partner identi
 expect(component, 'selectedBlockedByMe', 'selected block state')
 expect(component, "window.confirm(", 'explicit block confirmation')
 expect(component, 'Existing history stays visible', 'non-destructive block copy')
-expect(component, 'disabled={selectedBlockedByMe}', 'blocked composer disabled')
-expect(component, 'busy || selectedBlockedByMe || !draft.trim()', 'blocked send button disabled')
+expectOneOf(
+  component,
+  ['disabled={selectedBlockedByMe}', 'disabled={deletionPending || selectedBlockedByMe}'],
+  'blocked composer disabled'
+)
+expectOneOf(
+  component,
+  [
+    'busy || selectedBlockedByMe || !draft.trim()',
+    'busy || deletionPending || selectedBlockedByMe || !draft.trim()',
+  ],
+  'blocked send button disabled'
+)
 expect(component, "includes('interaction_blocked')", 'server-side opposite block surfaced')
 expect(component, 'setDraft(originalText)', 'failed send restores draft')
 expect(component, 'messages.map((message)', 'history rendering preserved')

@@ -109,12 +109,19 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   const [reportStatus, setReportStatus] = useState('')
   const [exportBusy, setExportBusy] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
+  const [accountState, setAccountState] = useState({
+    status: 'active',
+    deletion_requested_at: null,
+    hard_delete_enabled: false,
+  })
+  const [accountStateBusy, setAccountStateBusy] = useState(false)
 
   const selectedConversationId = selectedConversation?.conversation_id || null
   const selectedPartnerId = selectedConversation?.other_user_id || null
   const selectedBlockedByMe = selectedPartnerId
     ? blockedUserIds.includes(selectedPartnerId)
     : false
+  const deletionPending = accountState.status === 'deletion_requested'
 
   useEffect(() => {
     selectedConversationRef.current = selectedConversation
@@ -155,14 +162,34 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     return ids
   }, [supabase])
 
+  const loadAccountState = useCallback(async () => {
+    const { data, error: rpcError } = await supabase.rpc('comic_get_my_account_state')
+
+    if (rpcError) {
+      console.error('comic_get_my_account_state failed', rpcError)
+      setError('Unable to load account deletion status.')
+      return null
+    }
+
+    const row = Array.isArray(data) ? data[0] : data
+    const nextState = row || {
+      status: 'active',
+      deletion_requested_at: null,
+      hard_delete_enabled: false,
+    }
+    setAccountState(nextState)
+    return nextState
+  }, [supabase])
+
   useEffect(() => {
     const timer = setTimeout(() => {
       loadConversations()
       loadBlockedUsers()
+      loadAccountState()
     }, 0)
 
     return () => clearTimeout(timer)
-  }, [loadBlockedUsers, loadConversations])
+  }, [loadAccountState, loadBlockedUsers, loadConversations])
 
   useEffect(() => {
     let cancelled = false
@@ -322,7 +349,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
   useEffect(() => {
     const trimmed = query.trim()
 
-    if (trimmed.length < 2) return undefined
+    if (deletionPending || trimmed.length < 2) return undefined
 
     let cancelled = false
 
@@ -346,9 +373,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [query, supabase])
+  }, [deletionPending, query, supabase])
 
   const openConversationWith = useCallback(async (partnerId) => {
+    if (deletionPending) return
+
     setError('')
     setBusy(true)
 
@@ -383,7 +412,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     } finally {
       setBusy(false)
     }
-  }, [loadConversations, supabase])
+  }, [deletionPending, loadConversations, supabase])
 
   useImperativeHandle(
     forwardedRef,
@@ -513,6 +542,70 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     }
   }
 
+  const requestAccountDeletion = async () => {
+    if (accountStateBusy || deletionPending) return
+
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        'Request ComicChat account deletion? New chat interaction will stop immediately, but shared conversation history is retained. This request can be cancelled; hard deletion is not enabled yet.'
+      )
+    ) {
+      return
+    }
+
+    setError('')
+    setAccountStateBusy(true)
+
+    try {
+      const { data, error: requestError } = await supabase.rpc(
+        'comic_request_account_deletion'
+      )
+      if (requestError) throw requestError
+
+      const row = Array.isArray(data) ? data[0] : data
+      setAccountState(row || {
+        status: 'deletion_requested',
+        deletion_requested_at: new Date().toISOString(),
+        hard_delete_enabled: false,
+      })
+      setQuery('')
+      setSearchResults([])
+      setDraft('')
+    } catch (requestError) {
+      console.error('comic_request_account_deletion failed', requestError)
+      setError('Unable to request account deletion.')
+    } finally {
+      setAccountStateBusy(false)
+    }
+  }
+
+  const cancelAccountDeletion = async () => {
+    if (accountStateBusy || !deletionPending) return
+
+    setError('')
+    setAccountStateBusy(true)
+
+    try {
+      const { data, error: cancelError } = await supabase.rpc(
+        'comic_cancel_account_deletion'
+      )
+      if (cancelError) throw cancelError
+
+      const row = Array.isArray(data) ? data[0] : data
+      setAccountState(row || {
+        status: 'active',
+        deletion_requested_at: null,
+        hard_delete_enabled: false,
+      })
+    } catch (cancelError) {
+      console.error('comic_cancel_account_deletion failed', cancelError)
+      setError('Unable to cancel the deletion request.')
+    } finally {
+      setAccountStateBusy(false)
+    }
+  }
+
   const send = async (event) => {
     event.preventDefault()
 
@@ -521,6 +614,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       !selectedConversationId ||
       !originalText.trim() ||
       busy ||
+      deletionPending ||
       selectedBlockedByMe
     ) return
 
@@ -564,12 +658,18 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       const serverMessage = String(sendError?.message || '')
       const blocked = serverMessage.includes('interaction_blocked')
       const rateLimited = serverMessage.includes('send_rate_limited')
+      const deletionRequested = serverMessage.includes('account_deletion_pending')
+      const accountUnavailable = serverMessage.includes('account_unavailable')
       setError(
-        blocked
-          ? 'New messages are blocked for this conversation. Your text is still in the composer.'
-          : rateLimited
-            ? 'Too many messages were sent recently. Try again shortly; your text is still in the composer.'
-            : 'Message was not sent. Your text is still in the composer.'
+        deletionRequested
+          ? 'Your deletion request makes ComicChat read-only. Cancel it before sending new messages.'
+          : accountUnavailable
+            ? 'This account is unavailable for new ComicChat messages.'
+            : blocked
+              ? 'New messages are blocked for this conversation. Your text is still in the composer.'
+              : rateLimited
+                ? 'Too many messages were sent recently. Try again shortly; your text is still in the composer.'
+                : 'Message was not sent. Your text is still in the composer.'
       )
     } finally {
       setBusy(false)
@@ -599,8 +699,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
             className={styles.searchInput}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Type at least 2 characters"
+            placeholder={
+              deletionPending ? 'Search disabled while deletion is requested' : 'Type at least 2 characters'
+            }
             autoComplete="off"
+            disabled={deletionPending}
           />
         </label>
 
@@ -613,9 +716,33 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
           >
             {exportBusy ? 'Preparing export…' : 'Export my data'}
           </button>
+          {deletionPending ? (
+            <button
+              type="button"
+              className={styles.safetyButton}
+              onClick={cancelAccountDeletion}
+              disabled={accountStateBusy}
+            >
+              {accountStateBusy ? 'Updating…' : 'Cancel deletion request'}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.safetyButton}
+              onClick={requestAccountDeletion}
+              disabled={accountStateBusy}
+            >
+              {accountStateBusy ? 'Updating…' : 'Request account deletion'}
+            </button>
+          )}
           {exportStatus && (
             <p className={styles.exportStatus} role="status">
               {exportStatus}
+            </p>
+          )}
+          {deletionPending && (
+            <p className={styles.accountNotice} role="status">
+              Deletion requested. Existing history and data export remain available, but new chat interaction is disabled. Hard deletion is not enabled yet.
             </p>
           )}
         </div>
@@ -628,7 +755,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                 key={user.user_id}
                 className={styles.searchResult}
                 onClick={() => openConversationWith(user.user_id)}
-                disabled={busy}
+                disabled={busy || deletionPending}
               >
                 <span className={styles.avatar}>
                   {(user.username || '?').slice(0, 1).toUpperCase()}
@@ -827,6 +954,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
             <form className={styles.composer} onSubmit={send}>
               {error && <p className={styles.error}>{error}</p>}
+              {deletionPending && (
+                <p className={styles.safetyNotice} role="status">
+                  Account deletion is requested. Existing history stays visible, but ComicChat is read-only until you cancel the request.
+                </p>
+              )}
               {selectedBlockedByMe && (
                 <p className={styles.safetyNotice} role="status">
                   You blocked {selectedTitle}. Existing history stays visible. Unblock this user to resume messaging.
@@ -852,15 +984,19 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                   value={draft}
                   onChange={(event) => setDraft(event.target.value.slice(0, 4000))}
                   placeholder={
-                    selectedBlockedByMe ? 'Unblock this user to send a message' : 'Write a message…'
+                    deletionPending
+                      ? 'Cancel the deletion request to send messages'
+                      : selectedBlockedByMe
+                        ? 'Unblock this user to send a message'
+                        : 'Write a message…'
                   }
                   rows={2}
-                  disabled={selectedBlockedByMe}
+                  disabled={deletionPending || selectedBlockedByMe}
                 />
                 <button
                   className={styles.sendButton}
                   type="submit"
-                  disabled={busy || selectedBlockedByMe || !draft.trim()}
+                  disabled={busy || deletionPending || selectedBlockedByMe || !draft.trim()}
                 >
                   Send
                 </button>

@@ -343,6 +343,84 @@ Deno.serve(
 
 
         server.registerTool(
+          'get_account_deletion_status',
+          {
+            title: 'Get ComicChat account deletion status',
+            description:
+              'Read the authenticated user\'s ComicChat deletion-request state. This does not change or delete anything.',
+            inputSchema: {},
+            outputSchema: {
+              accountState: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_get_my_account_state')
+            if (error) fail(error)
+            const accountState = Array.isArray(data) ? data[0] : data
+            return jsonResult({ accountState: accountState || { status: 'active' } })
+          }
+        )
+
+        server.registerTool(
+          'request_account_deletion',
+          {
+            title: 'Request ComicChat account deletion',
+            description:
+              'Request deletion for the authenticated ComicChat account only when the user explicitly asks to do so. New chat interaction stops immediately, but shared history is retained and hard deletion is not enabled yet. The request can be cancelled.',
+            inputSchema: {},
+            outputSchema: {
+              accountState: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: true,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_request_account_deletion')
+            if (error) fail(error)
+            const accountState = Array.isArray(data) ? data[0] : data
+            if (!accountState) throw new Error('comic_request_account_deletion returned no state')
+            return jsonResult({ accountState })
+          }
+        )
+
+        server.registerTool(
+          'cancel_account_deletion',
+          {
+            title: 'Cancel ComicChat account deletion request',
+            description:
+              'Cancel the authenticated user\'s reversible ComicChat deletion request and restore new chat interaction.',
+            inputSchema: {},
+            outputSchema: {
+              accountState: z.record(z.string(), z.unknown()),
+            },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              idempotentHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_cancel_account_deletion')
+            if (error) fail(error)
+            const accountState = Array.isArray(data) ? data[0] : data
+            return jsonResult({ accountState: accountState || { status: 'active' } })
+          }
+        )
+
+        server.registerTool(
           'export_my_data',
           {
             title: 'Export my ComicChat data',
