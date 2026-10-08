@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import styles from '../styles/Home.module.css'
 import sidebarStyles from '../styles/Sidebar.module.css'
 import Auth from '../components/Auth'
-import Chat from '../components/Chat'
 import ComicDirectMessages from '../components/ComicDirectMessages'
 import Profile from '../components/Profile'
 import useTranslation from '../utils/useTranslation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const tabTransition = {
   duration: 0.26,
@@ -16,12 +15,11 @@ const tabTransition = {
 
 export default function Home({ currentUser, session, supabase }) {
   const { t, locale, toggleLanguage } = useTranslation()
-  const [tab, setTab] = useState('public')
+  const [tab, setTab] = useState('private')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isDesktop, setIsDesktop] = useState(true)
   const loggedIn = !!session
 
-  const directMessagesRef = useRef(null)
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -31,13 +29,6 @@ export default function Home({ currentUser, session, supabase }) {
     window.addEventListener('resize', checkDesktop)
     return () => window.removeEventListener('resize', checkDesktop)
   }, [])
-
-  const handleOpenDirectMessages = (userId) => {
-    setTab('private')
-    setTimeout(() => {
-      directMessagesRef.current?.openThreadWith(userId)
-    }, 0)
-  }
 
   const getAvatarLetter = () => {
     const name = currentUser?.username || session?.user?.email || 'U'
@@ -50,10 +41,10 @@ export default function Home({ currentUser, session, supabase }) {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Realtime Chat Workspace</title>
+        <title>ComicChat</title>
         <meta
           name="description"
-          content="Private realtime chat workspace with public rooms, direct messages, and Supabase authentication."
+          content="Private comic-first conversations where each message becomes a visual panel."
         />
       </Head>
 
@@ -99,18 +90,10 @@ export default function Home({ currentUser, session, supabase }) {
                   currentUser={currentUser}
                   session={session}
                   supabase={supabase}
-                  onBack={() => setTab('public')}
-                />
-              ) : tab === 'public' ? (
-                <Chat
-                  currentUser={currentUser}
-                  session={session}
-                  supabase={supabase}
-                  onOpenDirectMessages={handleOpenDirectMessages}
+                  onBack={() => setTab('private')}
                 />
               ) : (
                 <ComicDirectMessages
-                  ref={directMessagesRef}
                   session={session}
                   supabase={supabase}
                 />
@@ -147,25 +130,14 @@ export default function Home({ currentUser, session, supabase }) {
 
             <div className={sidebarStyles.navItems}>
               <div
-                className={`${sidebarStyles.navItem} ${tab === 'public' ? sidebarStyles.active : ''}`}
-                onClick={() => {
-                  setTab('public')
-                  setSidebarOpen(false)
-                }}
-              >
-                <div className={sidebarStyles.navItemIcon}>💬</div>
-                <div className={sidebarStyles.navItemText}>{t.publicChat}</div>
-              </div>
-
-              <div
                 className={`${sidebarStyles.navItem} ${tab === 'private' ? sidebarStyles.active : ''}`}
                 onClick={() => {
                   setTab('private')
                   setSidebarOpen(false)
                 }}
               >
-                <div className={sidebarStyles.navItemIcon}>✉️</div>
-                <div className={sidebarStyles.navItemText}>{t.privateMessages}</div>
+                <div className={sidebarStyles.navItemIcon}>✦</div>
+                <div className={sidebarStyles.navItemText}>ComicChat</div>
               </div>
 
               <div
