@@ -919,7 +919,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                 {selectedBlockedByMe ? 'Unblock' : 'Block'}
               </button>
             )}
-            <span className={styles.connection}>
+            <span className={styles.connection} data-testid="comic-connection">
               {connectionState === 'connected' ? 'Live' : connectionState}
             </span>
           </div>
