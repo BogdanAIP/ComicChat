@@ -36,7 +36,7 @@ for (const forbidden of [
 for (const required of [
   'reuse the already-tested ComicChat component',
   'does not build another UI shell',
-  'no custom `vercel.json`',
+  'No `vercel.json` is added.',
   'legacy public-room',
 ]) {
   expect(docs, required, 'reuse-first shell documentation')
