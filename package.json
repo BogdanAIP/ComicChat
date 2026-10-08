@@ -33,7 +33,8 @@
     "character:pr26": "node scripts/pr26-character-reference-check.mjs",
     "activation:pr27": "node scripts/pr27-staging-activation-check.mjs",
     "bootstrap:pr28": "node scripts/pr28-fresh-bootstrap-check.mjs",
-    "beta:pr29": "node scripts/pr29-comicchat-first-shell-check.mjs"
+    "beta:pr29": "node scripts/pr29-comicchat-first-shell-check.mjs",
+    "acceptance:pr30": "node scripts/pr30-browser-acceptance-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
