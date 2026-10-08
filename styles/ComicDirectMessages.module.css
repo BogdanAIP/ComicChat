@@ -1323,3 +1323,6 @@
     border-color: CanvasText;
   }
 }
+
+.storyStudio { background: #fff4cd; color: #211f2e; border-bottom: 3px solid #211f2e; max-height: 42vh; overflow-y: auto; flex-shrink: 0; }
+.storyStudio > summary { cursor: pointer; padding: 12px 23px; background: #e7daff; font-size: 13px; font-weight: 900; }
