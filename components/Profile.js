@@ -27,6 +27,12 @@ const Profile = ({ currentUser, session, supabase, onBack, requireUsername = fal
         .update({ username })
         .eq('id', currentUser.id)
 
+      if (error?.code === '23505') {
+        throw new Error(t.usernameTaken)
+      }
+      if (error?.code === '23514') {
+        throw new Error(t.usernameLength)
+      }
       if (error) throw error
 
       setMessage({ type: 'success', text: t.statusUpdated })
