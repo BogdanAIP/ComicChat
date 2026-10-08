@@ -256,6 +256,10 @@ export default function ComicGroupChat({ session, supabase }) {
           <button type="submit" disabled={busy || !joinId.trim() || !joinAccepted}>Join public group</button>
         </form>
 
+        <button type="button" className={styles.refreshButton}
+          onClick={() => refreshGroups()} disabled={busy}>
+          ↻ Refresh groups and invitations
+        </button>
         <h3>My groups</h3>
         {groups.length === 0 && <p className={styles.empty}>No groups yet.</p>}
         <div className={styles.groupList}>
