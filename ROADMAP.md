@@ -157,6 +157,7 @@ ComicChat остаётся отдельным продуктом и репози
 | PR-27 | Manual Supabase staging activation harness with plan-first deploy and explicit provider switch | PR-26 |
 | PR-28 | Fresh Supabase profile bootstrap: self-contained first migration + signup profile trigger | PR-27 |
 | PR-29 | ComicChat-first closed-beta homepage/navigation using the protected private-chat surface | PR-28 |
+| PR-30 | Two-account Playwright browser acceptance for local CI and public staging | PR-29 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
