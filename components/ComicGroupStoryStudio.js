@@ -149,10 +149,10 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
                 ))}
               </div>
               {isPublic && e.visibility === 'group' &&
-                e.panels.length > 0 && (
+                e.author_id === myUserId && e.panels.length > 0 && (
                 <button type="button" className={styles.primary}
                   data-testid="group-story-publish"
-                  disabled={busy || e.author_name === '' /* backend rechecks creator */}
+                  disabled={busy || e.author_id !== myUserId}
                   onClick={() => perform(
                     () => supabase.rpc('comic_publish_group_episode', {
                       p_episode_id: e.episode_id,
