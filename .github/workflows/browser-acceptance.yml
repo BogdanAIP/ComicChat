@@ -1,0 +1,188 @@
+name: Browser acceptance
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'components/**'
+      - 'pages/**'
+      - 'styles/**'
+      - 'utils/**'
+      - 'supabase/migrations/**'
+      - 'browser-tests/**'
+      - 'playwright.config.mjs'
+      - '.github/workflows/browser-acceptance.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Run against an ephemeral local stack or an already deployed staging site
+        required: true
+        default: local
+        type: choice
+        options:
+          - local
+          - staging
+      site_url:
+        description: HTTPS frontend URL when target=staging
+        required: false
+        type: string
+
+concurrency:
+  group: browser-acceptance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local:
+    name: Two-account browser acceptance (local)
+    if: ${{ github.event_name == 'pull_request' || inputs.target == 'local' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install pinned Playwright test runner
+        run: npm install --no-save --package-lock=false @playwright/test@1.64.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.119.0
+
+      - id: supabase
+        name: Start isolated local Supabase
+        run: |
+          supabase start --exclude studio,storage-api,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
+          supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
+
+      - name: Start ComicChat web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: |
+          npm run dev -- -H 127.0.0.1 -p 3000 > /tmp/comicchat-next.log 2>&1 &
+          echo $! > /tmp/comicchat-next.pid
+
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "ComicChat web did not become ready" >&2
+          cat /tmp/comicchat-next.log >&2 || true
+          exit 1
+
+      - name: Run two-account browser acceptance
+        env:
+          COMICCHAT_BASE_URL: http://127.0.0.1:3000
+          COMICCHAT_SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
+          COMICCHAT_SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
+        run: npx playwright test browser-tests/pr30-two-account.spec.mjs --project=chromium
+
+      - name: Show diagnostics on failure
+        if: failure()
+        run: |
+          cat /tmp/comicchat-next.log || true
+          supabase status || true
+          docker ps -a || true
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr30-browser-local-failure
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop local stack
+        if: always()
+        run: |
+          test ! -f /tmp/comicchat-next.pid || kill "$(cat /tmp/comicchat-next.pid)" || true
+          supabase stop --no-backup || true
+
+  staging:
+    name: Two-account browser acceptance (staging)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'staging' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: comicchat-staging
+    env:
+      COMICCHAT_BASE_URL: ${{ inputs.site_url }}
+      COMICCHAT_TEST_USER_A_EMAIL: ${{ secrets.STAGING_E2E_USER_A_EMAIL }}
+      COMICCHAT_TEST_USER_A_PASSWORD: ${{ secrets.STAGING_E2E_USER_A_PASSWORD }}
+      COMICCHAT_TEST_USER_B_EMAIL: ${{ secrets.STAGING_E2E_USER_B_EMAIL }}
+      COMICCHAT_TEST_USER_B_PASSWORD: ${{ secrets.STAGING_E2E_USER_B_PASSWORD }}
+
+    steps:
+      - name: Validate staging inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$COMICCHAT_BASE_URL" =~ ^https:// ]]; then
+            echo "staging site_url must be HTTPS" >&2
+            exit 1
+          fi
+
+          for name in             COMICCHAT_TEST_USER_A_EMAIL             COMICCHAT_TEST_USER_A_PASSWORD             COMICCHAT_TEST_USER_B_EMAIL             COMICCHAT_TEST_USER_B_PASSWORD
+          do
+            if [[ -z "${!name:-}" ]]; then
+              echo "comicchat-staging is missing $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install pinned Playwright test runner
+        run: npm install --no-save --package-lock=false @playwright/test@1.64.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run staging two-account browser acceptance
+        run: npx playwright test browser-tests/pr30-two-account.spec.mjs --project=chromium
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr30-browser-staging-failure
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
