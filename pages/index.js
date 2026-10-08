@@ -130,6 +130,7 @@ export default function Home({ currentUser, session, supabase }) {
 
             <div className={sidebarStyles.navItems}>
               <div
+                data-testid="comicchat-nav"
                 className={`${sidebarStyles.navItem} ${tab === 'private' ? sidebarStyles.active : ''}`}
                 onClick={() => {
                   setTab('private')
@@ -141,6 +142,7 @@ export default function Home({ currentUser, session, supabase }) {
               </div>
 
               <div
+                data-testid="profile-nav"
                 className={`${sidebarStyles.navItem} ${tab === 'profile' ? sidebarStyles.active : ''}`}
                 onClick={() => {
                   setTab('profile')
