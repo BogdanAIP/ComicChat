@@ -5,6 +5,7 @@ import sidebarStyles from '../styles/Sidebar.module.css'
 import Auth from '../components/Auth'
 import ComicDirectMessages from '../components/ComicDirectMessages'
 import ComicStoryFeed from '../components/ComicStoryFeed'
+import ComicGroupChat from '../components/ComicGroupChat'
 import Profile from '../components/Profile'
 import useTranslation from '../utils/useTranslation'
 import { useEffect, useState } from 'react'
@@ -90,7 +91,9 @@ export default function Home({ currentUser, session, supabase }) {
                 flexDirection: 'column',
               }}
             >
-              {tab === 'stories' ? (
+              {tab === 'groups' ? (
+                <ComicGroupChat session={session} supabase={supabase} />
+              ) : tab === 'stories' ? (
                 <ComicStoryFeed supabase={supabase} />
               ) : tab === 'profile' ? (
                 <Profile
@@ -148,6 +151,24 @@ export default function Home({ currentUser, session, supabase }) {
               >
                 <div className={sidebarStyles.navItemIcon}>✦</div>
                 <div className={sidebarStyles.navItemText}>ComicChat</div>
+              </div>
+
+              <div
+                data-testid="groups-nav"
+                role="button"
+                tabIndex={0}
+                className={`${sidebarStyles.navItem} ${tab === 'groups' ? sidebarStyles.active : ''}`}
+                onClick={() => { setTab('groups'); setSidebarOpen(false) }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setTab('groups')
+                    setSidebarOpen(false)
+                  }
+                }}
+              >
+                <div className={sidebarStyles.navItemIcon}>▣</div>
+                <div className={sidebarStyles.navItemText}>Groups</div>
               </div>
 
               <div
