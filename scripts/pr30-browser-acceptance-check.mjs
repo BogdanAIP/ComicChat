@@ -92,11 +92,12 @@ forbid(staging, 'SUPABASE_DB_PASSWORD', 'staging browser job must not receive da
 for (const required of [
   'Playwright',
   'two independent browser sessions',
-  'does not receive a Supabase service-role key',
+  'Supabase service-role key',
   'Vercel ChatGPT connector is available but was not installed',
 ]) {
   expect(docs, required, 'browser acceptance documentation')
 }
+expect(docs, 'does **not** receive', 'staging privilege disclosure')
 
 expect(roadmap, '| PR-30 |', 'roadmap PR-30 milestone')
 
