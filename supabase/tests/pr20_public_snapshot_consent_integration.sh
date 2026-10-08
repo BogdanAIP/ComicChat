@@ -127,14 +127,31 @@ R3="$(user_scalar "${A}" "SELECT public.comic_propose_public_snapshot('${AB}'::u
 CANCEL_RESULT="$(user_scalar "${B}" "SELECT public.comic_cancel_public_snapshot_request('${R3}'::uuid);")"
 [[ "${CANCEL_RESULT}" == "t" || "${CANCEL_RESULT}" == "true" ]]
 
-PUBLISH_FUNCTIONS="$("${PSQL[@]}" -c "
+# PR-20 originally required no publication RPC. PR-35 and PR-37 introduced
+# tightly scoped server functions; the old zero-function assertion is stale.
+# Keep a strict allowlist, SECURITY DEFINER/search_path guard, and deny anon.
+UNSAFE_PUBLISH_FUNCTIONS="$("${PSQL[@]}" -c "
 SELECT COUNT(*)
 FROM pg_proc AS p
 JOIN pg_namespace AS n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
-  AND p.proname LIKE 'comic_publish%';
+  AND p.proname LIKE 'comic_publish%'
+  AND (
+    p.proname <> 'comic_publish_group_episode'
+    OR pg_get_function_identity_arguments(p.oid) <> 'p_episode_id uuid'
+    OR NOT p.prosecdef
+    OR NOT ('search_path=pg_catalog' = ANY(p.proconfig))
+    OR has_function_privilege('anon', p.oid, 'EXECUTE')
+  );
 ")"
-[[ "${PUBLISH_FUNCTIONS}" == "0" ]]
+[[ "${UNSAFE_PUBLISH_FUNCTIONS}" == "0" ]]
+SAFE_GROUP_PUBLISH_COUNT="$("${PSQL[@]}" -c "
+SELECT COUNT(*)
+FROM pg_proc AS p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname='public' AND p.proname='comic_publish_group_episode'
+  AND pg_get_function_identity_arguments(p.oid)='p_episode_id uuid';
+")"
+[[ "${SAFE_GROUP_PUBLISH_COUNT}" == "1" ]]
 
 if user_scalar "${A}" "INSERT INTO public.comic_publication_consent(request_id, user_id) VALUES ('${R3}'::uuid, '${A}'::uuid);" >/dev/null 2>&1; then
   echo "authenticated browser unexpectedly wrote consent table directly" >&2
