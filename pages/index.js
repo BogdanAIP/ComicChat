@@ -21,7 +21,7 @@ export default function Home({ currentUser, session, supabase }) {
   const loggedIn = !!session
   const profileLoaded = Boolean(currentUser?.id)
   const needsUsername = profileLoaded && !currentUser?.username?.trim()
-
+  const shellSidebarVisible = loggedIn && profileLoaded && !needsUsername
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -38,7 +38,7 @@ export default function Home({ currentUser, session, supabase }) {
   }
 
   const mainMargin =
-    loggedIn && isDesktop && sidebarOpen ? 'var(--sidebar-w)' : '0'
+    shellSidebarVisible && isDesktop && sidebarOpen ? 'var(--sidebar-w)' : '0'
 
   return (
     <div className={styles.container}>
@@ -142,7 +142,7 @@ export default function Home({ currentUser, session, supabase }) {
         </AnimatePresence>
       </main>
 
-      {loggedIn && profileLoaded && !needsUsername && (
+      {shellSidebarVisible && (
         <>
           <div
             className={`${sidebarStyles.sidebarOverlay} ${sidebarOpen ? sidebarStyles.open : ''}`}
