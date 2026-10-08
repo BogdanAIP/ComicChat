@@ -48,7 +48,7 @@ export default function ComicWelcome({ onOpenProfile }) {
           </div>
           <div className={styles.panelThree}>
             <span className={styles.star} aria-hidden="true">★</span>
-            <div className={styles.bubbleThree}>Let's make a story.</div>
+            <div className={styles.bubbleThree}>Let&apos;s make a story.</div>
             <span className={styles.caption}>TO BE CONTINUED…</span>
           </div>
         </div>
