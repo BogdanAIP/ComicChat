@@ -240,3 +240,25 @@ GRANT EXECUTE ON FUNCTION public.comic_compile_group_episode(UUID,UUID[],TEXT),
  public.comic_list_group_episodes(UUID,INTEGER),
  public.comic_list_public_group_episodes(INTEGER)
  TO authenticated;
+
+
+-- PR-36 correction: unqualified user_id in RETURNS TABLE was ambiguous
+-- in the member authorization subquery. Keep this read guard reliable.
+CREATE OR REPLACE FUNCTION public.comic_list_group_members(p_group_id UUID)
+RETURNS TABLE(user_id UUID,username TEXT,member_role TEXT)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+  IF auth.uid() IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.comic_membership AS own
+    WHERE own.conversation_id=p_group_id AND own.user_id=auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'group_forbidden' USING ERRCODE='42501';
+  END IF;
+  RETURN QUERY
+  SELECT m.user_id,COALESCE(NULLIF(BTRIM(u.username),''),'Member'),m.role
+  FROM public.comic_membership AS m
+  LEFT JOIN public."user" AS u ON u.id=m.user_id
+  WHERE m.conversation_id=p_group_id
+  ORDER BY m.joined_at,m.user_id;
+END;
+$$;
