@@ -155,6 +155,7 @@ ComicChat остаётся отдельным продуктом и репози
 | PR-25 | Opt-in official image generation + private Supabase media vertical slice | PR-24 |
 | PR-26 | Provider-native conversation character reference continuity with private edit inputs | PR-25 |
 | PR-27 | Manual Supabase staging activation harness with plan-first deploy and explicit provider switch | PR-26 |
+| PR-28 | Fresh-project profile baseline + ComicChat-first closed-beta shell | PR-27 |
 
 ### Ссылки/границы, проверенные при составлении плана
 
