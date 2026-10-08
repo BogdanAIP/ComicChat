@@ -112,6 +112,9 @@ jobs:
       - name: PR-28 fresh Supabase bootstrap boundaries
         run: npm run bootstrap:pr28
 
+      - name: PR-29 ComicChat-first shell boundaries
+        run: npm run beta:pr29
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
