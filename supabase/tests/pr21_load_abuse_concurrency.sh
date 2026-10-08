@@ -41,7 +41,10 @@ INSERT INTO public."user"(id, username, email) VALUES
   ('${A}', 'loadalpha', 'load-a@example.test'),
   ('${B}', 'loadbravo', 'load-b@example.test'),
   ('${C}', 'loadcharlie', 'load-c@example.test'),
-  ('${D}', 'loaddelta', 'load-d@example.test');
+  ('${D}', 'loaddelta', 'load-d@example.test')
+ON CONFLICT (id) DO UPDATE SET
+  username = EXCLUDED.username,
+  email = EXCLUDED.email;
 SQL
 
 user_scalar() {

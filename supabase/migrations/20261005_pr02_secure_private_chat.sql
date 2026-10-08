@@ -2,6 +2,107 @@
 -- This migration creates a new private-message path instead of weakening or
 -- silently reusing the inherited direct_message* authorization model.
 
+-- ComicChat owns a minimal profile baseline derived from the upstream
+-- database.sql. This must exist before the private-chat functions below are
+-- created so a brand-new Supabase project can apply migrations from zero.
+--
+-- We intentionally do NOT recreate upstream public message/direct-message
+-- tables here. ComicChat uses its own private domain tables.
+
+CREATE TABLE IF NOT EXISTS public."user" (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    username TEXT,
+    email TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT TIMEZONE('utc', NOW())
+);
+
+ALTER TABLE public."user"
+    ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE public."user"
+    ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public."user"
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ
+        NOT NULL DEFAULT TIMEZONE('utc', NOW());
+ALTER TABLE public."user"
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ
+        NOT NULL DEFAULT TIMEZONE('utc', NOW());
+
+ALTER TABLE public."user" ENABLE ROW LEVEL SECURITY;
+
+-- Remove the broad upstream policy if the inherited schema had been applied.
+DROP POLICY IF EXISTS "Users can view all profiles" ON public."user";
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public."user";
+DROP POLICY IF EXISTS "Users can update their own profile" ON public."user";
+
+DROP POLICY IF EXISTS comic_profile_select_self ON public."user";
+CREATE POLICY comic_profile_select_self
+    ON public."user"
+    FOR SELECT
+    TO authenticated
+    USING (id = auth.uid());
+
+DROP POLICY IF EXISTS comic_profile_insert_self ON public."user";
+CREATE POLICY comic_profile_insert_self
+    ON public."user"
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (id = auth.uid());
+
+DROP POLICY IF EXISTS comic_profile_update_self ON public."user";
+CREATE POLICY comic_profile_update_self
+    ON public."user"
+    FOR UPDATE
+    TO authenticated
+    USING (id = auth.uid())
+    WITH CHECK (id = auth.uid());
+
+REVOKE ALL ON TABLE public."user" FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE ON TABLE public."user" TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $comic_profile_updated_at$
+BEGIN
+    NEW.updated_at := TIMEZONE('utc', NOW());
+    RETURN NEW;
+END;
+$comic_profile_updated_at$;
+
+DROP TRIGGER IF EXISTS set_updated_at ON public."user";
+CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON public."user"
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_updated_at();
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $comic_profile_new_user$
+BEGIN
+    INSERT INTO public."user"(id, username, email)
+    VALUES (NEW.id, NULL, NEW.email)
+    ON CONFLICT (id) DO UPDATE
+    SET
+        email = EXCLUDED.email,
+        updated_at = TIMEZONE('utc', NOW());
+
+    RETURN NEW;
+END;
+$comic_profile_new_user$;
+
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user();
+
+
 CREATE TABLE IF NOT EXISTS public.comic_conversation (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     kind TEXT NOT NULL DEFAULT 'direct' CHECK (kind IN ('direct', 'group')),

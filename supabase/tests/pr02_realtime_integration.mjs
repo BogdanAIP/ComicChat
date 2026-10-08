@@ -107,11 +107,10 @@ async function createUser(spec) {
   if (error) throw error
   if (!data.user?.id) throw new Error(`no user id for ${spec.email}`)
 
-  const { error: profileError } = await service.from('user').insert({
-    id: data.user.id,
-    username: spec.username,
-    email: spec.email,
-  })
+  const { error: profileError } = await service
+    .from('user')
+    .update({ username: spec.username, email: spec.email })
+    .eq('id', data.user.id)
 
   if (profileError) throw profileError
   return data.user.id

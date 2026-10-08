@@ -38,10 +38,12 @@ async function requestJson(url, init, label) {
   return body
 }
 
-function insertProfile(id, spec) {
+function upsertProfile(id, spec) {
   const sql = [
     'INSERT INTO public."user"(id, username, email)',
-    `VALUES ('${id}'::uuid, '${spec.username}', '${spec.email}');`,
+    `VALUES ('${id}'::uuid, '${spec.username}', '${spec.email}')`,
+    'ON CONFLICT (id) DO UPDATE SET',
+    `username = '${spec.username}', email = '${spec.email}';`,
   ].join(' ')
 
   execFileSync(
@@ -68,7 +70,7 @@ async function createUser(spec) {
 
   const id = signup?.user?.id
   if (!id) throw new Error(`signup response missing user id for ${spec.email}`)
-  insertProfile(id, spec)
+  upsertProfile(id, spec)
 
   const login = await requestJson(
     `${supabaseUrl}/auth/v1/token?grant_type=password`,
