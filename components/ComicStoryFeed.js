@@ -26,8 +26,24 @@ export default function ComicStoryFeed({ supabase }) {
   }, [supabase])
 
   useEffect(() => {
-    refresh()
-  }, [refresh])
+    let active = true
+    const loadInitially = async () => {
+      const { data, error: initialError } = await supabase.rpc(
+        'comic_list_released_episodes',
+        { p_limit: 30 }
+      )
+      if (!active) return
+      if (initialError) {
+        console.error('Unable to load ComicChat stories', initialError)
+        setError('Unable to load stories. Please try again.')
+      } else {
+        setEpisodes(data || [])
+      }
+      setLoading(false)
+    }
+    loadInitially()
+    return () => { active = false }
+  }, [supabase])
 
   return (
     <div className={styles.feed} aria-label="Published comic stories" data-testid="comic-story-feed">
