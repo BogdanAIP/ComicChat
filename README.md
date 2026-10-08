@@ -50,6 +50,12 @@
 
 **Текущий fast-track путь закрытой beta:** отдельный server-side provider `openai-image` с billing source `comicchat-sponsored-beta`. Он использует API-бюджет владельца ComicChat, а не ресурсы подписки отправителя, и включается только явной серверной настройкой. Это временный прозрачный путь к проверке продукта, а не замена целевой sender-pays модели.
 
+## ComicChat-first закрытая beta
+
+Для закрытой beta после входа основной интерфейс — защищённые приватные ComicChat-диалоги. Legacy public rooms, старые direct-message таблицы, public attachment uploads, audio и Cloudinary остаются только как унаследованный код и не входят в основной beta UX.
+
+Чистый Supabase-проект воспроизводит минимальный профильный baseline через migrations; ручной запуск широкого upstream `database.sql` для ComicChat-пути не требуется.
+
 ## Техническая исходная точка
 
 Fork по-прежнему наследует **Next.js / React / Supabase** и часть legacy UI из upstream, но защищённый ComicChat-путь уже отделён и покрыт CI. До production остаются внешний HTTPS deployment, настройка Supabase OAuth/DCR, двухаккаунтная проверка в реальном ChatGPT-клиенте, CSP/UI-origin для публикации и финальная упаковка плагина. Legacy email/voice/Cloudinary-код не считается частью защищённого ComicChat-пути.
