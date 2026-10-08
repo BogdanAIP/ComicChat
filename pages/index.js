@@ -100,6 +100,7 @@ export default function Home({ currentUser, session, supabase }) {
                 <ComicDirectMessages
                   session={session}
                   supabase={supabase}
+                  onOpenProfile={() => setTab('profile')}
                 />
               )}
             </motion.div>
@@ -120,7 +121,7 @@ export default function Home({ currentUser, session, supabase }) {
           >
             <div className={sidebarStyles.sidebarHeader}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2>{t.navigation}</h2>
+                <h2><span className={sidebarStyles.brandMark} aria-hidden="true">✦</span> ComicChat</h2>
                 <button 
                   onClick={toggleLanguage}
                   className={sidebarStyles.langToggle}
@@ -129,7 +130,8 @@ export default function Home({ currentUser, session, supabase }) {
                   {locale === 'ar' ? 'EN' : 'AR'}
                 </button>
               </div>
-              <p>{t.workspaceSub}</p>
+              <p>Stories, one panel at a time.</p>
+              <span className={sidebarStyles.brandIssue}>VOL. 01 / PRIVATE EDITION</span>
             </div>
 
             <div className={sidebarStyles.navItems}>

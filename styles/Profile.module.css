@@ -197,3 +197,145 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Character sheet: profile becomes a comic creator ID card. */
+.page {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 75% 18%, rgba(255,226,130,.37), transparent 32%),
+    radial-gradient(circle at 12% 75%, rgba(182,166,236,.29), transparent 32%);
+  padding: clamp(30px, 5vw, 64px) 22px;
+  align-items: flex-start;
+}
+
+.card {
+  position: relative;
+  max-width: 640px;
+  padding: clamp(24px, 4vw, 42px);
+  background: #fffef7;
+  color: var(--comic-ink);
+  border: 4px solid var(--comic-ink);
+  border-radius: 8px;
+  box-shadow: 9px 9px 0 var(--comic-ink);
+  backdrop-filter: none;
+}
+
+.card::before {
+  content: 'CHARACTER SHEET';
+  position: absolute;
+  top: -16px;
+  right: 22px;
+  padding: 7px 13px;
+  color: var(--comic-ink);
+  background: #ffe07b;
+  border: 2px solid var(--comic-ink);
+  box-shadow: 3px 3px 0 var(--comic-ink);
+  transform: rotate(3deg);
+  font: 900 10px/1.1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .1em;
+}
+
+.headerRow {
+  border-bottom: 3px solid var(--comic-ink);
+  padding-bottom: 17px;
+}
+
+.title {
+  color: var(--comic-ink);
+  font: 900 30px/1.1 'Arial Black', Impact, ui-sans-serif, sans-serif;
+  letter-spacing: -.05em;
+}
+
+.back {
+  border: 2px solid var(--comic-ink);
+  border-radius: 7px;
+  background: #efe7ff;
+  color: var(--comic-ink);
+  box-shadow: 3px 3px 0 var(--comic-ink);
+}
+
+.back:hover { border-color: var(--comic-ink); }
+
+.avatar {
+  border: 4px solid var(--comic-ink);
+  border-radius: 18px;
+  background: #f9939b;
+  color: var(--comic-ink);
+  box-shadow: 6px 6px 0 var(--comic-ink);
+  transform: rotate(-5deg);
+  margin-block: 20px 25px;
+}
+
+.name {
+  font: 900 25px/1.12 'Arial Black', Impact, sans-serif;
+  color: var(--comic-ink);
+  letter-spacing: -.04em;
+}
+
+.email { color: #5d5865; }
+
+.fieldLabel { color: #3e3946; font-weight: 900; }
+
+.fieldInput {
+  border: 2px solid var(--comic-ink);
+  border-radius: 6px;
+  color: var(--comic-ink);
+  background: white;
+}
+
+.fieldInput:focus {
+  border-color: var(--comic-ink);
+  box-shadow: 3px 3px 0 var(--comic-ink);
+}
+
+.btnPrimary {
+  background: #ffe07b;
+  color: var(--comic-ink);
+  border: 3px solid var(--comic-ink);
+  border-radius: 7px;
+  box-shadow: 4px 4px 0 var(--comic-ink);
+  font-weight: 900;
+}
+
+.btnGhost, .btnBlock {
+  background: #f0e9ff;
+  color: var(--comic-ink);
+  border: 2px solid var(--comic-ink);
+  border-radius: 7px;
+  font-weight: 800;
+}
+
+.btnGhost:hover, .btnBlock:hover { background: #e0d6ff; }
+
+.btnDanger {
+  background: #ffb5bc;
+  color: #7b2438;
+  border: 2px solid #7b2438;
+  border-radius: 7px;
+}
+
+.bannerSuccess {
+  color: #1f6658;
+  background: #e2f7e7;
+  border: 2px solid #377c6c;
+}
+
+.bannerError {
+  color: #8c283c;
+  background: #ffe2e7;
+  border: 2px solid #b3465d;
+}
+
+.divider { border-color: var(--comic-ink); }
+
+@media (max-width: 580px) {
+  .page { padding: 40px 16px 28px; }
+  .card { padding: 25px 20px; box-shadow: 5px 5px 0 var(--comic-ink); }
+  .title { font-size: 25px; }
+}
+
+@media (forced-colors: active) {
+  .card, .back, .avatar, .fieldInput, .btnPrimary, .btnGhost, .btnBlock {
+    border-color: CanvasText;
+  }
+}

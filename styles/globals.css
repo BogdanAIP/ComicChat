@@ -1,61 +1,57 @@
-/* UI/UX Pro Max Design Tokens - Elite Elegance */
+/* ComicChat / Volume 01 — ink-on-paper design system.
+   Preserve public variable names so the original authenticated flows keep working. */
 :root {
-  /* Backgrounds: Deep space and glass surfaces */
-  --bg-deep: #030712; /* Tailwind gray-950 equivalent */
-  --bg-mid: #0f172a; /* Tailwind slate-900 */
-  --bg-elevated: rgba(15, 23, 42, 0.7);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-glass-strong: rgba(255, 255, 255, 0.08);
-  --bg-glass-hover: rgba(255, 255, 255, 0.12);
+  --bg-deep: #fffaf0;
+  --bg-mid: #f8f0dd;
+  --bg-elevated: #fffefa;
+  --bg-glass: rgba(30, 28, 43, 0.035);
+  --bg-glass-strong: rgba(30, 28, 43, 0.075);
+  --bg-glass-hover: rgba(30, 28, 43, 0.12);
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-focus: rgba(129, 140, 248, 0.5); /* Indigo glow */
+  --border-subtle: rgba(30, 28, 43, 0.2);
+  --border-strong: rgba(30, 28, 43, 0.55);
+  --border-focus: #7568ce;
 
-  /* Text Colors */
-  --text-primary: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-faint: #475569;
+  --text-primary: #211f2e;
+  --text-muted: #615b6a;
+  --text-faint: #857e8c;
 
-  /* Accents - Tech Indigo */
-  --accent: #6366f1; /* Indigo-500 */
-  --accent-dim: rgba(99, 102, 241, 0.15);
-  --accent-strong: #4f46e5;
-  --accent-glow: rgba(99, 102, 241, 0.4);
-  
-  --success: #10b981;
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.12);
+  --accent: #a33455;
+  --accent-dim: rgba(240, 105, 122, .15);
+  --accent-strong: #f0727b;
+  --accent-glow: rgba(240, 105, 122, .16);
 
-  /* Shadows - Smooth Elevation */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 10px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 25px var(--accent-glow);
+  --success: #1b665b;
+  --danger: #ae3445;
+  --danger-bg: rgba(236, 103, 119, .14);
 
-  /* Border Radii - Rounded Soft */
+  --shadow-sm: 2px 2px 0 rgba(33, 31, 46, .7);
+  --shadow-md: 5px 5px 0 rgba(33, 31, 46, .88);
+  --shadow-glow: none;
+
   --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
   --radius-full: 9999px;
+  --sidebar-w: 270px;
 
-  /* Layout */
-  --sidebar-w: 300px;
-  
-  /* Chat specific */
-  --chat-accent: #6366f1;
-  --chat-accent-soft: rgba(99, 102, 241, 0.15);
-  --chat-surface: #0a0f1d;
-  --chat-bubble-own: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-  --chat-bubble-other: rgba(255, 255, 255, 0.05);
-  --chat-input-bar: rgba(3, 7, 18, 0.85);
+  --chat-accent: #aa9de9;
+  --chat-accent-soft: rgba(170, 157, 233, .18);
+  --chat-surface: #fffaf0;
+  --chat-bubble-own: #ffe17b;
+  --chat-bubble-other: #fffefa;
+  --chat-input-bar: #fffefb;
+  --transit-time: .24s;
 
-  /* Framer Motion standard transition duration */
-  --transit-time: 0.3s;
+  --comic-ink: #211f2e;
+  --comic-paper: #fffaf0;
+  --comic-coral: #f4737d;
+  --comic-lilac: #b3a7ed;
+  --comic-yellow: #ffe07b;
+  --comic-mint: #8fd7d2;
 }
 
-html,
-body {
+html, body {
   padding: 0;
   margin: 0;
   min-height: 100%;
@@ -63,55 +59,52 @@ body {
 
 body {
   color: var(--text-primary);
-  background-color: var(--bg-deep);
+  background: var(--bg-deep);
   background-image:
-    radial-gradient(ellipse 120% 80% at 50% -30%, rgba(45, 212, 191, 0.15), transparent 55%),
-    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(99, 102, 241, 0.12), transparent 50%),
-    linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 100%);
-  background-attachment: fixed;
+    radial-gradient(circle at 12% 0%, rgba(255, 219, 111, .18), transparent 38%),
+    radial-gradient(circle at 95% 18%, rgba(179, 167, 237, .15), transparent 34%);
+  font-family: 'Trebuchet MS', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle grid overlay */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.35;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 20%, transparent 100%);
+  opacity: .22;
+  background: radial-gradient(#302c38 1px, transparent 1.4px) 0 0/19px 19px;
+  mask-image: linear-gradient(90deg, #000, transparent 45%, #000);
 }
 
-.background {
-  display: none;
+.background { display: none; }
+a { color: inherit; text-decoration: none; }
+* { box-sizing: border-box; }
+.app-root { position: relative; z-index: 1; min-height: 100vh; }
+
+button, input, textarea, select {
+  font-family: inherit;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+button, a {
+  -webkit-tap-highlight-color: transparent;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-.app-root {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-}
-
-/* Focus rings — accessible, on-brand */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 3px solid #7368c9;
+  outline-offset: 4px;
 }
 
 ::selection {
-  background: var(--accent-dim);
-  color: var(--text-primary);
+  background: #ffe07b;
+  color: #211f2e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

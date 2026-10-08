@@ -8,6 +8,7 @@ import {
 } from 'react'
 import ComicPanel from './ComicPanel'
 import styles from '../styles/ComicDirectMessages.module.css'
+import ComicWelcome from './ComicWelcome'
 
 const REPORT_REASONS = [
   ['spam', 'Spam'],
@@ -69,7 +70,7 @@ function mergeMessage(previous, nextMessage) {
   return sortMessages([...withoutDuplicate, nextMessage])
 }
 
-const ComicDirectMessages = forwardRef(({ session, supabase }, ref) => {
+const ComicDirectMessages = forwardRef(({ session, supabase, onOpenProfile }, ref) => {
   const myUserId = session?.user?.id
 
   if (!myUserId) return null
@@ -79,13 +80,14 @@ const ComicDirectMessages = forwardRef(({ session, supabase }, ref) => {
       session={session}
       supabase={supabase}
       forwardedRef={ref}
+      onOpenProfile={onOpenProfile}
     />
   )
 })
 
 ComicDirectMessages.displayName = 'ComicDirectMessages'
 
-function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
+function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenProfile }) {
   const myUserId = session.user.id
   const channelRef = useRef(null)
   const selectedConversationRef = useRef(null)
@@ -759,10 +761,10 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       <aside className={styles.sidebar}>
         <header className={styles.sidebarHeader}>
           <div>
-            <p className={styles.eyebrow}>ComicChat</p>
+            <p className={styles.eyebrow}>THE STORY DESK</p>
             <h2>Private conversations</h2>
           </div>
-          <span className={styles.lockBadge}>Private</span>
+          <span className={styles.lockBadge}>✦ Private</span>
         </header>
 
         <label className={styles.searchLabel}>
@@ -900,7 +902,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
       <div className={styles.chat}>
         <header className={styles.chatHeader}>
           <div>
-            <p className={styles.eyebrow}>Comic-first private chat</p>
+            <p className={styles.eyebrow}>YOUR STORY / FRAME BY FRAME</p>
             <h2 data-testid="comic-chat-title">{selectedTitle}</h2>
           </div>
           <div className={styles.chatHeaderActions}>
@@ -926,20 +928,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
         </header>
 
         {!selectedConversation ? (
-          <div className={styles.emptyChat}>
-            <div className={styles.placeholderPanel}>🎨</div>
-            <h3>Welcome to ComicChat</h3>
-            <p>
-              Your private messages become comic-style cards. To get started,
-              open <strong>Profile</strong> in the navigation and set a username.
-              Invite a friend to register, then enter at least two letters of
-              their username in the search on the left to start chatting.
-            </p>
-            <p>
-              This closed beta displays comic previews while AI image generation
-              is switched off. Real private artwork can be enabled later.
-            </p>
-          </div>
+          <ComicWelcome onOpenProfile={onOpenProfile} />
         ) : (
           <>
             <div className={styles.messages} aria-live="polite">
@@ -948,9 +937,9 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                   <div className={styles.placeholderPanel}>✦</div>
                   <h3>Start the conversation</h3>
                   <p>
-                    Every message occupies a visual comic card immediately. The
-                    illustration appears as a deterministic placeholder first and
-                    upgrades in place when private generation is enabled. The original text and message ID stay unchanged.
+                    The page is yours. Write the first line and watch it land in
+                    its own comic panel. The artwork will stay in preview mode
+                    while AI image generation is switched off.
                   </p>
                 </div>
               )}
@@ -1108,7 +1097,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
               </div>
               <div className={styles.composerNote}>
                 <span>{draft.length}/4000</span>
-                <span>Client attachments remain disabled; generated comic art uses private authenticated storage.</span>
+                <span>Every message is a new panel. Private artwork is available when enabled.</span>
               </div>
             </form>
           </>

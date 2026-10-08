@@ -69,6 +69,11 @@ const Auth = ({ supabase }) => {
         animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
+        <div className={styles.brandBadge} aria-label="ComicChat">
+          <span aria-hidden="true">✦</span>
+          <span>ComicChat</span>
+          <small>VOL. 01</small>
+        </div>
         <h2 className={styles.title}>
           {isSignUp ? t.register : t.login}
         </h2>
