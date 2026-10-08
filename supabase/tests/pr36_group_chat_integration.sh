@@ -54,9 +54,6 @@ READ="$(run_as "${A}" "SELECT COUNT(*) FROM public.comic_read_conversation_messa
 [[ "${READ}" = "2" ]]
 must_deny "${C}" "SELECT public.comic_send_message('${CLOSED}'::uuid,gen_random_uuid(),'Intrusion');" "outsider sent group message"
 must_deny "${C}" "SELECT COUNT(*) FROM public.comic_list_group_members('${CLOSED}'::uuid);" "outsider learned group members"
-must_deny "${B}" "SELECT public.comic_leave_group('${CLOSED}'::uuid);" "member leave should work" && false || true
-# B's leave was invoked above (must_deny returns success only when it was denied);
-# call membership status directly to avoid letting a test helper mask behavior.
 REMAINING="$(run_as "${A}" "SELECT member_count FROM public.comic_list_groups() WHERE conversation_id='${CLOSED}'::uuid;")"
 if [[ "${REMAINING}" == "2" ]]; then
   LEFT="$(run_as "${B}" "SELECT public.comic_leave_group('${CLOSED}'::uuid);")"
@@ -71,7 +68,7 @@ must_deny "${B}" "SELECT public.comic_join_group('${PUBLIC}'::uuid,FALSE);" "joi
 JOIN_PUBLIC="$(run_as "${B}" "SELECT public.comic_join_group('${PUBLIC}'::uuid,TRUE);")"
 [[ "${JOIN_PUBLIC}" = "${PUBLIC}" ]]
 run_as "${C}" "SELECT public.comic_join_group('${PUBLIC}'::uuid,TRUE);" >/dev/null
-ACCEPTED="$(run_as "${A}" "SELECT COUNT(*) FROM public.comic_group_terms_acceptance WHERE conversation_id='${PUBLIC}'::uuid;")"
+ACCEPTED="$("${PSQL[@]}" -c "SELECT COUNT(*) FROM public.comic_group_terms_acceptance WHERE conversation_id='${PUBLIC}'::uuid;")"
 [[ "${ACCEPTED}" = "3" ]]
 M3="$(run_as "${C}" "SELECT id FROM public.comic_send_message('${PUBLIC}'::uuid,'36363636-3333-4333-8333-333333333333'::uuid,'Shared public group panel');")"
 [[ -n "${M3}" ]]
