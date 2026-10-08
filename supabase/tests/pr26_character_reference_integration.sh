@@ -17,7 +17,10 @@ INSERT INTO auth.users(id, email) VALUES
 INSERT INTO public."user"(id, username, email) VALUES
   ('${A}', 'pr26alpha', 'pr26-a@example.test'),
   ('${B}', 'pr26bravo', 'pr26-b@example.test'),
-  ('${C}', 'pr26charlie', 'pr26-c@example.test');
+  ('${C}', 'pr26charlie', 'pr26-c@example.test')
+ON CONFLICT (id) DO UPDATE SET
+  username = EXCLUDED.username,
+  email = EXCLUDED.email;
 SQL
 
 user_scalar() {
