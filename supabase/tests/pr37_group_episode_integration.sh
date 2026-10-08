@@ -44,7 +44,7 @@ deny "$A" "SELECT public.comic_compile_group_episode('$CLOSED'::uuid,ARRAY['$X':
 deny "$A" "SELECT public.comic_compile_group_episode('$CLOSED'::uuid,ARRAY[]::uuid[], 'Empty');" "empty source accepted"
 STORY="$(run_as "$B" "SELECT public.comic_compile_group_episode('$CLOSED'::uuid,ARRAY['$Y'::uuid,'$X'::uuid], 'Closed issue');")"
 [[ -n "$STORY" ]]
-SCOPE="$(run_as "$A" "SELECT visibility||'|'||JSONB_ARRAY_LENGTH(panels)||'|'||panels->0->>'text'||'|'||panels->1->>'text' FROM public.comic_list_group_episodes('$CLOSED'::uuid) WHERE episode_id='$STORY'::uuid;")"
+SCOPE="$(run_as "$A" "SELECT visibility||'|'||JSONB_ARRAY_LENGTH(panels)||'|'||(panels->0->>'text')||'|'||(panels->1->>'text') FROM public.comic_list_group_episodes('$CLOSED'::uuid) WHERE episode_id='$STORY'::uuid;")"
 [[ "$SCOPE" == "group|2|Closed comic panel from A|Closed comic panel from B" ]]
 deny "$C" "SELECT count(*) FROM public.comic_list_group_episodes('$CLOSED'::uuid);" "outsider read closed episode"
 deny "$B" "SELECT public.comic_publish_group_episode('$STORY'::uuid);" "closed episode published by its author"
