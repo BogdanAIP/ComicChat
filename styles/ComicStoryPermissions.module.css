@@ -1,0 +1,127 @@
+.panel {
+  margin: 12px clamp(16px, 3vw, 36px);
+  padding: 20px;
+  background: #fff8dd;
+  color: #211f2e;
+  border: 3px solid #211f2e;
+  border-radius: 9px;
+  box-shadow: 5px 5px 0 #211f2e;
+}
+.header h3 {
+  margin: 9px 0 5px;
+  font: 900 clamp(20px, 2.5vw, 28px)/1.1 'Arial Black', Impact, sans-serif;
+  letter-spacing: -.04em;
+}
+.header p, .hint {
+  margin: 8px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4c4554;
+}
+.marker {
+  display: inline-block;
+  padding: 5px 9px;
+  background: #ffc1c4;
+  border: 2px solid #211f2e;
+  transform: rotate(-2deg);
+  font: 900 10px/1.1 sans-serif;
+}
+.requestForm {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 10px;
+}
+.requestForm label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 900;
+}
+.requestForm select, .requestForm input {
+  width: 100%;
+  min-height: 43px;
+  border: 2px solid #211f2e;
+  border-radius: 6px;
+  background: white;
+  padding: 9px 10px;
+  color: #211f2e;
+  font-size: 14px;
+}
+.primaryButton, .secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 43px;
+  max-width: 100%;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  border: 2px solid #211f2e;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  color: #211f2e;
+}
+.primaryButton {
+  background: #ffe07b;
+  box-shadow: 3px 3px 0 #211f2e;
+}
+.secondaryButton {
+  background: #fff;
+}
+.primaryButton:disabled, .secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.request {
+  margin-top: 19px;
+  padding: 15px;
+  background: #fffef8;
+  border: 2px solid #211f2e;
+  border-radius: 6px;
+}
+.requestHeading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+.requestHeading span {
+  color: #564369;
+  font-weight: 800;
+  font-size: 12px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 13px;
+}
+.request details { font-size: 12px; }
+.request summary { cursor: pointer; font-weight: 800; }
+.messageReview {
+  margin: 12px 0;
+  padding-inline-start: 22px;
+  max-height: 230px;
+  overflow-y: auto;
+}
+.messageReview li {
+  padding: 7px 0;
+  border-bottom: 1px solid #dad0cf;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.notice {
+  margin: 12px 0 0;
+  color: #51425f;
+  font-size: 12px;
+  font-weight: 800;
+}
+@media (max-width: 760px) {
+  .panel { margin: 10px 12px; padding: 16px; box-shadow: 3px 3px 0 #211f2e; }
+  .actions { flex-direction: column; align-items: stretch; }
+}
+@media (forced-colors: active) {
+  .panel, .request, .primaryButton, .secondaryButton { border-color: CanvasText; }
+}

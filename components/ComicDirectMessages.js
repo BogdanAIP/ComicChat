@@ -9,6 +9,7 @@ import {
 import ComicPanel from './ComicPanel'
 import styles from '../styles/ComicDirectMessages.module.css'
 import ComicWelcome from './ComicWelcome'
+import ComicStoryPermissions from './ComicStoryPermissions'
 
 const REPORT_REASONS = [
   ['spam', 'Spam'],
@@ -931,6 +932,19 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
           <ComicWelcome onOpenProfile={onOpenProfile} />
         ) : (
           <>
+            <details className={styles.storyStudio}>
+              <summary>✦ Make a comic from this conversation</summary>
+              <ComicStoryPermissions
+                key={selectedConversationId}
+                supabase={supabase}
+                conversationId={selectedConversationId}
+                myUserId={myUserId}
+                messages={messages}
+                deletionPending={deletionPending}
+                blocked={selectedBlockedByMe}
+              />
+            </details>
+
             <div className={styles.messages} aria-live="polite">
               {messages.length === 0 && (
                 <div className={styles.emptyChat}>
