@@ -46,7 +46,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
   }
 
   return (
-    <div className={styles.page} data-testid="profile-page">
+    <div className={styles.page} data-testid="profile-page" data-current-user-ready={currentUser?.id ? 'true' : 'false'}>
       <motion.div
         className={styles.card}
         initial={{ opacity: 0, y: 16 }}
