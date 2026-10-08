@@ -319,23 +319,8 @@ jobs:
         env:
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: |
-          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
-          DO $
-          BEGIN
-            IF to_regclass('public."user"') IS NULL THEN
-              RAISE EXCEPTION 'fresh profile baseline missing';
-            END IF;
-            IF NOT EXISTS (
-              SELECT 1
-              FROM pg_trigger
-              WHERE tgname = 'comic_auth_user_profile_insert'
-                AND NOT tgisinternal
-            ) THEN
-              RAISE EXCEPTION 'auth profile trigger missing';
-            END IF;
-          END
-          $;
-          SQL
+          test "$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select to_regclass('public.\"user\"') is not null")" = "t"
+          test "$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select exists (select 1 from pg_trigger where tgname = 'comic_auth_user_profile_insert' and not tgisinternal)")" = "t"
 
       - name: Serve authenticated ComicChat MCP function
         run: |
