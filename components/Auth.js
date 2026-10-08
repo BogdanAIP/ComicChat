@@ -30,9 +30,13 @@ const Auth = ({ supabase }) => {
 
         if (error) throw error
 
+        // Supabase returns a session immediately when email confirmation is off.
+        // Never tell a signed-in user to verify an already-confirmed email.
         setMessage({
           type: 'success',
-          text: 'Account created successfully! Please verify your email.',
+          text: data?.session
+            ? 'Account created! Opening ComicChat…'
+            : 'Account created! Check your email to confirm your address, then log in.',
         })
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({

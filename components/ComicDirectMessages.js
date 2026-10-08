@@ -927,12 +927,17 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
 
         {!selectedConversation ? (
           <div className={styles.emptyChat}>
-            <div className={styles.placeholderPanel}>💬</div>
-            <h3>Select a private conversation</h3>
+            <div className={styles.placeholderPanel}>🎨</div>
+            <h3>Welcome to ComicChat</h3>
             <p>
-              PR-02 uses the new membership-scoped ComicChat domain. Legacy
-              direct-message tables, public attachment URLs, audio, and email
-              notifications are not used here.
+              Your private messages become comic-style cards. To get started,
+              open <strong>Profile</strong> in the navigation and set a username.
+              Invite a friend to register, then enter at least two letters of
+              their username in the search on the left to start chatting.
+            </p>
+            <p>
+              This closed beta displays comic previews while AI image generation
+              is switched off. Real private artwork can be enabled later.
             </p>
           </div>
         ) : (
