@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ComicPanel from './ComicPanel'
+import ComicGroupStoryStudio from './ComicGroupStoryStudio'
 import styles from '../styles/ComicGroupChat.module.css'
 
 const PUBLIC_JOIN_RULE =
@@ -324,6 +325,13 @@ export default function ComicGroupChat({ session, supabase }) {
               )}
               <span className={styles.groupId}>Group ID: {selectedId}</span>
             </div>
+            <ComicGroupStoryStudio
+              key={selectedId}
+              supabase={supabase}
+              group={selectedGroup}
+              messages={messages}
+              myUserId={myId}
+            />
             <div className={styles.messages} aria-live="polite" data-testid="comic-group-messages">
               {messages.length === 0 && <p className={styles.empty}>Write the first comic panel.</p>}
               {messages.map((m) => (
