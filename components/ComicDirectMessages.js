@@ -932,6 +932,19 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
           <ComicWelcome onOpenProfile={onOpenProfile} />
         ) : (
           <>
+            <details className={styles.storyStudio}>
+              <summary>✦ Make a comic from this conversation</summary>
+              <ComicStoryPermissions
+                key={selectedConversationId}
+                supabase={supabase}
+                conversationId={selectedConversationId}
+                myUserId={myUserId}
+                messages={messages}
+                deletionPending={deletionPending}
+                blocked={selectedBlockedByMe}
+              />
+            </details>
+
             <div className={styles.messages} aria-live="polite">
               {messages.length === 0 && (
                 <div className={styles.emptyChat}>
