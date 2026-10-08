@@ -755,7 +755,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
     : 'Private comics'
 
   return (
-    <section className={styles.shell} aria-label="ComicChat private messages">
+    <section className={styles.shell} aria-label="ComicChat private messages" data-testid="comic-private-shell">
       <aside className={styles.sidebar}>
         <header className={styles.sidebarHeader}>
           <div>
@@ -769,6 +769,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
           Find a user by username
           <input
             className={styles.searchInput}
+            data-testid="comic-user-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={
@@ -838,6 +839,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
               <button
                 type="button"
                 key={user.user_id}
+                data-testid="comic-search-result"
+                data-user-id={user.user_id}
                 className={styles.searchResult}
                 onClick={() => openConversationWith(user.user_id)}
                 disabled={busy || deletionPending}
@@ -861,6 +864,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
               <button
                 type="button"
                 key={conversation.conversation_id}
+                data-testid="comic-conversation"
+                data-partner-id={conversation.other_user_id}
                 className={
                   conversation.conversation_id === selectedConversationId
                     ? `${styles.conversationButton} ${styles.activeConversation}`
@@ -896,7 +901,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
         <header className={styles.chatHeader}>
           <div>
             <p className={styles.eyebrow}>Comic-first private chat</p>
-            <h2>{selectedTitle}</h2>
+            <h2 data-testid="comic-chat-title">{selectedTitle}</h2>
           </div>
           <div className={styles.chatHeaderActions}>
             {selectedConversation && (
@@ -1074,6 +1079,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
               <div className={styles.composerRow}>
                 <textarea
                   className={styles.textarea}
+                  data-testid="comic-composer"
                   value={draft}
                   onChange={(event) => setDraft(event.target.value.slice(0, 4000))}
                   placeholder={
@@ -1088,6 +1094,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef }) {
                 />
                 <button
                   className={styles.sendButton}
+                  data-testid="comic-send"
                   type="submit"
                   disabled={busy || deletionPending || selectedBlockedByMe || !draft.trim()}
                 >
