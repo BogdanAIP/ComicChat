@@ -46,7 +46,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-testid="profile-page" data-current-user-ready={currentUser?.id ? 'true' : 'false'}>
       <motion.div
         className={styles.card}
         initial={{ opacity: 0, y: 16 }}
@@ -94,6 +94,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             </label>
             <input
               id="username"
+              data-testid="profile-username-input"
               type="text"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
@@ -104,6 +105,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             <div className={styles.actions}>
               <motion.button
                 type="submit"
+                data-testid="profile-save"
                 className={styles.btnPrimary}
                 disabled={loading}
                 whileTap={{ scale: loading ? 1 : 0.98 }}
@@ -126,6 +128,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
         ) : (
           <motion.button
             type="button"
+            data-testid="profile-edit-username"
             className={styles.btnBlock}
             onClick={() => setEditingUsername(true)}
             whileHover={{ scale: 1.01 }}

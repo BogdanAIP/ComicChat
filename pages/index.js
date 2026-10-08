@@ -35,8 +35,11 @@ export default function Home({ currentUser, session, supabase }) {
     return name[0].toUpperCase()
   }
 
-  const mainMargin =
-    loggedIn && isDesktop && sidebarOpen ? 'var(--sidebar-w)' : '0'
+  const desktopSidebarOpen = loggedIn && isDesktop && sidebarOpen
+  const mainMargin = desktopSidebarOpen ? 'var(--sidebar-w)' : '0'
+  const mainWidth = desktopSidebarOpen
+    ? 'calc(100% - var(--sidebar-w))'
+    : '100%'
 
   return (
     <div className={styles.container}>
@@ -52,6 +55,7 @@ export default function Home({ currentUser, session, supabase }) {
         className={styles.main}
         style={{
           marginInlineEnd: mainMargin,
+          width: mainWidth,
         }}
       >
         <AnimatePresence mode="wait">
@@ -130,6 +134,7 @@ export default function Home({ currentUser, session, supabase }) {
 
             <div className={sidebarStyles.navItems}>
               <div
+                data-testid="comicchat-nav"
                 className={`${sidebarStyles.navItem} ${tab === 'private' ? sidebarStyles.active : ''}`}
                 onClick={() => {
                   setTab('private')
@@ -141,6 +146,7 @@ export default function Home({ currentUser, session, supabase }) {
               </div>
 
               <div
+                data-testid="profile-nav"
                 className={`${sidebarStyles.navItem} ${tab === 'profile' ? sidebarStyles.active : ''}`}
                 onClick={() => {
                   setTab('profile')

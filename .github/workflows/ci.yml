@@ -115,6 +115,9 @@ jobs:
       - name: PR-29 ComicChat-first shell boundaries
         run: npm run beta:pr29
 
+      - name: PR-30 two-account browser acceptance boundaries
+        run: npm run acceptance:pr30
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.

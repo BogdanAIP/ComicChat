@@ -77,6 +77,7 @@ const Auth = ({ supabase }) => {
             </label>
             <input
               id="email"
+              data-testid="auth-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -93,6 +94,7 @@ const Auth = ({ supabase }) => {
             </label>
             <input
               id="password"
+              data-testid="auth-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -120,6 +122,7 @@ const Auth = ({ supabase }) => {
 
           <motion.button
             type="submit"
+            data-testid="auth-submit"
             className={styles.submitButton}
             disabled={loading}
             whileHover={{ scale: loading ? 1 : 1.01 }}
