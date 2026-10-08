@@ -249,6 +249,9 @@ jobs:
       - name: Apply PR-35 one-permission story publication migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261008215000_pr35_one_permission_story_publish.sql
 
+      - name: Apply PR-36 group chat migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261008230000_pr36_group_chat.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -287,6 +290,9 @@ jobs:
 
       - name: Run PR-35 one-permission comic publication integration
         run: bash supabase/tests/pr35_one_permission_publish_integration.sh
+
+      - name: Run PR-36 group membership and message security integration
+        run: bash supabase/tests/pr36_group_chat_integration.sh
 
       - name: Run PR-21 load abuse concurrency integration
         run: bash supabase/tests/pr21_load_abuse_concurrency.sh
