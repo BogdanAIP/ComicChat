@@ -108,6 +108,9 @@ jobs:
       - name: PR-27 staging activation boundaries
         run: npm run activation:pr27
 
+      - name: PR-28 fresh beta shell boundaries
+        run: npm run beta:pr28
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -286,6 +289,9 @@ jobs:
 
       - name: Run PR-26 character reference integration
         run: bash supabase/tests/pr26_character_reference_integration.sh
+
+      - name: Run PR-28 fresh profile integration
+        run: bash supabase/tests/pr28_fresh_profile_integration.sh
 
   mcp-oauth:
     name: MCP OAuth discovery integration
