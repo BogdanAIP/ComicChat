@@ -252,6 +252,9 @@ jobs:
       - name: Apply PR-36 group chat migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261008230000_pr36_group_chat.sql
 
+      - name: Apply PR-37 group episode compiler migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261009001000_pr37_group_episode_compiler.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -293,6 +296,9 @@ jobs:
 
       - name: Run PR-36 group membership and message security integration
         run: bash supabase/tests/pr36_group_chat_integration.sh
+
+      - name: Run PR-37 group episode publication and privacy integration
+        run: bash supabase/tests/pr37_group_episode_integration.sh
 
       - name: Run PR-21 load abuse concurrency integration
         run: bash supabase/tests/pr21_load_abuse_concurrency.sh

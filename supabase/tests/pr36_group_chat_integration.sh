@@ -46,6 +46,8 @@ JOINED="$(run_as "${B}" "SELECT public.comic_join_group('${CLOSED}'::uuid,FALSE)
 [[ "${JOINED}" = "${CLOSED}" ]]
 MEMBERS="$(run_as "${B}" "SELECT member_count FROM public.comic_list_groups() WHERE conversation_id='${CLOSED}'::uuid;")"
 [[ "${MEMBERS}" = "2" ]]
+VISIBLE_NAMES="$(run_as "${B}" "SELECT COUNT(*) FROM public.comic_list_group_members('${CLOSED}'::uuid);")"
+[[ "${VISIBLE_NAMES}" = "2" ]]
 M1="$(run_as "${B}" "SELECT id FROM public.comic_send_message('${CLOSED}'::uuid,'36363636-1111-4111-8111-111111111111'::uuid,'Comic panel from Bravo');")"
 [[ -n "${M1}" ]]
 M2="$(run_as "${A}" "SELECT id FROM public.comic_send_message('${CLOSED}'::uuid,'36363636-2222-4222-8222-222222222222'::uuid,'Comic panel from Alpha');")"
