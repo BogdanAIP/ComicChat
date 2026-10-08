@@ -183,7 +183,7 @@ CREATE OR REPLACE FUNCTION public.comic_list_group_episodes(
   p_limit INTEGER DEFAULT 30
 )
 RETURNS TABLE(
-  episode_id UUID,title TEXT,author_name TEXT,panels JSONB,
+  episode_id UUID,title TEXT,author_name TEXT,author_id UUID,panels JSONB,
   visibility TEXT,created_at TIMESTAMPTZ,published_at TIMESTAMPTZ
 )
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -197,7 +197,7 @@ BEGIN
 
   RETURN QUERY
   SELECT e.id,e.title,COALESCE(NULLIF(BTRIM(u.username),''),'Member'),
-    e.panels,e.visibility,e.created_at,e.published_at
+    e.created_by,e.panels,e.visibility,e.created_at,e.published_at
   FROM public.comic_group_episode e
   LEFT JOIN public."user" u ON u.id=e.created_by
   WHERE e.group_id=p_group_id
