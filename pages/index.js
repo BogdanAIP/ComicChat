@@ -19,6 +19,8 @@ export default function Home({ currentUser, session, supabase }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isDesktop, setIsDesktop] = useState(true)
   const loggedIn = !!session
+  const profileLoaded = Boolean(currentUser?.id)
+  const needsUsername = profileLoaded && !currentUser?.username?.trim()
 
 
   useEffect(() => {
@@ -71,6 +73,43 @@ export default function Home({ currentUser, session, supabase }) {
             >
               <Auth supabase={supabase} />
             </motion.div>
+          ) : !profileLoaded ? (
+            <motion.div
+              key="profile-loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={tabTransition}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: 'grid',
+                placeItems: 'center',
+              }}
+            >
+              <p>{t.loading}</p>
+            </motion.div>
+          ) : needsUsername ? (
+            <motion.div
+              key="username-setup"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={tabTransition}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Profile
+                currentUser={currentUser}
+                session={session}
+                supabase={supabase}
+                requireUsername
+              />
+            </motion.div>
           ) : (
             <motion.div
               key={tab}
@@ -103,7 +142,7 @@ export default function Home({ currentUser, session, supabase }) {
         </AnimatePresence>
       </main>
 
-      {loggedIn && (
+      {loggedIn && profileLoaded && !needsUsername && (
         <>
           <div
             className={`${sidebarStyles.sidebarOverlay} ${sidebarOpen ? sidebarStyles.open : ''}`}
