@@ -190,16 +190,12 @@ jobs:
             )::UUID
           $$;
 
-          CREATE TABLE public."user" (
-            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-            username TEXT,
-            email TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-
           GRANT USAGE ON SCHEMA public TO authenticated;
           GRANT USAGE ON SCHEMA public TO service_role;
           SQL
+
+      - name: Apply PR-28 profile baseline
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261004090000_pr28_profile_baseline.sql
 
       - name: Apply PR-02 migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261005_pr02_secure_private_chat.sql
@@ -319,27 +315,26 @@ jobs:
           supabase start --exclude studio,inbucket,logflare,vector,supavisor
           supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
 
-      - name: Bootstrap least-privilege legacy profile table for MCP acceptance
+      - name: Verify migrated profile baseline for MCP acceptance
         env:
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: |
           psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE TABLE IF NOT EXISTS public."user" (
-            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-            username TEXT,
-            email TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-
-          ALTER TABLE public."user" ENABLE ROW LEVEL SECURITY;
-          GRANT SELECT ON public."user" TO authenticated;
-
-          DROP POLICY IF EXISTS pr23_user_select_self ON public."user";
-          CREATE POLICY pr23_user_select_self
-            ON public."user"
-            FOR SELECT
-            TO authenticated
-            USING (id = auth.uid());
+          DO $
+          BEGIN
+            IF to_regclass('public."user"') IS NULL THEN
+              RAISE EXCEPTION 'fresh profile baseline missing';
+            END IF;
+            IF NOT EXISTS (
+              SELECT 1
+              FROM pg_trigger
+              WHERE tgname = 'comic_auth_user_profile_insert'
+                AND NOT tgisinternal
+            ) THEN
+              RAISE EXCEPTION 'auth profile trigger missing';
+            END IF;
+          END
+          $;
           SQL
 
       - name: Serve authenticated ComicChat MCP function
@@ -412,18 +407,11 @@ jobs:
           supabase start --exclude studio,storage-api,imgproxy,inbucket,edge-runtime,logflare,vector,supavisor
           supabase status -o env | sed 's/="/=/; s/"$//' >> "$GITHUB_OUTPUT"
 
-      - name: Bootstrap legacy profile table required by user discovery
+      - name: Verify migrated profile baseline required by user discovery
         env:
           DB_URL: ${{ steps.supabase.outputs.DB_URL }}
         run: |
-          psql "$DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE TABLE IF NOT EXISTS public."user" (
-            id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-            username TEXT,
-            email TEXT,
-            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-          );
-          SQL
+          test "$(psql "$DB_URL" -v ON_ERROR_STOP=1 -Atc "select to_regclass('public.\"user\"') is not null")" = "t"
 
       - name: Verify private Broadcast authorization
         env:
