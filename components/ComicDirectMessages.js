@@ -9,6 +9,7 @@ import {
 import ComicPanel from './ComicPanel'
 import styles from '../styles/ComicDirectMessages.module.css'
 import ComicWelcome from './ComicWelcome'
+import ComicStoryPermissions from './ComicStoryPermissions'
 
 const REPORT_REASONS = [
   ['spam', 'Spam'],
