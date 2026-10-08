@@ -3,9 +3,10 @@ import { motion } from 'framer-motion'
 import styles from '../styles/Profile.module.css'
 import useTranslation from '../utils/useTranslation'
 
-const Profile = ({ currentUser, session, supabase, onBack }) => {
+const Profile = ({ currentUser, session, supabase, onBack, requireUsername = false }) => {
   const { t } = useTranslation()
-  const [editingUsername, setEditingUsername] = useState(false)
+  const mustChooseUsername = requireUsername && !currentUser?.username?.trim()
+  const [editingUsername, setEditingUsername] = useState(mustChooseUsername)
   const [newUsername, setNewUsername] = useState(currentUser?.username || '')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -16,14 +17,15 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
     setMessage({ type: '', text: '' })
 
     try {
-      const { error } = await supabase.from('user').upsert(
-        {
-          id: currentUser.id,
-          ...currentUser,
-          username: newUsername.trim(),
-        },
-        { onConflict: 'id' }
-      )
+      const username = newUsername.trim()
+      if (username.length < 2 || username.length > 32) {
+        throw new Error(t.usernameLength)
+      }
+
+      const { error } = await supabase
+        .from('user')
+        .update({ username })
+        .eq('id', currentUser.id)
 
       if (error) throw error
 
@@ -54,16 +56,20 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className={styles.headerRow}>
-          <motion.button
-            type="button"
-            className={styles.back}
-            onClick={onBack}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Back"
-          >
-            ←
-          </motion.button>
-          <h1 className={styles.title}>{t.profile}</h1>
+          {!mustChooseUsername && (
+            <motion.button
+              type="button"
+              className={styles.back}
+              onClick={onBack}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Back"
+            >
+              ←
+            </motion.button>
+          )}
+          <h1 className={styles.title}>
+            {mustChooseUsername ? t.chooseUsername : t.profile}
+          </h1>
         </div>
 
         <div className={styles.avatar}>
@@ -75,6 +81,9 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             {currentUser?.username || t.unnamed}
           </h2>
           <p className={styles.email}>{session?.user?.email}</p>
+          {mustChooseUsername && (
+            <p className={styles.email}>{t.usernameRequired}</p>
+          )}
         </div>
 
         {message.text && (
@@ -110,17 +119,19 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
               >
                 {loading ? t.loading : t.save}
               </motion.button>
-              <button
-                type="button"
-                className={styles.btnGhost}
-                onClick={() => {
-                  setEditingUsername(false)
-                  setNewUsername(currentUser?.username || '')
-                  setMessage({ type: '', text: '' })
-                }}
-              >
-                {t.cancelReply.split(' ')[0]} {/* "Cancel" */}
-              </button>
+              {!mustChooseUsername && (
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  onClick={() => {
+                    setEditingUsername(false)
+                    setNewUsername(currentUser?.username || '')
+                    setMessage({ type: '', text: '' })
+                  }}
+                >
+                  {t.cancelReply.split(' ')[0]} {/* "Cancel" */}
+                </button>
+              )}
             </div>
           </form>
         ) : (
@@ -131,7 +142,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
-            {t.usernameOptional}
+            {t.username}
           </motion.button>
         )}
 
