@@ -83,6 +83,25 @@ test('closed group messages appear as comics for invited participants without pa
     const onA = pageA.locator('article[data-message-id]').filter({ hasText: replyText })
     await expect(onA).toHaveCount(1)
     await expect(onA.getByText(replyText,{exact:true})).toHaveCount(1)
+
+    // A group participant creates a real closed-group comic from two existing
+    // chat messages. The other member can read it; the public feed cannot.
+    await pageB.getByTestId('group-story-studio').locator('summary').click()
+    await pageB.getByLabel(`Include comic message ${firstText.slice(0,45)}`).check()
+    await pageB.getByLabel(`Include comic message ${replyText.slice(0,45)}`).check()
+    await pageB.getByLabel('Group story title').fill(`Our private comic ${suffix}`)
+    await pageB.getByTestId('group-story-create').click()
+    const localEpisode = pageB.getByTestId('group-story-episode')
+    await expect(localEpisode).toContainText(`Our private comic ${suffix}`)
+    await expect(localEpisode).toContainText(firstText)
+    await expect(localEpisode).toContainText(replyText)
+    await expect(pageB.getByTestId('group-story-publish')).toHaveCount(0)
+
+    await pageA.getByTestId('group-story-studio').locator('summary').click()
+    await pageA.getByRole('button', { name: 'Refresh stories' }).click()
+    await expect(pageA.getByTestId('group-story-episode')).toContainText(`Our private comic ${suffix}`)
+    await pageB.getByTestId('stories-nav').click()
+    await expect(pageB.getByTestId('comic-story-feed')).not.toContainText(`Our private comic ${suffix}`)
   } finally {
     await contextA.close()
     await contextB.close()
