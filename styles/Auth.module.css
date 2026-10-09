@@ -305,3 +305,19 @@
     border-color: CanvasText;
   }
 }
+
+.container { min-height:0; height:100%; overflow-y:auto; }
+.authCard { flex-shrink:0; }
+.passwordField { display:flex; gap:8px; align-items:stretch; }
+.passwordField .input { min-width:0; flex:1; }
+.passwordToggle,.resetButton {
+  border:2px solid #211f2e; border-radius:6px; background:#fff4cd;
+  color:#211f2e; font:inherit; font-weight:700; font-size:12px; line-height:1.3; padding:8px 10px;
+  cursor:pointer; min-height:44px;
+}
+.passwordToggle { flex:0 0 auto; max-width:100px; }
+.resetButton { display:block; margin:18px auto 0; background:transparent; }
+.passwordToggle:focus-visible,.resetButton:focus-visible { outline:3px solid #9853c8;outline-offset:3px; }
+@media(max-height:700px) { .container { justify-content:flex-start; padding-block:24px; } }
+
+.productIdea { margin:22px 0 0; color:#554d5d; font-size:13px; font-weight:700; line-height:1.5; text-align:center; }

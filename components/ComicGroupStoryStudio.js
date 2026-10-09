@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import ComicPanel from './ComicPanel'
+import useTranslation from '../utils/useTranslation'
 import styles from '../styles/ComicGroupStoryStudio.module.css'
 
 const MAX_PANELS = 36
 
 export default function ComicGroupStoryStudio({ supabase, group, messages, myUserId }) {
+  const { t } = useTranslation()
   const [chosen, setChosen] = useState([])
-  const [title, setTitle] = useState('Our group comic')
+  const [title, setTitle] = useState('')
   const [episodes, setEpisodes] = useState([])
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
@@ -33,14 +35,14 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
       })
       if (!active) return
       if (loadError) {
-        setError('Could not load group stories.')
+        setError(t.groupStoryLoadError)
       } else {
         setEpisodes(data || [])
       }
     }
     start()
     return () => { active = false }
-  }, [groupId, supabase])
+  }, [groupId, supabase, t])
 
   const toggle = (id) => {
     setChosen((current) => current.includes(id)
@@ -61,7 +63,7 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
       return true
     } catch (e) {
       console.error('Comic group story operation failed', e)
-      setError('Unable to complete story action. Check group permissions and try again.')
+      setError(t.groupStoryActionError)
       return false
     } finally {
       setBusy(false)
@@ -70,60 +72,60 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
 
   const makeEpisode = async (event) => {
     event.preventDefault()
-    if (!chosen.length || !title.trim()) return
+    if (!chosen.length) return
     const selected = messages.filter((m) => chosen.includes(m.id))
     if (selected.length !== chosen.length) {
-      setError('The chosen messages changed. Please select them again.')
+      setError(t.groupStoryChanged)
       return
     }
     const ok = await perform(
       () => supabase.rpc('comic_compile_group_episode', {
         p_group_id: groupId,
         p_message_ids: selected.map((m) => m.id),
-        p_title: title.trim(),
+        p_title: title.trim() || t.groupStoryDefault,
       }),
       isPublic
-        ? 'Group comic created. You can publish it in Stories.'
-        : 'Group-only comic created. It stays inside this closed group.'
+        ? t.groupStoryCreated
+        : t.groupStoryClosedCreated
     )
     if (ok) setChosen([])
   }
 
   return (
-    <details className={styles.studio} data-testid="group-story-studio">
-      <summary>▣ Collect comic panels into a story</summary>
+    <details name="comic-studios" className={styles.studio} data-testid="group-story-studio">
+      <summary>▣ {t.groupStoryCollect}</summary>
       <div className={styles.inner}>
         <p className={styles.disclosure}>
           {isPublic
-            ? 'Any member can compile selected messages. Publication to Stories is permitted under the public-group join rules.'
-            : 'Closed-group stories stay inside this group. Public posting and external links are disabled.'}
+            ? t.groupStoryPublicRules
+            : t.groupStoryPrivateRules}
         </p>
         <form onSubmit={makeEpisode} className={styles.form}>
           <label>
-            Story title
-            <input aria-label="Group story title" maxLength={100} required
+            {t.storyTitle}
+            <input aria-label={t.storyTitle} placeholder={t.groupStoryDefault} maxLength={100} required
               value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           <fieldset className={styles.choices}>
-            <legend>Choose messages for this comic ({chosen.length}/{MAX_PANELS})</legend>
-            {messages.length === 0 && <p>No messages yet.</p>}
-            {messages.map((m) => (
+            <legend>{t.groupStoryChoose} ({chosen.length}/{MAX_PANELS})</legend>
+            {messages.length === 0 && <p>{t.groupStoryNoMessages}</p>}
+            {messages.filter((m) => !String(m.id).startsWith('temp-')).map((m) => (
               <label key={m.id} className={styles.messageOption}>
                 <input type="checkbox" checked={chosen.includes(m.id)} disabled={busy ||
                   (!chosen.includes(m.id) && chosen.length >= MAX_PANELS)}
                   onChange={() => toggle(m.id)}
-                  aria-label={`Include comic message ${m.original_text.slice(0,45)}`} />
+                  aria-label={`${t.groupStoryInclude}: ${m.original_text.slice(0,45)}`} />
                 <span>{m.original_text}</span>
               </label>
             ))}
           </fieldset>
           <button type="submit" className={styles.primary} disabled={busy ||
-            chosen.length===0 || !title.trim()} data-testid="group-story-create">
-            Create comic from {chosen.length} messages
+            chosen.length===0} data-testid="group-story-create">
+            {t.groupStoryCreate} ({chosen.length})
           </button>
         </form>
         <div className={styles.episodeList}>
-          <h3>Group comic episodes</h3>
+          <h3>{t.groupStoryEpisodes}</h3>
           <button type="button" disabled={busy} onClick={() => perform(
             () => supabase.rpc('comic_list_group_episodes', {
               p_group_id: groupId, p_limit: 30,
@@ -131,21 +133,23 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
               if (!loadError) setEpisodes(data || [])
               return { error: loadError }
             }),
-            'Group stories refreshed.'
-          )}>Refresh stories</button>
-          {episodes.length===0 && <p>No episodes collected yet.</p>}
+            t.storyRefresh
+          )}>{t.storyRefresh}</button>
+          {episodes.length===0 && <p>{t.groupStoryNone}</p>}
           {episodes.map((e) => (
             <article key={e.episode_id} className={styles.episode} data-testid="group-story-episode">
               <header>
-                <span className={styles.tag}>{e.visibility === 'public' ? 'PUBLIC STORY' : 'GROUP ONLY'}</span>
+                <span className={styles.tag}>{e.visibility === 'public' ? t.groupStoryPublic : t.groupStoryPrivate}</span>
                 <h4>{e.title}</h4>
-                <p>By {e.author_name} · {e.panels.length} comic panels</p>
+                <p>{t.storyBy} {e.author_name} · {e.panels.length} {t.storyPanels}</p>
               </header>
               <div className={styles.panels}>
-                {e.panels.map((panel) => (
+                {e.panels.map((panel, panelIndex) => (
                   <ComicPanel key={panel.id} messageId={panel.id}
                     speaker={panel.speaker} text={panel.text}
-                  senderId={panel.speaker}
+                  characterSeed={panel.character?.seed ?? null}
+                  supabase={supabase} episodeAsset={panel.illustration?.kind === 'private-comic-art'
+                    ? {kind: 'group', episodeId: e.episode_id, panelIndex} : null}
                   styleConfig={panel.style?.primary_style_id === 'classic' ? null : panel.style || null}
                     status="ready" createdAt={panel.created_at} />
                 ))}
@@ -159,9 +163,9 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
                     () => supabase.rpc('comic_publish_group_episode', {
                       p_episode_id: e.episode_id,
                     }),
-                    'Episode published to the public Stories feed.'
+                    t.groupStoryPublished
                   )}>
-                  Publish this comic in Stories
+                  {t.groupStoryPublish}
                 </button>
               )}
             </article>

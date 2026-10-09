@@ -62,7 +62,7 @@ async function createEphemeralAccounts() {
 }
 
 async function login(page, account) {
-  await page.goto('/')
+  await page.goto('/en')
   await page.getByTestId('auth-email').fill(account.email)
   await page.getByTestId('auth-password').fill(account.password)
   await page.getByTestId('auth-submit').click()

@@ -9,6 +9,11 @@ import {
 import ComicPanel from './ComicPanel'
 import ComicStylePicker from './ComicStylePicker'
 import useComicChatStyles from '../utils/useComicChatStyles'
+import useComicMessages from '../utils/useComicMessages'
+import useComicScroll from '../utils/useComicScroll'
+import useConversationDraft from '../utils/useConversationDraft'
+import { makeUuid, mergeMessage, reusableSendAttempt } from '../utils/comicMessages.mjs'
+import useTranslation from '../utils/useTranslation'
 import styles from '../styles/ComicDirectMessages.module.css'
 import ComicWelcome from './ComicWelcome'
 import ComicStoryPermissions from './ComicStoryPermissions'
@@ -22,56 +27,6 @@ const REPORT_REASONS = [
   ['self_harm', 'Self-harm concern'],
   ['other', 'Other'],
 ]
-
-function makeUuid() {
-  const browserCrypto = globalThis.crypto
-
-  if (browserCrypto?.randomUUID) {
-    return browserCrypto.randomUUID()
-  }
-
-  if (!browserCrypto?.getRandomValues) {
-    throw new Error('Secure random UUID generation is unavailable')
-  }
-
-  const bytes = new Uint8Array(16)
-  browserCrypto.getRandomValues(bytes)
-  bytes[6] = (bytes[6] & 0x0f) | 0x40
-  bytes[8] = (bytes[8] & 0x3f) | 0x80
-
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    hex.slice(12, 16),
-    hex.slice(16, 20),
-    hex.slice(20),
-  ].join('-')
-}
-
-function sortMessages(messages) {
-  return [...messages].sort((a, b) => {
-    const timeDiff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    if (timeDiff !== 0) return timeDiff
-    return String(a.id).localeCompare(String(b.id))
-  })
-}
-
-function mergeMessage(previous, nextMessage) {
-  const withoutDuplicate = previous.filter((message) => {
-    if (message.id === nextMessage.id) return false
-    if (
-      nextMessage.client_nonce &&
-      message.client_nonce === nextMessage.client_nonce &&
-      message.sender_id === nextMessage.sender_id
-    ) {
-      return false
-    }
-    return true
-  })
-
-  return sortMessages([...withoutDuplicate, nextMessage])
-}
 
 const ComicDirectMessages = forwardRef(({ session, supabase, onOpenProfile }, ref) => {
   const myUserId = session?.user?.id
@@ -92,19 +47,18 @@ ComicDirectMessages.displayName = 'ComicDirectMessages'
 
 function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenProfile }) {
   const myUserId = session.user.id
-  const channelRef = useRef(null)
   const selectedConversationRef = useRef(null)
-  const messagesEndRef = useRef(null)
+  const sendAttemptRef = useRef(new Map())
+  const styleRefreshRef = useRef(null)
+  const messagesRef = useRef(null)
+  const { t } = useTranslation()
   const renderDispatchRef = useRef(new Set())
 
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
-  const [messages, setMessages] = useState([])
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [blockedUserIds, setBlockedUserIds] = useState([])
-  const [draft, setDraft] = useState('')
-  const [connectionState, setConnectionState] = useState('idle')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [reportTargetId, setReportTargetId] = useState(null)
@@ -124,7 +78,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
   const [betaSafety, setBetaSafety] = useState(null)
 
   const selectedConversationId = selectedConversation?.conversation_id || null
-  const chatStyles = useComicChatStyles(supabase, selectedConversationId, messages)
+  const [draft, setDraft] = useConversationDraft(selectedConversationId)
   const selectedPartnerId = selectedConversation?.other_user_id || null
   const selectedBlockedByMe = selectedPartnerId
     ? blockedUserIds.includes(selectedPartnerId)
@@ -262,94 +216,19 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     }
   }, [supabase])
 
-  useEffect(() => {
-    if (!selectedConversationId) return undefined
-
-    let cancelled = false
-
-    const loadHistory = async () => {
-      const { data, error: loadError } = await supabase.rpc(
-        'comic_read_conversation_messages',
-        {
-          p_conversation_id: selectedConversationId,
-          p_limit: 1000,
-        }
-      )
-
-      if (cancelled) return
-
-      if (loadError) {
-        console.error('comic_read_conversation_messages failed', loadError)
-        setError('Unable to load this conversation.')
-        return
-      }
-
-      setMessages((current) => {
-        let merged = current.filter(
-          (message) =>
-            message.conversation_id === selectedConversationId &&
-            String(message.id).startsWith('temp-')
-        )
-
-        for (const row of data || []) {
-          merged = mergeMessage(merged, row)
-        }
-
-        return sortMessages(merged)
-      })
-
-      const visible = typeof document === 'undefined' ? false : !document.hidden
-      await markReceipts(selectedConversationId, visible)
-      await loadConversations()
-    }
-
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current)
-      channelRef.current = null
-    }
-
-    let channel = null
-
-    const subscribeMessages = async () => {
-      await supabase.realtime.setAuth(session.access_token)
-      if (cancelled) return
-
-      channel = supabase
-        .channel(`conversation:${selectedConversationId}`, {
-          config: { private: true },
-        })
-        .on('broadcast', { event: 'INSERT' }, async () => {
-          await loadHistory()
-        })
-        .on('broadcast', { event: 'UPDATE' }, async () => {
-          await loadHistory()
-        })
-        .subscribe((status) => {
-          if (cancelled) return
-          setConnectionState(
-            status === 'SUBSCRIBED' ? 'connected' : status.toLowerCase()
-          )
-          if (status === 'SUBSCRIBED') loadHistory()
-        })
-
-      channelRef.current = channel
-    }
-
-    subscribeMessages()
-
-    return () => {
-      cancelled = true
-      if (channel && channelRef.current === channel) channelRef.current = null
-      if (channel) supabase.removeChannel(channel)
-    }
-  }, [
-    loadConversations,
-    markReceipts,
-    myUserId,
-    selectedConversationId,
-    session.access_token,
-    supabase,
-  ])
+  const onMessageActivity = useCallback(async (conversationId) => {
+    await markReceipts(conversationId, typeof document !== 'undefined' && !document.hidden)
+    await loadConversations()
+  }, [markReceipts, loadConversations])
+  const history = useComicMessages({
+    supabase, session, conversationId: selectedConversationId,
+    onActivity: onMessageActivity,
+    onStyleChange: () => styleRefreshRef.current?.(),
+  })
+  const { messages, setMessages, connectionState } = history
+  const chatStyles = useComicChatStyles(supabase, selectedConversationId, messages)
+  useEffect(() => { styleRefreshRef.current = chatStyles.refresh }, [chatStyles.refresh])
+  const messageScroll = useComicScroll(messagesRef, selectedConversationId, messages)
 
   useEffect(() => {
     if (!selectedConversationId || typeof document === 'undefined') return undefined
@@ -364,10 +243,6 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [loadConversations, markReceipts, selectedConversationId])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
 
   useEffect(() => {
     if (!betaSafety?.external_generation_enabled) return undefined
@@ -479,8 +354,6 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
           unread_count: 0,
         }
 
-      setMessages([])
-      setConnectionState('connecting')
       setSelectedConversation(row)
       setQuery('')
       setSearchResults([])
@@ -696,7 +569,10 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       selectedBlockedByMe
     ) return
 
-    const clientNonce = makeUuid()
+    const conversationId = selectedConversationId
+    const attempt = reusableSendAttempt(sendAttemptRef.current.get(conversationId), conversationId, originalText)
+    sendAttemptRef.current.set(conversationId, attempt)
+    const clientNonce = attempt.nonce
     const tempId = `temp-${clientNonce}`
     const optimistic = {
       id: tempId,
@@ -713,11 +589,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     setError('')
     setBusy(true)
     setDraft('')
+    messageScroll.followEnd()
     setMessages((current) => mergeMessage(current, optimistic))
 
     try {
       const { data, error: sendError } = await supabase.rpc('comic_send_message', {
-        p_conversation_id: selectedConversationId,
+        p_conversation_id: conversationId,
         p_client_nonce: clientNonce,
         p_original_text: originalText,
       })
@@ -727,12 +604,15 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       const row = Array.isArray(data) ? data[0] : data
       if (!row?.id) throw new Error('comic_send_message returned no message')
 
-      setMessages((current) => mergeMessage(current, row))
-      await loadConversations()
+      if (sendAttemptRef.current.get(conversationId) === attempt) sendAttemptRef.current.delete(conversationId)
+      if (selectedConversationRef.current?.conversation_id === conversationId) {
+        setMessages((current) => mergeMessage(current, row))
+      }
+      loadConversations().catch((loadError) => console.error('Conversation refresh failed', loadError))
     } catch (sendError) {
       console.error('comic_send_message failed', sendError)
       setMessages((current) => current.filter((message) => message.id !== tempId))
-      setDraft(originalText)
+      setDraft((current) => current || originalText)
       const serverMessage = String(sendError?.message || '')
       const blocked = serverMessage.includes('interaction_blocked')
       const rateLimited = serverMessage.includes('send_rate_limited')
@@ -747,7 +627,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               ? 'New messages are blocked for this conversation. Your text is still in the composer.'
               : rateLimited
                 ? 'Too many messages were sent recently. Try again shortly; your text is still in the composer.'
-                : 'Message was not sent. Your text is still in the composer.'
+                : t.sendUnconfirmed
       )
     } finally {
       setBusy(false)
@@ -757,18 +637,18 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
   const visibleSearchResults = query.trim().length >= 2 ? searchResults : []
 
   const selectedTitle = selectedConversation
-    ? selectedConversation.other_username || 'Private conversation'
-    : 'Private comics'
+    ? selectedConversation.other_username || t.privateConversation
+    : t.privateComics
 
   return (
-    <section className={styles.shell} aria-label="ComicChat private messages" data-testid="comic-private-shell">
+<section className={`${styles.shell} ${selectedConversation ? styles.hasChat : ''}`} aria-label={t.privateMessages} data-testid="comic-private-shell">
       <aside className={styles.sidebar}>
         <header className={styles.sidebarHeader}>
           <div>
-            <p className={styles.eyebrow}>THE STORY DESK</p>
-            <h2>Private conversations</h2>
+            <p className={styles.eyebrow}>{t.storyDesk}</p>
+            <h2>{t.privateConversations}</h2>
           </div>
-          <span className={styles.lockBadge}>✦ Private</span>
+          <span className={styles.lockBadge}>✦ {t.private}</span>
         </header>
 
         <label className={styles.searchLabel}>
@@ -779,21 +659,21 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={
-              deletionPending ? 'Search disabled while deletion is requested' : 'Type at least 2 characters'
+              deletionPending ? 'Search disabled while deletion is requested' : t.typeTwoCharacters
             }
             autoComplete="off"
             disabled={deletionPending}
           />
         </label>
 
-        <div className={styles.exportActions}>
+        <details className={styles.exportActions}><summary>{t.betaSettings}</summary>
           <button
             type="button"
             className={styles.safetyButton}
             onClick={exportMyData}
             disabled={exportBusy}
           >
-            {exportBusy ? 'Preparing export…' : 'Export my data'}
+            {exportBusy ? t.preparingExport : t.exportMyData}
           </button>
           {deletionPending ? (
             <button
@@ -802,7 +682,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               onClick={cancelAccountDeletion}
               disabled={accountStateBusy}
             >
-              {accountStateBusy ? 'Updating…' : 'Cancel deletion request'}
+              {accountStateBusy ? t.updating : t.cancelDeletion}
             </button>
           ) : (
             <button
@@ -811,7 +691,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               onClick={requestAccountDeletion}
               disabled={accountStateBusy}
             >
-              {accountStateBusy ? 'Updating…' : 'Request account deletion'}
+              {accountStateBusy ? t.updating : t.requestDeletion}
             </button>
           )}
           {exportStatus && (
@@ -837,7 +717,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               {' '}Retention duration {betaSafety.retention_duration_defined ? 'is defined' : 'is not defined'}.
             </div>
           )}
-        </div>
+        </details>
 
         {visibleSearchResults.length > 0 && (
           <div className={styles.searchResults}>
@@ -854,7 +734,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                 <span className={styles.avatar}>
                   {(user.username || '?').slice(0, 1).toUpperCase()}
                 </span>
-                <span>{user.username || 'Unnamed user'}</span>
+                <span>{user.username || t.unnamedUser}</span>
               </button>
             ))}
           </div>
@@ -863,7 +743,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
         <div className={styles.conversationList}>
           {conversations.length === 0 ? (
             <p className={styles.emptySidebar}>
-              Search for a username to start a private conversation.
+              {t.startPrivateConversation}
             </p>
           ) : (
             conversations.map((conversation) => (
@@ -878,8 +758,6 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     : styles.conversationButton
                 }
                 onClick={() => {
-                  setMessages([])
-                  setConnectionState('connecting')
                   setSelectedConversation(conversation)
                 }}
               >
@@ -887,9 +765,9 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                   {(conversation.other_username || '?').slice(0, 1).toUpperCase()}
                 </span>
                 <span className={styles.conversationCopy}>
-                  <strong>{conversation.other_username || 'Private user'}</strong>
+                  <strong>{conversation.other_username || t.privateUser}</strong>
                   <span>
-                    {conversation.last_message_text || 'No messages yet'}
+                    {conversation.last_message_text || t.noMessagesYet}
                   </span>
                 </span>
                 {Number(conversation.unread_count) > 0 && (
@@ -905,8 +783,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
 
       <div className={styles.chat}>
         <header className={styles.chatHeader}>
+          {selectedConversation && <button type="button" className={styles.backButton}
+            data-testid="comic-back" onClick={() => setSelectedConversation(null)}>
+            ← {t.backToChats}
+          </button>}
           <div>
-            <p className={styles.eyebrow}>YOUR STORY / FRAME BY FRAME</p>
+            <p className={styles.eyebrow}>{t.yourStory}</p>
             <h2 data-testid="comic-chat-title">{selectedTitle}</h2>
           </div>
           <div className={styles.chatHeaderActions}>
@@ -922,11 +804,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                 disabled={busy}
                 aria-pressed={selectedBlockedByMe}
               >
-                {selectedBlockedByMe ? 'Unblock' : 'Block'}
+                {selectedBlockedByMe ? t.unblock : t.block}
               </button>
             )}
             <span className={styles.connection} data-testid="comic-connection">
-              {connectionState === 'connected' ? 'Live' : connectionState}
+              {connectionState === 'connected' ? t.live : connectionState}
             </span>
           </div>
         </header>
@@ -935,8 +817,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
           <ComicWelcome onOpenProfile={onOpenProfile} />
         ) : (
           <>
-            <details className={styles.storyStudio}>
-              <summary>✦ Make a comic from this conversation</summary>
+            <details className={styles.storyStudio} name="comic-studios">
+              <summary>{t.makeComic}</summary>
               <ComicStoryPermissions
                 key={selectedConversationId}
                 supabase={supabase}
@@ -948,20 +830,24 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               />
             </details>
 
-            <ComicStylePicker key={`${selectedConversationId}:${chatStyles.current.primary_style_id}:${chatStyles.current.secondary_style_id}:${chatStyles.current.secondary_weight}`}
+            <ComicStylePicker key={selectedConversationId}
               current={chatStyles.current} onSave={chatStyles.save}
               pending={chatStyles.pending} error={chatStyles.error}
-              notice={chatStyles.notice} />
+              notice={chatStyles.notice} externalGenerationEnabled={Boolean(betaSafety?.external_generation_enabled)} />
 
-            <div className={styles.messages} aria-live="polite">
+            <div className={styles.messages} ref={messagesRef} onScroll={messageScroll.onScroll}
+              aria-live="polite" data-testid="comic-messages">
+              {history.error && <p role="alert" className={styles.error}>{t[history.error] || history.error}</p>}
+              {history.hasOlder && <button type="button" className={styles.loadOlder}
+                onClick={history.loadOlder} disabled={history.loadingOlder}>
+                {history.loadingOlder ? t.loading : t.loadEarlierMessages}
+              </button>}
               {messages.length === 0 && (
                 <div className={styles.emptyChat}>
                   <div className={styles.placeholderPanel}>✦</div>
-                  <h3>Start the conversation</h3>
+                  <h3>{t.startConversation}</h3>
                   <p>
-                    The page is yours. Write the first line and watch it land in
-                    its own comic panel. The artwork will stay in preview mode
-                    while AI image generation is switched off.
+                    {t.firstPanelHelp}
                   </p>
                 </div>
               )}
@@ -979,7 +865,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                       ? chatStyles.current
                       : Object.hasOwn(chatStyles.snapshots, message.id)
                         ? chatStyles.snapshots[message.id] : null}
-                    speaker={mine ? 'You' : selectedTitle}
+                    speaker={mine ? t.you : selectedTitle}
                     text={message.original_text}
                     status={message.status}
                     mine={mine}
@@ -989,10 +875,10 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     reporting={reportBusy && reportTargetId === message.id}
                     supabase={supabase}
                     mediaStorageEnabled={Boolean(betaSafety?.media_storage_enabled)}
+                    mediaAssetId={message.media_asset_id || null}
                   />
                 )
               })}
-              <div ref={messagesEndRef} />
             </div>
 
             {reportTargetId && (
@@ -1085,24 +971,26 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               )}
 
               {draft.length > 0 && (
-                <div className={styles.composerPreview} aria-label="Comic message preview">
+                <details className={styles.composerPreview} aria-label={t.messagePreview}>
+                  <summary>{t.messagePreview}</summary>
                   <ComicPanel
                     messageId={`draft:${selectedConversationId}`}
                     senderId={myUserId}
                     styleConfig={chatStyles.current}
-                    speaker="You"
+                    speaker={t.you}
                     text={draft}
                     status="queued"
                     mine
                     preview
                   />
-                </div>
+                </details>
               )}
 
               <div className={styles.composerRow}>
                 <textarea
                   className={styles.textarea}
                   data-testid="comic-composer"
+                  aria-label={t.writeMessage}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value.slice(0, 4000))}
                   placeholder={
@@ -1110,10 +998,10 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                       ? 'Cancel the deletion request to send messages'
                       : selectedBlockedByMe
                         ? 'Unblock this user to send a message'
-                        : 'Write a message…'
+                        : t.writeMessage
                   }
                   rows={2}
-                  disabled={deletionPending || selectedBlockedByMe}
+                  disabled={busy || deletionPending || selectedBlockedByMe}
                 />
                 <button
                   className={styles.sendButton}
@@ -1121,12 +1009,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                   type="submit"
                   disabled={busy || deletionPending || selectedBlockedByMe || !draft.trim()}
                 >
-                  Send
+                  {busy ? t.sending : t.send}
                 </button>
               </div>
               <div className={styles.composerNote}>
                 <span>{draft.length}/4000</span>
-                <span>Every message is a new panel. Private artwork is available when enabled.</span>
+                <span>{t.panelPerMessage}</span>
               </div>
             </form>
           </>

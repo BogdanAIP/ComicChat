@@ -1,0 +1,87 @@
+# ComicChat — исправления по аудиту 9 октября 2026
+
+Исходный полный анализ: [COMICCHAT_AUDIT_2026-10-09.md](COMICCHAT_AUDIT_2026-10-09.md). Он сохраняет состояние `main@7bd8741` до исправлений. Этот документ описывает фактические изменения, проверки и оставшуюся работу. Новые продуктовые идеи ниже — backlog, а не реализованные функции.
+
+## Исправленный интерфейс
+
+| Проблема | Теперь |
+|---|---|
+| Карточки группы сжимались до полосок, текст исчезал | Карточки не сжимаются; прокручивается история, весь bubble остаётся внутри карточки |
+| Composer уходил ниже экрана после появления preview | Чат занимает доступную высоту `100dvh`; composer остаётся внизу, preview раскрывается отдельно |
+| На мобильном список и разговор мешали друг другу | Список и открытый чат имеют отдельные состояния; есть кнопка назад |
+| Старый запрос публикации показывал пустой локальный фрагмент | Review получает замороженный снимок с сервера, включая сообщения вне загруженной страницы; без успешного review согласие отключено |
+| Разрешение нельзя было отозвать | Добавлен отзыв через существующий RPC; серверный доступ к эпизоду и art учитывает актуальные согласия |
+| Группа обрезала пробелы и переводы строк | `trim()` проверяет только пустоту; отправляется исходная строка |
+| Повтор после потерянного ответа создавал дубль | Один nonce сохраняется для конкретной попытки; повтор использует тот же nonce, не стирает более новый draft |
+| Каждое realtime-событие перечитывало всю историю | Общий hook загружает по 50 сообщений с keyset pagination, получает конкретное изменённое сообщение и объединяет его по ID |
+| Обновление сбрасывало чтение старых сообщений | Автопрокрутка работает рядом с концом; загрузка предыдущей страницы сохраняет позицию |
+| Скрытое меню оставляло доступные за экраном элементы | Native buttons, `inert`, `aria-hidden`, CSS visibility, Escape и возврат фокуса |
+| `/ar` менял направление, но оставлял основной UI английским | Переведены основные auth/chat/group/story/style/profile/navigation действия и состояния; исправлена RTL-навигация |
+| Recovery и состояние профиля были неполными | Supabase reset/recovery и смена пароля; переключение видимости пароля; устранены profile/session races и обновление профиля без reload |
+
+Изображение-шаблон теперь явно подписано как шаблон; ожидание или недоступность AI-art не выдаются за готовую AI-иллюстрацию. Технические studio/style controls свёрнуты, а оригинальный текст сохраняется отдельно от рисунка.
+
+## Архитектура и сервер
+
+**Замороженный эпизод.** Предложение публикации сохраняет точный массив панелей; preview, согласие и выпуск используют один и тот же payload. Старые pending-запросы получают ограниченный снимок последних 36 кадров; опубликованные текст и стиль не пересобираются. Метаданные содержат версию стиля, числовую идентичность персонажа, разрешённый descriptor готового artwork. Private object paths и произвольные worker keys исключены из клиентского payload.
+
+**Доступ к artwork Stories.** Новый `comicchat-story-art` сначала проверяет пользователя, затем service-only resolver проверяет актуальные Direct-согласия, допустимость публичной группы или текущее членство в закрытой группе. Возвращаются байты изображения с `no-store`, без Storage URL. Прямой доступ к приватной переписке не предоставляется читателю Stories. Уже скачанные пользователем байты отозвать невозможно; лента перепроверяется при возвращении на вкладку и каждые 30 секунд.
+
+**Очередь без открытого браузера.** `comicchat-render` и новый `comicchat-worker` используют один обработчик существующих заданий. Worker имеет отдельную проверку credential; hosted setup использует Supabase Cron, pg_net и Vault. За один вызов обрабатывается ограниченное число заданий. Внешняя генерация требует существующего explicit gate; он не включается этими изменениями.
+
+**Повтор и защита от устаревшего worker.** У каждого claim отдельный immutable asset ID, upload не перезаписывает файл. Completion проверяет lease и соответствие asset. SDK retries отключены; timeout 120 секунд при lease 180 секунд. Retryable ошибки планируются с backoff, истёкшие lease восстанавливаются, исчерпанные попытки становятся terminal. Неиспользованный файл поздней попытки удаляется самим обработчиком. Стиль берётся из снимка сообщения, а не из текущих настроек разговора.
+
+**Доступ и время.** Согласованы исторические ACL: `anon`/PUBLIC не получают ComicChat SECURITY DEFINER RPC, browser roles не вызывают trigger helpers. Явные authenticated-grants с проверками пользователя сохранены. `timestamptz` defaults сообщений используют `NOW()`; исправлен обход лимита отправок на сервере с часовым поясом, отличным от UTC. Исторические timestamps не переписываются.
+
+**Legacy email endpoint.** Неиспользуемый UI endpoint больше не принимает произвольного получателя и содержимое для отправки: POST возвращает 410, другие методы — 405. Реальные email-уведомления требуют отдельного server-derived механизма.
+
+## Проверки и доказательства
+
+| Проверка | Результат |
+|---|---|
+| PostgreSQL 17.11: 18 базовых миграций и новая audit migration | PASS |
+| Старые pending/published/cancelled snapshots, backfill, FNV32 goldens, ACL | PASS |
+| 21 SQL integration suite, включая two-user isolation, groups, consent, rate limits, concurrency, expired leases и stale-worker fencing | PASS; [журнал](evidence/audit-postgres-2026-10-09.log) |
+| 29 существующих static boundary scripts | PASS |
+| Node regressions: immutable identity, точный текст и потерянный ответ | 3 PASS |
+| ESLint и production build Next.js 16.3.6 | PASS; существующие lint warnings остаются |
+| Windows Chrome / Playwright: direct и group 1440/390 px, consent/revoke, отказ preview, Escape/focus, Arabic auth | Все 5 сценариев PASS; отказ preview повторён после исправления неоднозначного locator теста |
+| Chrome DevTools: DOM, computed CSS, геометрия, Performance/CDP | PASS; [метрики](evidence/audit-ui-2026-10-09.json), [мобильный экран](evidence/audit-group-mobile-2026-10-09.png) |
+
+На 390×844 Direct composer после раскрытия preview находится на y=748…814, Group — y=770…832. У восьми групповых карточек высота около 303 px, `scrollHeight == clientHeight`, bubble целиком внутри. Горизонтального переполнения нет. В исходном аудите composer уходил к y≈1004, а групповые карточки сжимались до ≈53 px.
+
+Эти UI-сценарии используют настоящий frontend и детерминированные ответы Supabase. Они доказывают вёрстку и wiring; серверную авторизацию доказывают отдельные SQL suites. Реальную AI-генерацию с оплатой не запускали. В CI добавлены групповой browser suite, UI regressions, backfill и новые SQL проверки. Playwright закреплён в lockfile; workflow больше не изменяет установленную версию Next отдельным npm install. Generated browser reports исключены из ESLint.
+
+## Reuse-first решение
+
+Использованы существующие Supabase Auth/Realtime/RPC/Storage, нативные Cron/Vault/pg_net, официальный OpenAI SDK и Playwright/Chrome DevTools. Применены Supabase review и `review-duplication` workflow через R. Market/Resolver и официальные реализации рассмотрены; переход на новый chat vendor или вторую очередь увеличивал бы миграцию и риск потери проверенных правил доступа. Общие message/draft/scroll hooks — небольшие адаптеры существующих компонент, а не новый транспорт.
+
+Custom code остаётся для специфики ComicChat: точного текста, message ID/nonce, frozen episode, согласий, identity/style snapshots, billing ledger и lease fencing. Rakazo используется при разработке и не стал runtime dependency.
+
+Официальные основания: [Supabase Auth](https://supabase.com/docs/guides/auth), [Cron + Edge Functions](https://supabase.com/docs/guides/functions/schedule-functions), [Vault](https://supabase.com/docs/guides/database/vault), [Playwright assertions](https://playwright.dev/docs/test-assertions), [OpenAI Node SDK](https://github.com/openai/openai-node).
+
+## Следующая продуктовая работа
+
+1. **Вход через готовый результат:** показать до регистрации короткий разговор и его эпизод; измерять приглашение друга, ответ, первый выпуск и совместное возвращение через неделю.
+2. **Компактный режим чтения:** переключение между разговором и комиксом без изменения исходного текста.
+3. **Персонажи:** профиль внешности и контролируемые изменения; проверить continuity на подборке диалогов, прежде чем обещать постоянную AI-идентичность.
+4. **Редактор выпуска:** выбор кадров, обложка, заголовок и страницы. Личные коллекции и продолжения.
+5. **Приглашения по ссылке:** заменить обмен UUID; предусмотреть срок действия, отзыв и private membership boundary.
+6. **Сценарии для друзей:** загадка, приключение или комедия с ролями. Проверить удержание до добавления публичных подписок.
+7. **Стоимость:** быстрый template chat и улучшение выбранного выпуска. Метрики latency, доли ошибок, фактической стоимости и повторов.
+
+Оставшиеся технические задачи: pagination ленты Stories сверх 50 выпусков; parity групп/стилей/эпизодов в MCP; завершение перевода редких safety/beta diagnostics; реальные уведомления; проверка paid image flow и character continuity после отдельной настройки бюджета. Отложенные adult/anti-leak функции не реализованы этим пакетом. Project-level leaked-password protection требует отдельного решения по настройкам/тарифу, не считается исправленной. Supabase advisor продолжает отмечать намеренные authenticated SECURITY DEFINER RPC и deny-only таблицы без browser policies; расширение их доступа не является исправлением.
+
+## Выпуск
+
+Ветка: `fix/comicchat-audit-2026-10-09`. Новая portable migration: `20261009063333_audit_fixes.sql`, SHA256 `0c63d41782171384553f32ba4d4737645f41953c651a1c01d69ab23f171babae`.
+
+Hosted worker provisioning находится отдельно в `supabase/ops/audit_worker_schedule.sql`: применяется после deployment и auth smoke worker. Полная история удалённых миграций не переигрывается. Статус CI, применения и staging будет записан ниже после фактической проверки.
+
+### Серверный выпуск — 07:19–07:21 UTC
+
+На staging Supabase применены `audit_fixes` и `audit_worker_schedule`. Активны `comicchat-render` v3, `comicchat-story-art` v1 и `comicchat-worker` v1. Все три без авторизации возвращают 401. Cron `comicchat-generation-drain` включён; первый вызов 07:21 UTC завершился HTTP 202 без timeout. Credential хранится в Vault; проверять его может только service_role. Очередь в момент проверки пуста, поэтому HTTP 202 не выдаётся за успешную генерацию изображения.
+
+`external_generation_enabled=false` подтверждён после выпуска. Anon SECURITY DEFINER advisor устранён. Для проверенного legacy `handle_updated_at()` подготовлено отдельное hosted hardening `audit_legacy_hardening.sql`: фиксируется search_path без изменения тела или исторических данных.
+
+[PR #39](https://github.com/BogdanAIP/ComicChat/pull/39) содержит полный анализ, исправления и доказательства. Первый CI прошёл Build, PostgreSQL, MCP и Realtime; group browser и все 5 UI fixtures прошли. Старый Direct browser test ожидал `Live` после автоматического выбора `/ar`; теперь тест явно открывает `/en`, сохраняя проверку настоящего realtime обмена. Повторный CI выполняется на исправленной версии.

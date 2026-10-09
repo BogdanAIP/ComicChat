@@ -54,8 +54,8 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      - name: Install pinned Playwright test runner
-        run: npm install --no-save --package-lock=false @playwright/test@1.64.0
+      - name: Verify pinned Playwright test runner from lockfile
+        run: npx playwright --version
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
@@ -97,7 +97,7 @@ jobs:
           COMICCHAT_BASE_URL: http://127.0.0.1:3000
           COMICCHAT_SUPABASE_URL: ${{ steps.supabase.outputs.API_URL }}
           COMICCHAT_SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.SERVICE_ROLE_KEY }}
-        run: npx playwright test browser-tests/pr30-two-account.spec.mjs --project=chromium
+        run: npx playwright test browser-tests/pr30-two-account.spec.mjs browser-tests/pr36-group-chat.spec.mjs browser-tests/audit-ui.spec.mjs --project=chromium
 
       - name: Show diagnostics on failure
         if: failure()
@@ -167,8 +167,8 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      - name: Install pinned Playwright test runner
-        run: npm install --no-save --package-lock=false @playwright/test@1.64.0
+      - name: Verify pinned Playwright test runner from lockfile
+        run: npx playwright --version
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

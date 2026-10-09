@@ -1,0 +1,20 @@
+.character[data-character-template='template-1'] {
+  filter: hue-rotate(60deg);
+}
+.character[data-character-template='template-1'] > span:first-child {
+  border-radius: 46% 46% 38% 38%;
+  transform: scaleX(.88);
+}
+.character[data-character-template='template-2'] {
+  filter: hue-rotate(150deg);
+}
+.character[data-character-template='template-2'] > span:first-child {
+  border-radius: 38% 38% 48% 48%;
+  transform: scaleX(1.12);
+}
+.character[data-character-template='template-3'] {
+  filter: hue-rotate(240deg);
+}
+.character[data-character-template='template-3'] > span:first-child {
+  border-radius: 50% 32% 45% 45%;
+}

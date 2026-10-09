@@ -21,7 +21,8 @@ expect(home, "useState('private')", 'ComicChat default tab')
 expect(home, "import ComicDirectMessages from '../components/ComicDirectMessages'", 'protected ComicChat component reuse')
 expect(home, '<title>ComicChat</title>', 'ComicChat page title')
 expect(home, 'Private comic-first conversations where each message becomes a visual panel.', 'ComicChat page description')
-expect(home, '>ComicChat</div>', 'ComicChat navigation entry')
+expect(home, "'comicchat-nav'", 'ComicChat navigation entry')
+if (!/<button\s+[^>]*type="button"/.test(home)) throw new Error('Navigation must use native buttons')
 expect(home, "onBack={() => setTab('private')}", 'Profile returns to ComicChat')
 
 for (const forbidden of [

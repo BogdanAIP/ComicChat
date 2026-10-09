@@ -19,3 +19,7 @@
 .notice,.error {padding:9px 11px;border:2px solid #211f2e;background:#def7e5;font-size:12px;font-weight:800;}
 .error {background:#ffd9df;}
 @media(max-width:760px){.studio{max-height:53vh;}.controls{display:grid;}.preview{gap:9px;}.panel{padding:15px;}}
+
+.studio { max-height:26dvh; }
+@media(max-width:760px) { .studio { max-height:26dvh; } }
+@media(max-height:550px) { .studio>summary { padding-block:8px; } }

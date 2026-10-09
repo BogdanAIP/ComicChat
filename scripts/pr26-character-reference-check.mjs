@@ -13,7 +13,7 @@ const forbid = (source, needle, label) => {
 }
 
 const migration = read('supabase/migrations/20261008002500_pr26_character_reference.sql')
-const edge = read('supabase/functions/comicchat-render/index.ts')
+const edge = read('supabase/functions/comicchat-render/index.ts') + read('supabase/functions/_shared/comic-image-worker.ts')
 const test = read('supabase/tests/pr26_character_reference_integration.sh')
 const docs = read('docs/PR26_CHARACTER_REFERENCE_CONTINUITY.md')
 const roadmap = read('ROADMAP.md')

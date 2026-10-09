@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { renderTemplate } from '../utils/templateRenderer.mjs'
 import { styleVisualTokens } from '../utils/comicStyleSkills.mjs'
+import useTranslation from '../utils/useTranslation'
+import panelStyles from '../styles/ComicPanel.module.css'
 import styles from '../styles/ComicDirectMessages.module.css'
 
 function formatTime(value) {
@@ -30,7 +32,11 @@ export default function ComicPanel({
   reporting = false,
   supabase = null,
   mediaStorageEnabled = false,
+  mediaAssetId = null,
+  episodeAsset = null,
+  characterSeed = null,
 }) {
+  const { t } = useTranslation()
   const [copyState, setCopyState] = useState('idle')
   const [retryPreviewing, setRetryPreviewing] = useState(false)
   const [privateArt, setPrivateArt] = useState(null)
@@ -44,6 +50,7 @@ export default function ComicPanel({
     preview,
     senderId,
     styleConfig,
+    characterSeed,
   })
   const scene = renderModel.scene
   const visualTokens = renderModel.style ? styleVisualTokens(renderModel.style) : undefined
@@ -62,6 +69,8 @@ export default function ComicPanel({
     }
   }, [])
 
+  const episodeArtKey = !preview && supabase && episodeAsset
+    ? `${episodeAsset.kind}:${episodeAsset.episodeId}:${episodeAsset.panelIndex}` : null
   const privateArtKey =
     !preview &&
     status === 'ready' &&
@@ -70,23 +79,34 @@ export default function ComicPanel({
     conversationId &&
     messageId &&
     !String(messageId).startsWith('temp-')
-      ? `${conversationId}/${messageId}.webp`
+      ? mediaAssetId && mediaAssetId !== messageId
+        ? `${conversationId}/${messageId}/${mediaAssetId}.webp`
+        : `${conversationId}/${messageId}.webp`
       : null
+  const artKey = episodeArtKey || privateArtKey
   const artUrl =
-    privateArtKey && privateArt?.key === privateArtKey ? privateArt.url : null
+    artKey && privateArt?.key === artKey ? privateArt.url : null
 
   useEffect(() => {
-    if (!privateArtKey || !supabase) return undefined
+    if (!artKey || !supabase) return undefined
 
     let cancelled = false
     let objectUrl = null
 
     const loadPrivateArt = async () => {
-      const { data, error } = await supabase.storage
-        .from('comicchat-art')
-        .download(privateArtKey)
+      setPrivateArt({ key: artKey, loading: true })
+      const { data, error } = episodeArtKey
+        ? await supabase.functions.invoke('comicchat-story-art', { body: {
+            episodeKind: episodeAsset.kind, episodeId: episodeAsset.episodeId,
+            panelIndex: episodeAsset.panelIndex,
+          } })
+        : await supabase.storage.from('comicchat-art').download(privateArtKey)
 
-      if (cancelled || error || !data) return
+      if (cancelled) return
+      if (error || !(data instanceof Blob)) {
+        setPrivateArt({ key: artKey, error: true })
+        return
+      }
 
       objectUrl = URL.createObjectURL(data)
       if (cancelled) {
@@ -95,7 +115,7 @@ export default function ComicPanel({
         return
       }
 
-      setPrivateArt({ key: privateArtKey, url: objectUrl })
+      setPrivateArt({ key: artKey, url: objectUrl })
     }
 
     loadPrivateArt()
@@ -104,10 +124,21 @@ export default function ComicPanel({
       cancelled = true
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [privateArtKey, supabase])
+  // The frozen asset key identifies the request; object identity from the
+  // parent render must not repeatedly download the same artwork.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artKey, supabase])
 
   const exactText = renderModel.text
   const accessibleId = `comic-${String(messageId).replace(/[^a-zA-Z0-9_-]/g, '-')}`
+  const stateLabels = { queued: t.panelQueued, rendering: t.panelRendering,
+    ready: t.panelReady, failed: t.panelFailed, sending: t.panelSending,
+    draft: t.panelDraft, 'retry-preview': t.panelRetry }
+  const stateLabel = status === 'ready' && !preview
+    ? artUrl ? t.panelReady
+      : privateArt?.key === artKey && privateArt?.error ? t.panelArtUnavailable
+        : artKey ? t.panelArtLoading : t.panelTemplate
+    : stateLabels[state.key] || state.label
 
   const retryPreview = () => {
     if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
@@ -150,8 +181,8 @@ export default function ComicPanel({
             role="img"
             aria-label={
               artUrl
-                ? `Private generated comic artwork for ${speaker}`
-                : `Decorative ${scene.label} placeholder for ${speaker}`
+                ? `${t.panelArtLabel}: ${speaker}`
+                : `${t.panelPlaceholder}: ${speaker}`
             }
           >
             {artUrl ? (
@@ -165,7 +196,7 @@ export default function ComicPanel({
               <>
                 <div className={styles.sceneTexture} aria-hidden="true" />
                 <div
-                  className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]}`}
+                  className={`${styles.characterSilhouette} ${styles[`pose_${scene.pose}`]} ${panelStyles.character}`}
                   data-character-template={renderModel.character.silhouette}
                   aria-hidden="true"
                 >
@@ -190,12 +221,12 @@ export default function ComicPanel({
               fontSize: `${renderModel.bubble.fontScale}rem`,
             }}
           >
-            <p>{exactText || 'Your message will appear here exactly as typed.'}</p>
+            <p>{exactText || t.panelEmptyDraft}</p>
           </div>
 
           <div className={styles.visualState} aria-hidden="true">
             <span className={styles.visualStateDot} />
-            <span>{state.label}</span>
+            <span>{stateLabel}</span>
           </div>
         </div>
 
@@ -215,9 +246,9 @@ export default function ComicPanel({
                 type="button"
                 className={styles.comicAction}
                 onClick={copyOriginal}
-                aria-label={`Copy original text from ${speaker}`}
+                aria-label={`${t.panelCopy}: ${speaker}`}
               >
-                Copy original text
+                {t.panelCopy}
               </button>
             )}
 
@@ -227,9 +258,9 @@ export default function ComicPanel({
                 className={styles.comicAction}
                 onClick={() => onReport(messageId)}
                 disabled={reporting}
-                aria-label={`Report message from ${speaker}`}
+                aria-label={`${t.panelReport}: ${speaker}`}
               >
-                {reporting ? 'Reporting…' : 'Report'}
+                {reporting ? t.panelReporting : t.panelReport}
               </button>
             )}
 
@@ -238,9 +269,9 @@ export default function ComicPanel({
                 type="button"
                 className={styles.comicAction}
                 onClick={retryPreview}
-                aria-label="Preview a visual retry on this same message without changing server state"
+                aria-label={t.panelRetryLabel}
               >
-                Retry preview
+                {t.panelRetry}
               </button>
             )}
           </div>
@@ -253,17 +284,17 @@ export default function ComicPanel({
         role="status"
         aria-live="polite"
       >
-        {state.announcement}
+        {stateLabel}
       </span>
 
       {!preview && copyState === 'copied' && (
         <span className={styles.srOnly} role="status" aria-live="polite">
-          Original text copied exactly.
+          {t.panelCopied}
         </span>
       )}
       {!preview && copyState === 'failed' && (
         <span className={styles.srOnly} role="alert">
-          Could not copy original text.
+          {t.panelCopyFailed}
         </span>
       )}
     </article>

@@ -13,7 +13,7 @@ const forbid = (source, needle, label) => {
 }
 
 const migration = read('supabase/migrations/20261007235500_pr25_private_image_generation.sql')
-const edge = read('supabase/functions/comicchat-render/index.ts')
+const edge = read('supabase/functions/comicchat-render/index.ts') + read('supabase/functions/_shared/comic-image-worker.ts')
 const panel = read('components/ComicPanel.js')
 const web = read('components/ComicDirectMessages.js')
 const config = read('supabase/config.toml')

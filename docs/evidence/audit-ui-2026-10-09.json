@@ -1,0 +1,249 @@
+{
+  "date": "2026-10-09",
+  "surface": "Next.js 16.3.6 real frontend / Windows Chrome through R",
+  "backend": "Deterministic fixture responses; not a production-account E2E test",
+  "fixture": true,
+  "directPreview": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "composer": [
+      {
+        "testId": "comic-composer",
+        "rect": {
+          "x": 12,
+          "y": 748,
+          "width": 275,
+          "height": 66,
+          "top": 748,
+          "right": 287,
+          "bottom": 814,
+          "left": 12
+        }
+      }
+    ],
+    "cards": [
+      {
+        "height": 304.8702392578125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.870361328125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.870361328125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.870361328125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.8703308105469,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.87030029296875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.870361328125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 304.870361328125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 283,
+        "scroll": 275,
+        "client": 275,
+        "bubbleInside": true
+      }
+    ],
+    "horizontalOverflow": false
+  },
+  "groupMobile": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "composer": [
+      {
+        "testId": "comic-group-composer",
+        "rect": {
+          "x": 12,
+          "y": 770,
+          "width": 281.75,
+          "height": 62,
+          "top": 770,
+          "right": 293.75,
+          "bottom": 832,
+          "left": 12
+        }
+      }
+    ],
+    "cards": [
+      {
+        "height": 302.7567138671875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.756591796875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.756591796875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.75665283203125,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.7567138671875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.7567138671875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.7567138671875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      },
+      {
+        "height": 302.7567138671875,
+        "scroll": 295,
+        "client": 295,
+        "bubbleInside": true
+      }
+    ],
+    "horizontalOverflow": false
+  },
+  "groupDesktop": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "composer": [
+      {
+        "testId": "comic-group-composer",
+        "rect": {
+          "x": 337,
+          "y": 826,
+          "width": 989.75,
+          "height": 62,
+          "top": 826,
+          "right": 1326.75,
+          "bottom": 888,
+          "left": 337
+        }
+      }
+    ],
+    "cards": [
+      {
+        "height": 329.2940673828125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      },
+      {
+        "height": 329.294189453125,
+        "scroll": 320,
+        "client": 320,
+        "bubbleInside": true
+      }
+    ],
+    "horizontalOverflow": false
+  },
+  "devtools": {
+    "document": "#document",
+    "metrics": [
+      {
+        "name": "Nodes",
+        "value": 1438
+      },
+      {
+        "name": "LayoutCount",
+        "value": 0
+      },
+      {
+        "name": "RecalcStyleCount",
+        "value": 0
+      },
+      {
+        "name": "JSHeapUsedSize",
+        "value": 12818208
+      }
+    ]
+  }
+}

@@ -106,6 +106,10 @@ MESSAGE1_RENDERING="$("${PSQL[@]}" -c "SELECT status FROM public.comic_message W
 FAIL1="$(service_scalar "SELECT status FROM public.comic_fail_generation_job('${JOB1}'::uuid, '${LEASE1}'::uuid, 'mock_transient', 'retry once', true);")"
 [[ "${FAIL1}" == "queued" ]]
 
+# A retry now has a persisted delay. Advance the isolated fixture's clock
+# instead of sleeping or bypassing the production claim predicate.
+"${PSQL[@]}" -c "UPDATE public.comic_generation_job SET next_attempt_at=NOW()-INTERVAL '1 second' WHERE id='${JOB1}'::uuid;" >/dev/null
+
 CLAIM2="$(claim_for_message "${MESSAGE1}")"
 IFS='|' read -r CLAIM2_ID LEASE2 ATTEMPT2 <<< "${CLAIM2}"
 [[ "${CLAIM2_ID}" == "${JOB1}" ]]
@@ -145,6 +149,7 @@ for attempt in 1 2 3; do
 
   if [[ "${attempt}" -lt 3 ]]; then
     [[ "${STATUS}" == "queued" ]]
+    "${PSQL[@]}" -c "UPDATE public.comic_generation_job SET next_attempt_at=NOW()-INTERVAL '1 second' WHERE id='${JOB2}'::uuid;" >/dev/null
   else
     [[ "${STATUS}" == "failed" ]]
   fi
