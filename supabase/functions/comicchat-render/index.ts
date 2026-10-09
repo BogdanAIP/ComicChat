@@ -13,6 +13,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 import { createClient } from 'npm:@supabase/supabase-js@2.109.0'
 import OpenAI, { toFile } from 'npm:openai@7.28.0'
+import { resolveStyleSkill } from '../../../utils/comicStyleSkills.mjs'
 
 const BUCKET = 'comicchat-art'
 const PROVIDER = 'openai-image'
@@ -87,11 +88,18 @@ function buildPrompt(input: {
   senderId: string
   originalText: string
   hasReference: boolean
+  styleConfig?: {
+    primary_style_id: string
+    secondary_style_id: string | null
+    secondary_weight: number
+  } | null
 }) {
   const sceneText = input.originalText.slice(0, 1800)
   return [
     'Create one square comic-panel illustration for a private messenger.',
-    `Visual style: ${styleProfile(input.conversationId)}.`,
+    input.styleConfig && input.styleConfig.primary_style_id !== 'classic'
+      ? `Visual Style Skill: ${resolveStyleSkill(input.styleConfig).prompt}`
+      : `Visual style: ${styleProfile(input.conversationId)}.`,
     `Keep the speaking character visually consistent with this fixed profile: ${characterProfile(input.senderId)}.`,
     ...(input.hasReference
       ? [
@@ -220,11 +228,23 @@ async function renderMessage(input: {
       )
     }
 
+    // This is a frozen message-time selection, never the current mutable
+    // conversation style. Do not retroactively restyle existing illustrations.
+    const { data: styleSnapshot, error: styleError } = await service
+      .from('comic_message_style')
+      .select('primary_style_id,secondary_style_id,secondary_weight,style_version')
+      .eq('message_id', message.id)
+      .maybeSingle()
+    if (styleError) throw new Error('message_style_lookup_failed')
+    if (styleSnapshot && styleSnapshot.style_version !== 1) {
+      throw new Error('unsupported_style_skill_version')
+    }
     const prompt = buildPrompt({
       conversationId: message.conversation_id,
       senderId: message.sender_id,
       originalText: message.original_text,
       hasReference: Boolean(referenceFile),
+      styleConfig: styleSnapshot,
     })
 
     // Do not fall back from edit -> generate inside one attempt. A provider
