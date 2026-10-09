@@ -948,7 +948,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               />
             </details>
 
-            <ComicStylePicker key={selectedConversationId}
+            <ComicStylePicker key={`${selectedConversationId}:${chatStyles.current.primary_style_id}:${chatStyles.current.secondary_style_id}:${chatStyles.current.secondary_weight}`}
               current={chatStyles.current} onSave={chatStyles.save}
               pending={chatStyles.pending} error={chatStyles.error}
               notice={chatStyles.notice} />
