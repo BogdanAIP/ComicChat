@@ -59,6 +59,13 @@ MSG4="$(as_user "$B" "SELECT id FROM public.comic_send_message('$G'::uuid,'38383
 [[ -n "$MSG4" ]]
 GR="$(as_user "$B" "SELECT primary_style_id||'+'||secondary_style_id||':'||secondary_weight FROM public.comic_list_message_styles('$G'::uuid) WHERE message_id='$MSG4'::uuid;")"
 [[ "$GR" == "cartoon+romance:40" ]]
+EP="$(as_user "$A" "SELECT public.comic_compile_group_episode('$G'::uuid,ARRAY['$MSG4'::uuid], 'Frozen comic style');")"
+[[ -n "$EP" ]]
+EP_STYLE="$(as_user "$B" "SELECT panels->0->'style'->>'primary_style_id'||'+'||panels->0->'style'->>'secondary_style_id'||':'||(panels->0->'style'->>'secondary_weight') FROM public.comic_list_group_episodes('$G'::uuid) WHERE episode_id='$EP'::uuid;")"
+[[ "$EP_STYLE" == "cartoon+romance:40" ]]
+as_user "$A" "SELECT public.comic_set_conversation_style('$G'::uuid,'anime',NULL,0);" >/dev/null
+STILL_SAME="$(as_user "$B" "SELECT panels->0->'style'->>'primary_style_id' FROM public.comic_list_group_episodes('$G'::uuid) WHERE episode_id='$EP'::uuid;")"
+[[ "$STILL_SAME" == "cartoon" ]]
 deny "$C" "SELECT * FROM public.comic_get_conversation_style('$G'::uuid);" "outsider read closed group style"
 as_user "$B" "SELECT public.comic_leave_group('$G'::uuid);" >/dev/null
 deny "$B" "SELECT * FROM public.comic_list_message_styles('$G'::uuid);" "exmember read group styles"
