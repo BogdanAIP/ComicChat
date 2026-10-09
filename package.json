@@ -35,7 +35,8 @@
     "bootstrap:pr28": "node scripts/pr28-fresh-bootstrap-check.mjs",
     "beta:pr29": "node scripts/pr29-comicchat-first-shell-check.mjs",
     "acceptance:pr30": "node scripts/pr30-browser-acceptance-check.mjs",
-    "styles:pr38": "node scripts/pr38-style-skills-check.mjs"
+    "styles:pr38": "node scripts/pr38-style-skills-check.mjs",
+    "ai:connectors": "node scripts/ai-connectors-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
