@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { STYLE_SKILLS, normalizeStyleConfig, styleVisualTokens } from '../utils/comicStyleSkills.mjs'
 import styles from '../styles/ComicStylePicker.module.css'
 
@@ -9,12 +9,6 @@ export default function ComicStylePicker({
   const [primary, setPrimary] = useState(current.primary_style_id)
   const [secondary, setSecondary] = useState(current.secondary_style_id || '')
   const [weight, setWeight] = useState(current.secondary_weight || 30)
-
-  useEffect(() => {
-    setPrimary(current.primary_style_id)
-    setSecondary(current.secondary_style_id || '')
-    setWeight(current.secondary_weight || 30)
-  }, [current])
 
   const selection = normalizeStyleConfig({
     primary_style_id: primary,
