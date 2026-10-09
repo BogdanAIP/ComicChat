@@ -27,7 +27,7 @@ CREATE TABLE public.comic_message_style (
   message_id UUID PRIMARY KEY REFERENCES public.comic_message(id) ON DELETE CASCADE,
   conversation_id UUID NOT NULL REFERENCES public.comic_conversation(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  primary_style_id TEXT NOT NULL CHECK (primary_style_id IN ('anime','manga','superhero','cartoon','romance')),
+  primary_style_id TEXT NOT NULL CHECK (primary_style_id IN ('classic','anime','manga','superhero','cartoon','romance')),
   secondary_style_id TEXT CHECK (
     secondary_style_id IS NULL OR secondary_style_id IN ('anime','manga','superhero','cartoon','romance')
   ),
@@ -154,7 +154,7 @@ INSERT INTO public.comic_message_style(
   message_id,conversation_id,sender_id,primary_style_id,
   secondary_style_id,secondary_weight,style_version
 )
-SELECT m.id,m.conversation_id,m.sender_id,'anime',NULL,0,1
+SELECT m.id,m.conversation_id,m.sender_id,'classic',NULL,0,1
 FROM public.comic_message m
 ON CONFLICT (message_id) DO NOTHING;
 
