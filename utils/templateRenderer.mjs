@@ -1,3 +1,4 @@
+import { normalizeStyleConfig } from './comicStyleSkills.mjs'
 const SCENES = [
   { key: 'studio', symbol: '✦', label: 'studio scene' },
   { key: 'city', symbol: '▦', label: 'city scene' },
@@ -157,9 +158,12 @@ export function renderTemplate({
   status = 'queued',
   optimistic = false,
   preview = false,
+  styleConfig = null,
+  senderId = null,
 }) {
   const exactText = String(text ?? '')
   const seed = stableComicSeed(messageId)
+  const characterSeed = styleConfig && senderId ? stableComicSeed(senderId) : seed
   const scene = SCENES[seed % SCENES.length]
 
   return {
@@ -176,9 +180,10 @@ export function renderTemplate({
     character: {
       slot: mine ? 'sender' : 'partner',
       anchor: mine ? 'start' : 'end',
-      silhouette: `template-${(seed >>> 5) % 4}`,
+      silhouette: `template-${(characterSeed >>> 5) % 4}`,
     },
     bubble: getBubbleLayout(exactText),
     state: getTemplateStatus(status, optimistic, preview),
+    ...(styleConfig ? { style: normalizeStyleConfig(styleConfig) } : {}),
   }
 }
