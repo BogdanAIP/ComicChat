@@ -61,7 +61,7 @@ GR="$(as_user "$B" "SELECT primary_style_id||'+'||secondary_style_id||':'||secon
 [[ "$GR" == "cartoon+romance:40" ]]
 EP="$(as_user "$A" "SELECT public.comic_compile_group_episode('$G'::uuid,ARRAY['$MSG4'::uuid], 'Frozen comic style');")"
 [[ -n "$EP" ]]
-EP_STYLE="$(as_user "$B" "SELECT panels->0->'style'->>'primary_style_id'||'+'||panels->0->'style'->>'secondary_style_id'||':'||(panels->0->'style'->>'secondary_weight') FROM public.comic_list_group_episodes('$G'::uuid) WHERE episode_id='$EP'::uuid;")"
+EP_STYLE="$(as_user "$B" "SELECT (panels->0->'style'->>'primary_style_id')||'+'||(panels->0->'style'->>'secondary_style_id')||':'||(panels->0->'style'->>'secondary_weight') FROM public.comic_list_group_episodes('$G'::uuid) WHERE episode_id='$EP'::uuid;")"
 [[ "$EP_STYLE" == "cartoon+romance:40" ]]
 as_user "$A" "SELECT public.comic_set_conversation_style('$G'::uuid,'anime',NULL,0);" >/dev/null
 STILL_SAME="$(as_user "$B" "SELECT panels->0->'style'->>'primary_style_id' FROM public.comic_list_group_episodes('$G'::uuid) WHERE episode_id='$EP'::uuid;")"
