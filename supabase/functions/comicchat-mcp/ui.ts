@@ -33,6 +33,25 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
     .composer button { border: 0; border-radius: 12px; padding: 10px 16px; cursor: pointer; }
     .empty { margin: auto; padding: 24px; text-align: center; opacity: .72; }
     .status { min-height: 1.3em; padding: 0 18px; font-size: 12px; opacity: .7; }
+    /* Code-rendered comic panels: instant, local, zero image-API spend. */
+    .panel { position: relative; background: #fff7e5; color: #242022; border: 3px solid #242022; border-radius: 10px;
+      padding: 10px 12px 14px; box-shadow: 5px 5px 0 #242022; width: min(660px, 92%); }
+    .panel.mine { background: #ffe2ce; }
+    .panel.other { background: #e4dfff; }
+    .panel::before { content: ''; display: block; height: 76px; margin-bottom: 10px; border: 2px solid #242022;
+      background: radial-gradient(circle at 20% 60%, #242022 0 17px, transparent 18px),
+        radial-gradient(ellipse at 20% 150%, #242022 0 64px, transparent 65px),
+        repeating-radial-gradient(circle at 86% 40%, #ffbd69 0 7px, #fff3c9 8px 17px); }
+    .panel.other::before { background: radial-gradient(circle at 78% 60%, #242022 0 17px, transparent 18px),
+        radial-gradient(ellipse at 78% 150%, #242022 0 64px, transparent 65px),
+        repeating-radial-gradient(circle at 10% 40%, #bcb1ff 0 7px, #eeebff 8px 17px); }
+    .bubble { border: 2px solid #242022; border-radius: 22px; padding: 10px 14px; background: white; font-weight: 650; }
+    .connectorToggle { margin: 12px 0; padding: 10px; border: 2px solid currentColor; border-radius: 8px;
+      background: transparent; color: inherit; width: 100%; cursor: pointer; }
+    .connectorList { font-size: 12px; }
+    .connector { border-top: 1px solid color-mix(in srgb, CanvasText 20%, transparent); padding: 7px 0; }
+    .connector small { display: block; opacity: .68; }
+    .connectorList[hidden] { display: none; }
     @media (max-width: 720px) {
       .shell { grid-template-columns: 1fr; }
       .sidebar { border-right: 0; border-bottom: 1px solid color-mix(in srgb, CanvasText 16%, transparent); max-height: 36vh; }
@@ -45,6 +64,8 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
     <aside class="sidebar">
       <h1 class="title">ComicChat</h1>
       <div id="profile" class="muted">Connecting…</div>
+      <button id="aiSourcesToggle" class="connectorToggle" type="button" aria-expanded="false" aria-controls="connectorList">AI connections</button>
+      <div id="connectorList" class="connectorList" hidden aria-live="polite"></div>
       <div id="conversations" aria-label="Conversations"></div>
     </aside>
     <section class="main">
@@ -76,6 +97,8 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
 
     const profileEl = document.getElementById('profile');
     const conversationsEl = document.getElementById('conversations');
+    const aiSourcesToggle = document.getElementById('aiSourcesToggle');
+    const connectorListEl = document.getElementById('connectorList');
     const titleEl = document.getElementById('conversationTitle');
     const metaEl = document.getElementById('conversationMeta');
     const messagesEl = document.getElementById('messages');
@@ -231,6 +254,36 @@ export const COMICCHAT_APP_HTML = String.raw`<!doctype html>
       updateFromResponse(response);
       return response;
     }
+
+
+    aiSourcesToggle.addEventListener('click', async function () {
+      const opened = aiSourcesToggle.getAttribute('aria-expanded') !== 'true';
+      aiSourcesToggle.setAttribute('aria-expanded', String(opened));
+      connectorListEl.hidden = !opened;
+      if (!opened) return;
+      connectorListEl.textContent = 'Loading authorized connector catalog…';
+      try {
+        const response = await callTool('list_ai_connectors', {});
+        const items = response?.structuredContent?.connectors || [];
+        connectorListEl.replaceChildren();
+        if (!items.length) connectorListEl.textContent = 'No connectors reported.';
+        items.forEach(function (item) {
+          const entry = document.createElement('div');
+          entry.className = 'connector';
+          const label = document.createElement('strong');
+          label.textContent = item.label || item.id;
+          const status = document.createElement('small');
+          status.textContent = item.implemented
+            ? (item.id === 'chatgpt-app-host' ? 'Embedded ComicChat transport; no host image entitlement' :
+               item.id === 'comicchat-template' ? 'Built in; no paid API' : 'Available after authorization and billing approval')
+            : 'Connection adapter not yet enabled';
+          entry.append(label, status);
+          connectorListEl.appendChild(entry);
+        });
+      } catch (error) {
+        connectorListEl.textContent = 'Unable to retrieve connector status.';
+      }
+    });
 
     conversationsEl.addEventListener('click', async function (event) {
       const button = event.target.closest('button[data-conversation-id]');
