@@ -1,0 +1,21 @@
+.studio {background:#f8ecff;color:#211f2e;border-bottom:3px solid #211f2e;flex-shrink:0;max-height:50vh;overflow-y:auto;}
+.studio>summary {padding:12px 22px;cursor:pointer;list-style:revert;font-size:13px;font-weight:900;outline-offset:2px;}
+.studio>summary:hover {background:#ead9ff;}
+.panel {display:grid;gap:13px;padding:16px clamp(16px,3vw,32px);background:#fffdf5;}
+.explainer,.disclaimer {font-size:12px;line-height:1.5;margin:0;max-width:740px;color:#595161;}
+.controls {display:flex;flex-wrap:wrap;gap:13px;}
+.controls label {min-width:180px;flex:1 1 180px;display:grid;gap:7px;font-size:12px;font-weight:900;}
+.controls select {min-height:44px;border:2px solid #211f2e;border-radius:7px;background:white;color:#211f2e;padding:8px 11px;font:700 13px/1.2 sans-serif;}
+.controls input[type=range] {cursor:pointer;accent-color:#d65a7e;min-height:36px;}
+.preview {display:flex;flex-wrap:wrap;gap:16px;align-items:center;background:linear-gradient(125deg,var(--comic-style-bg),var(--comic-style-light));border:3px solid #211f2e;border-radius:6px;padding:16px;box-shadow:4px 4px 0 #211f2e;}
+.preview>span {font-size:45px;color:var(--comic-style-accent);text-shadow:2px 2px 0 #211f2e;}
+.preview>div:nth-child(2) {flex:1 1 130px;}
+.preview strong {font:900 22px/1.1 'Arial Black',Impact,sans-serif;}
+.preview p {margin:4px 0;font-size:11px;font-weight:850;}
+.preview small {display:block;font-size:11px;line-height:1.4;margin-top:7px;}
+.sampleBubble {background:white;border:3px solid #211f2e;border-radius:27px 27px 27px 6px;max-width:220px;padding:12px;font-weight:900;font-size:13px;box-shadow:3px 3px 0 #211f2e;}
+.panel>button {justify-self:start;padding:12px 16px;min-height:44px;border:3px solid #211f2e;border-radius:7px;color:#211f2e;background:#ffe07b;box-shadow:3px 3px 0 #211f2e;font-weight:900;cursor:pointer;}
+.panel>button:disabled {opacity:.55;cursor:wait;}
+.notice,.error {padding:9px 11px;border:2px solid #211f2e;background:#def7e5;font-size:12px;font-weight:800;}
+.error {background:#ffd9df;}
+@media(max-width:760px){.studio{max-height:53vh;}.controls{display:grid;}.preview{gap:9px;}.panel{padding:15px;}}
