@@ -43,6 +43,9 @@ jobs:
       - name: PR-04 TemplateRenderer goldens
         run: npm run renderer:pr04
 
+      - name: PR-38 comic Skill resolver and renderer compatibility
+        run: npm run styles:pr38
+
       - name: PR-05 generation pipeline boundaries
         run: npm run pipeline:pr05
 
@@ -255,6 +258,9 @@ jobs:
       - name: Apply PR-37 group episode compiler migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261009001000_pr37_group_episode_compiler.sql
 
+      - name: Apply PR-38 versioned comic Style Skills migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261009014000_pr38_comic_style_skills.sql
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -299,6 +305,9 @@ jobs:
 
       - name: Run PR-37 group episode publication and privacy integration
         run: bash supabase/tests/pr37_group_episode_integration.sh
+
+      - name: Run PR-38 comic Style Skills permission and snapshot integration
+        run: bash supabase/tests/pr38_comic_style_skills_integration.sh
 
       - name: Run PR-21 load abuse concurrency integration
         run: bash supabase/tests/pr21_load_abuse_concurrency.sh
