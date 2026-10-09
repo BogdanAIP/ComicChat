@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ComicPanel from './ComicPanel'
+import ComicStylePicker from './ComicStylePicker'
+import useComicChatStyles from '../utils/useComicChatStyles'
 import ComicGroupStoryStudio from './ComicGroupStoryStudio'
 import styles from '../styles/ComicGroupChat.module.css'
 
@@ -26,6 +28,7 @@ export default function ComicGroupChat({ session, supabase }) {
   const [reportDetails, setReportDetails] = useState('')
 
   const myId = session.user.id
+  const chatStyles = useComicChatStyles(supabase, selectedId, messages)
   const selectedGroup = groups.find((g) => g.conversation_id === selectedId) || null
   const nameById = useMemo(
     () => new Map(members.map((m) => [m.user_id, m.username])),
@@ -332,10 +335,18 @@ export default function ComicGroupChat({ session, supabase }) {
               messages={messages}
               myUserId={myId}
             />
+            <ComicStylePicker key={selectedId} current={chatStyles.current}
+              onSave={chatStyles.save} pending={chatStyles.pending}
+              notice={chatStyles.notice} error={chatStyles.error}
+              editable={selectedGroup.my_role === 'owner'} group />
+
             <div className={styles.messages} aria-live="polite" data-testid="comic-group-messages">
               {messages.length === 0 && <p className={styles.empty}>Write the first comic panel.</p>}
               {messages.map((m) => (
                 <ComicPanel key={m.id} messageId={m.id} conversationId={m.conversation_id}
+                  senderId={m.sender_id}
+                  styleConfig={Object.hasOwn(chatStyles.snapshots, m.id)
+                    ? chatStyles.snapshots[m.id] : null}
                   speaker={m.sender_id === myId ? 'You' : nameById.get(m.sender_id) || 'Member'}
                   text={m.original_text} status={m.status} mine={m.sender_id === myId}
                   createdAt={m.created_at} supabase={supabase}
