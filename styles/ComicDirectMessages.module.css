@@ -1326,3 +1326,32 @@
 
 .storyStudio { background: #fff4cd; color: #211f2e; border-bottom: 3px solid #211f2e; max-height: 42vh; overflow-y: auto; flex-shrink: 0; }
 .storyStudio > summary { cursor: pointer; padding: 12px 23px; background: #e7daff; font-size: 13px; font-weight: 900; }
+
+/* PR-38: a visual layer derived from immutable Style Skill metadata.
+   Original user speech remains separately rendered as exact text. */
+.comicScene[data-comic-style] {
+  background: linear-gradient(140deg, var(--comic-style-bg), var(--comic-style-light));
+}
+.comicScene[data-comic-style] .characterBody {
+  background: var(--comic-style-accent);
+  box-shadow: inset -24px -12px 0 rgba(33,31,46,.18);
+}
+.comicScene[data-comic-style] .speechBubble {
+  border-radius: var(--comic-style-bubble);
+}
+.comicScene[data-comic-style] .sceneSymbol {
+  color: var(--comic-style-light);
+}
+.comicScene[data-comic-style="manga"] .sceneArtwork {
+  filter: grayscale(.85) contrast(1.16);
+}
+.comicScene[data-comic-style="superhero"] .sceneTexture {
+  background: radial-gradient(#211f2e 2px, transparent 2px) 0 0/10px 10px;
+  opacity: .29;
+}
+.comicScene[data-comic-style="cartoon"] .characterHead {
+  border-radius: 54% 48% 51% 45%;
+}
+.comicScene[data-comic-style="romance"] .sceneTexture {
+  background: radial-gradient(rgba(255,255,255,.7) 2px, transparent 3px) 0 0/25px 25px;
+}

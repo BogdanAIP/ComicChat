@@ -145,6 +145,8 @@ export default function ComicGroupStoryStudio({ supabase, group, messages, myUse
                 {e.panels.map((panel) => (
                   <ComicPanel key={panel.id} messageId={panel.id}
                     speaker={panel.speaker} text={panel.text}
+                  senderId={panel.speaker}
+                  styleConfig={panel.style?.primary_style_id === 'classic' ? null : panel.style || null}
                     status="ready" createdAt={panel.created_at} />
                 ))}
               </div>

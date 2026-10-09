@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { renderTemplate } from '../utils/templateRenderer.mjs'
+import { styleVisualTokens } from '../utils/comicStyleSkills.mjs'
 import styles from '../styles/ComicDirectMessages.module.css'
 
 function formatTime(value) {
@@ -16,6 +17,8 @@ function formatTime(value) {
 export default function ComicPanel({
   messageId,
   conversationId,
+  senderId = null,
+  styleConfig = null,
   speaker,
   text,
   status = 'queued',
@@ -39,8 +42,11 @@ export default function ComicPanel({
     status,
     optimistic,
     preview,
+    senderId,
+    styleConfig,
   })
   const scene = renderModel.scene
+  const visualTokens = renderModel.style ? styleVisualTokens(renderModel.style) : undefined
   const persistedState = renderModel.state
   const state = retryPreviewing
     ? {
@@ -130,11 +136,15 @@ export default function ComicPanel({
       data-visual-state={state.key}
       data-renderer={renderModel.renderer}
       data-renderer-version={renderModel.version}
+      data-style-primary={renderModel.style?.primary_style_id || 'classic'}
+      data-style-secondary={renderModel.style?.secondary_style_id || ''}
       aria-labelledby={`${accessibleId}-speaker`}
       aria-describedby={`${accessibleId}-status`}
     >
       <figure className={styles.comicFigure}>
-        <div className={`${styles.comicScene} ${styles[`scene_${scene.key}`]}`}>
+        <div className={`${styles.comicScene} ${styles[`scene_${scene.key}`]}`}
+          data-comic-style={renderModel.style?.primary_style_id || undefined}
+          style={visualTokens}>
           <div
             className={styles.sceneArtwork}
             role="img"
