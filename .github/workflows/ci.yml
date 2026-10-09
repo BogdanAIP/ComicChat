@@ -46,6 +46,9 @@ jobs:
       - name: PR-38 comic Skill resolver and renderer compatibility
         run: npm run styles:pr38
 
+      - name: ComicChat connection-first AI/OAuth boundaries
+        run: npm run ai:connectors && npm run ai:oauth
+
       - name: PR-05 generation pipeline boundaries
         run: npm run pipeline:pr05
 
