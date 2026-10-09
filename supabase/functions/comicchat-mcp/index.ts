@@ -8,6 +8,7 @@ import { pipeline } from 'npm:@supabase/middleware@^1.0.0'
 import { withOAuthProtectedResource, withSupabase } from 'npm:@supabase/server@^1.6.0'
 import { z } from 'npm:zod@^4.3.6'
 import { COMICCHAT_APP_HTML } from './ui.ts'
+import { listAiConnectors } from '../../../utils/aiConnectorRegistry.mjs'
 
 const oauth = [{ type: 'oauth2' as const, scopes: ['openid', 'email', 'profile'] }]
 const COMICCHAT_APP_URI = 'ui://comicchat/app-v1.html'
@@ -140,6 +141,21 @@ Deno.serve(
               messages,
             })
           }
+        )
+
+        // Connection catalog describes capabilities; it never authorizes spending
+        // or claims access to a user's ChatGPT/Codex image tools.
+        server.registerTool(
+          'list_ai_connectors',
+          {
+            title: 'ComicChat AI connectors',
+            description: 'Read supported connection types and honest readiness flags. This does not log into any provider, authorize billing or run image generation.',
+            inputSchema: {},
+            outputSchema: { connectors: z.array(z.record(z.string(), z.unknown())) },
+            annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+            securitySchemes: oauth,
+          },
+          async () => jsonResult({ connectors: listAiConnectors() })
         )
 
         server.registerTool(
