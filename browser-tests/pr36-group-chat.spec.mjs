@@ -70,6 +70,18 @@ test('closed group messages appear as comics for invited participants without pa
     await pageB.getByRole('button', { name: 'Join', exact: true }).click()
     await expect(pageB.getByRole('heading', { name: groupName })).toBeVisible()
 
+    // PR-38: a group owner selects a reusable Skill and a mixed secondary
+    // style. The non-owner has read-only controls; new message panels keep
+    // the exact text and carry the frozen selected style.
+    await pageA.getByTestId('comic-style-picker').locator('summary').click()
+    await pageA.getByTestId('comic-style-primary').selectOption('cartoon')
+    await pageA.getByTestId('comic-style-secondary').selectOption('anime')
+    await pageA.getByTestId('comic-style-save').click()
+    await expect(pageA.getByTestId('comic-style-picker').locator('summary')).toContainText('Cartoon')
+    await pageB.getByTestId('comic-style-picker').locator('summary').click()
+    await expect(pageB.getByTestId('comic-style-primary')).toBeDisabled()
+    await expect(pageB.getByTestId('comic-style-save')).toHaveCount(0)
+
     await pageA.getByTestId('comic-group-composer').fill(firstText)
     await pageA.getByTestId('comic-group-send').click()
 
@@ -77,6 +89,8 @@ test('closed group messages appear as comics for invited participants without pa
     await expect(onB).toHaveCount(1)
     await expect(onB.getByText(firstText,{exact:true})).toHaveCount(1)
     await expect(onB).not.toHaveAttribute('data-message-status','draft')
+    await expect(onB).toHaveAttribute('data-style-primary','cartoon')
+    await expect(onB).toHaveAttribute('data-style-secondary','anime')
 
     await pageB.getByTestId('comic-group-composer').fill(replyText)
     await pageB.getByTestId('comic-group-send').click()
@@ -95,6 +109,7 @@ test('closed group messages appear as comics for invited participants without pa
     await expect(localEpisode).toContainText(`Our private comic ${suffix}`)
     await expect(localEpisode).toContainText(firstText)
     await expect(localEpisode).toContainText(replyText)
+    await expect(localEpisode.locator('article[data-style-primary="cartoon"]')).toHaveCount(2)
     await expect(pageB.getByTestId('group-story-publish')).toHaveCount(0)
 
     await pageA.getByTestId('group-story-studio').locator('summary').click()
