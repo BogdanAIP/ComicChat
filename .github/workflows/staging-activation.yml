@@ -94,6 +94,12 @@ jobs:
             exit 1
           fi
 
+      - name: Read-only MCP authorization readiness before deployment
+        if: ${{ inputs.mode == 'deploy' }}
+        env:
+          COMICCHAT_MCP_URL: https://${{ inputs.project_ref }}.supabase.co/functions/v1/comicchat-mcp
+        run: node scripts/comicchat-mcp-remote-readiness.mjs
+
       - name: Link staging project
         shell: bash
         run: |

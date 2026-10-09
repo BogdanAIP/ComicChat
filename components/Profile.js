@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import styles from '../styles/Profile.module.css'
 import useTranslation from '../utils/useTranslation'
@@ -67,6 +68,12 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             ←
           </motion.button>
           <h1 className={styles.title}>{t.profile}</h1>
+        </div>
+
+        <div style={{marginBottom:16}}>
+          <Link href="/ai-connections" style={{fontWeight:700,textDecoration:'underline'}}>
+            AI connections · ChatGPT / Codex
+          </Link>
         </div>
 
         <div className={styles.avatar}>
