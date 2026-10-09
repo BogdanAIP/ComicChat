@@ -32,8 +32,8 @@ for (const [source, needle, label] of [
   [profile, 'data-testid="profile-edit-username"', 'profile edit selector'],
   [profile, 'data-testid="profile-username-input"', 'profile username selector'],
   [profile, 'data-testid="profile-save"', 'profile save selector'],
-  [home, 'data-testid="comicchat-nav"', 'ComicChat navigation selector'],
-  [home, 'data-testid="profile-nav"', 'Profile navigation selector'],
+  [home, "'comicchat-nav'", 'ComicChat navigation selector'],
+  [home, "'profile-nav'", 'Profile navigation selector'],
   [comic, 'data-testid="comic-private-shell"', 'private shell selector'],
   [comic, 'data-testid="comic-user-search"', 'user search selector'],
   [comic, 'data-testid="comic-search-result"', 'search result selector'],
@@ -70,7 +70,7 @@ for (const required of [
 }
 
 for (const required of [
-  'npm install --no-save --package-lock=false @playwright/test@1.64.0',
+  'npx playwright --version',
   'npx playwright install --with-deps chromium',
   'Start isolated local Supabase',
   'Run two-account browser acceptance',
@@ -83,6 +83,8 @@ for (const required of [
 ]) {
   expect(workflow, required, 'browser acceptance workflow')
 }
+
+if (pkg.devDependencies?.['@playwright/test'] !== '1.64.0') throw new Error('Playwright runner must be pinned in package lock')
 
 const staging = workflow.split('  staging:')[1] || ''
 forbid(staging, 'SERVICE_ROLE', 'staging browser job must not receive service role')

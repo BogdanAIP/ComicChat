@@ -1355,3 +1355,55 @@
 .comicScene[data-comic-style="romance"] .sceneTexture {
   background: radial-gradient(rgba(255,255,255,.7) 2px, transparent 3px) 0 0/25px 25px;
 }
+
+/* Keep natural card height, while history takes the remaining space. */
+.shell { height:100%; min-height:0; overflow:hidden; }
+.chat { height:100%; min-height:0; overflow:hidden; }
+.chatHeader { flex:0 0 auto; }
+.messages { flex:1 1 0; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.comicCard { flex:0 0 auto; }
+.composer { flex:0 0 auto; min-height:0; padding:12px 18px; }
+.composerRow { min-width:0; }
+.textarea { max-height:128px; min-width:0; }
+.composerPreview {
+  display:block; margin:0 0 8px; max-height:min(21dvh,165px);
+  overflow-y:auto; border:2px solid var(--comic-ink); background:#f8ecff;
+}
+.composerPreview>summary { cursor:pointer; padding:8px 12px; font-size:12px;font-weight:800; }
+.composerPreview>article { margin:8px auto 12px; }
+.storyStudio { max-height:26dvh; }
+.reportDialog { flex:0 1 auto; min-height:0; max-height:24dvh; overflow-y:auto; }
+.reportStatus { flex-shrink:0; max-height:8dvh; overflow:auto; }
+.backButton,.loadOlder {
+  min-height:40px; padding:8px 12px; border:2px solid var(--comic-ink);
+  border-radius:6px; background:#fff4cd; color:var(--comic-ink);
+  font:800 12px/1.3 'Trebuchet MS','Segoe UI',sans-serif; cursor:pointer;
+}
+.backButton { display:none; }
+.loadOlder { flex-shrink:0; align-self:center; }
+.backButton:focus-visible,.loadOlder:focus-visible { outline:3px solid #9853c8;outline-offset:3px; }
+@media(max-width:760px) {
+  .shell { display:block; overflow:hidden; }
+  .sidebar { height:100%; max-height:none; padding-block-start:75px; }
+  .chat { display:none; min-height:0; height:100%; }
+  .hasChat .sidebar { display:none; }
+  .hasChat .chat { display:flex; }
+  .backButton { display:inline-flex; align-items:center; }
+  .chatHeader { display:flex; flex-wrap:wrap; gap:9px; padding:10px 14px; padding-inline-end:74px; }
+  .chatHeader>div:first-of-type { flex:1 1 100%; }
+  .chatHeader .eyebrow { display:none; }
+  .chatHeaderActions { flex-direction:row; align-items:center; }
+  .chatHeader h2 { font-size:23px; }
+  .messages { padding:16px; }
+  .composer { padding:10px 12px; }
+  .composerNote { flex-direction:row; font-size:10px; }
+  .composerNote span:last-child { text-align:end; }
+}
+@media(max-height:550px) {
+  .chatHeader { padding-block:8px; }
+  .chatHeader .eyebrow { display:none; }
+  .chatHeader h2 { font-size:21px; }
+  .storyStudio>summary { padding-block:8px; }
+  .composerNote span:last-child { display:none; }
+  .composerPreview { max-height:17dvh; }
+}

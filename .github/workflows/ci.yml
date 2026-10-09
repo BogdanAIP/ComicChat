@@ -121,6 +121,9 @@ jobs:
       - name: PR-30 two-account browser acceptance boundaries
         run: npm run acceptance:pr30
 
+      - name: Message identity and response-loss regressions
+        run: node --test tests/comicMessages.test.mjs
+
       - name: Build
         env:
           # Provide dummy values so the build doesn't fail on missing env vars.
@@ -260,6 +263,18 @@ jobs:
 
       - name: Apply PR-38 versioned comic Style Skills migration
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261009014000_pr38_comic_style_skills.sql
+
+      - name: Seed legacy publication requests for migration coverage
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/audit_backfill_fixture.sql
+
+      - name: Apply audit fixes migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261009063333_audit_fixes.sql
+
+      - name: Verify legacy publication backfill
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/audit_backfill_assertions.sql
+
+      - name: Verify frozen publication, keyset reads, asset authorization, and retry fencing
+        run: bash supabase/tests/audit_fixes_integration.sh
 
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql

@@ -160,10 +160,13 @@ export function renderTemplate({
   preview = false,
   styleConfig = null,
   senderId = null,
+  characterSeed: frozenCharacterSeed = null,
 }) {
   const exactText = String(text ?? '')
   const seed = stableComicSeed(messageId)
-  const characterSeed = styleConfig && senderId ? stableComicSeed(senderId) : seed
+  const characterSeed = Number.isInteger(frozenCharacterSeed)
+    ? frozenCharacterSeed >>> 0
+    : styleConfig && senderId ? stableComicSeed(senderId) : seed
   const scene = SCENES[seed % SCENES.length]
 
   return {

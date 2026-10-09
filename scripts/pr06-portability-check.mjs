@@ -8,7 +8,7 @@ const manifest = JSON.parse(
 )
 const docs = read('docs/PR06_SITES_DEPLOYMENT_SPIKE.md')
 const supabaseHook = read('utils/useSupabase.js')
-const chat = read('components/ComicDirectMessages.js')
+const chat = read('components/ComicDirectMessages.js') + read('utils/useComicMessages.js')
 const pr02 = read('supabase/migrations/20261005_pr02_secure_private_chat.sql')
 const pr05 = read(
   'supabase/migrations/20261005130000_pr05_generation_pipeline.sql'
@@ -90,7 +90,7 @@ requireText(
 )
 if (
   !chat.includes(".from('comic_message')") &&
-  !chat.includes("'comic_read_conversation_messages'")
+  !chat.includes("'comic_read_message_page'")
 ) {
   failures.push('missing: ComicChat Supabase message-read coupling')
 }

@@ -30,7 +30,7 @@ expect(component, "window.confirm(", 'explicit block confirmation')
 expect(component, 'Existing history stays visible', 'non-destructive block copy')
 expectOneOf(
   component,
-  ['disabled={selectedBlockedByMe}', 'disabled={deletionPending || selectedBlockedByMe}'],
+  ['disabled={busy || deletionPending || selectedBlockedByMe}'],
   'blocked composer disabled'
 )
 expectOneOf(
@@ -42,7 +42,7 @@ expectOneOf(
   'blocked send button disabled'
 )
 expect(component, "includes('interaction_blocked')", 'server-side opposite block surfaced')
-expect(component, 'setDraft(originalText)', 'failed send restores draft')
+expect(component, 'setDraft((current) => current || originalText)', 'failed send restores draft')
 expect(component, 'messages.map((message)', 'history rendering preserved')
 expect(styles, '.safetyButton', 'block control styling')
 expect(styles, '.safetyButton:focus-visible', 'keyboard focus styling')

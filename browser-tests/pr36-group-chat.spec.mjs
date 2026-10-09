@@ -22,7 +22,7 @@ async function makeGroupAccounts() {
 }
 
 async function loginAndName(page, account, name) {
-  await page.goto('/')
+  await page.goto('/en')
   await page.getByTestId('auth-email').fill(account.email)
   await page.getByTestId('auth-password').fill(account.password)
   await page.getByTestId('auth-submit').click()
@@ -59,6 +59,7 @@ test('closed group messages appear as comics for invited participants without pa
     await pageA.getByRole('button', { name: 'Create', exact: true }).click()
     await expect(pageA.getByRole('heading', { name: groupName })).toBeVisible()
 
+    await pageA.getByTestId('comic-group-tools').locator('summary').click()
     await pageA.getByLabel('Find user to invite').fill(nickB)
     await pageA.getByRole('button', { name: `Invite ${nickB}` }).click()
     await expect(pageA.getByText('Invitation sent.')).toBeVisible()
@@ -101,9 +102,9 @@ test('closed group messages appear as comics for invited participants without pa
     // A group participant creates a real closed-group comic from two existing
     // chat messages. The other member can read it; the public feed cannot.
     await pageB.getByTestId('group-story-studio').locator('summary').click()
-    await pageB.getByLabel(`Include comic message ${firstText.slice(0,45)}`).check()
-    await pageB.getByLabel(`Include comic message ${replyText.slice(0,45)}`).check()
-    await pageB.getByLabel('Group story title').fill(`Our private comic ${suffix}`)
+    await pageB.getByLabel(`Include comic message: ${firstText.slice(0,45)}`).check()
+    await pageB.getByLabel(`Include comic message: ${replyText.slice(0,45)}`).check()
+    await pageB.getByLabel('Story title').fill(`Our private comic ${suffix}`)
     await pageB.getByTestId('group-story-create').click()
     const localEpisode = pageB.getByTestId('group-story-episode')
     await expect(localEpisode).toContainText(`Our private comic ${suffix}`)

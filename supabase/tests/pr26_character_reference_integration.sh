@@ -47,17 +47,18 @@ SQL
 
 complete_message() {
   local message_id="$1"
-  local claimed job_id lease
+  local claimed job_id lease asset
 
   claimed="$(service_scalar "SELECT id::text || '|' || lease_token::text FROM public.comic_claim_generation_job_for_message('${message_id}'::uuid, 'openai-image', 180);")"
   job_id="${claimed%%|*}"
   lease="${claimed#*|}"
+  asset="$("${PSQL[@]}" -c "SELECT attempt_asset_id FROM public.comic_generation_job WHERE id='${job_id}'::uuid;")"
   [[ -n "${job_id}" && -n "${lease}" ]]
 
   service_scalar "SELECT status FROM public.comic_complete_generation_job(
     '${job_id}'::uuid,
     '${lease}'::uuid,
-    '{\"illustration\":{\"kind\":\"private-comic-art\",\"version\":1,\"asset_id\":\"opaque\",\"containsText\":false}}'::jsonb,
+    '{\"illustration\":{\"kind\":\"private-comic-art\",\"version\":1,\"asset_id\":\"${asset}\",\"mime_type\":\"image/webp\",\"containsText\":false}}'::jsonb,
     1,
     0
   );" >/dev/null

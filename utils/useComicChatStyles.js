@@ -1,65 +1,50 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { normalizeStyleConfig } from '../utils/comicStyleSkills.mjs'
 
 const DEFAULT_STYLE = normalizeStyleConfig()
 
 export default function useComicChatStyles(supabase, conversationId, messages = []) {
-  const [current, setCurrent] = useState(DEFAULT_STYLE)
-  const [snapshots, setSnapshots] = useState({})
-  const [pending, setPending] = useState(false)
+  const [saved, setSaved] = useState({ conversationId: null, current: DEFAULT_STYLE })
+  const [pendingConversation, setPendingConversation] = useState(null)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
 
-  const messageIds = useMemo(
-    () => messages.filter((m) => m.id && !String(m.id).startsWith('temp-'))
-      .map((m) => m.id).join(','),
-    [messages]
-  )
+  const scopeRef = useRef(null)
+  const snapshots = useMemo(() => Object.fromEntries(messages
+    .filter((message) => message.id && Object.hasOwn(message, 'style'))
+    .map((message) => [message.id, message.style?.primary_style_id === 'classic' || !message.style
+      ? null : normalizeStyleConfig(message.style)])), [messages])
 
-  useEffect(() => {
-    if (!conversationId) return undefined
-    let active = true
-    const load = async () => {
-      const { data, error: rpcError } = await supabase.rpc(
-        'comic_get_conversation_style', { p_conversation_id: conversationId }
-      )
-      if (!active) return
-      if (rpcError) setError('Unable to load style settings.')
-      else {
-        setCurrent(normalizeStyleConfig(data?.[0]))
-        setError('')
-      }
+  const refresh = useCallback(async () => {
+    const scope = scopeRef.current
+    if (!conversationId || !scope?.active || scope.conversationId !== conversationId) return
+    const { data, error: rpcError } = await supabase.rpc(
+      'comic_get_conversation_style', { p_conversation_id: conversationId }
+    )
+    if (!scope.active) return
+    if (rpcError) {
+      setSaved({ conversationId, current: DEFAULT_STYLE })
+      setError('styleLoadFailed')
     }
-    load()
-    return () => { active = false }
+    else {
+      setSaved({ conversationId, current: normalizeStyleConfig(data?.[0]) })
+      setError('')
+    }
+    setNotice('')
   }, [conversationId, supabase])
 
   useEffect(() => {
-    if (!conversationId) return undefined
-    let active = true
-    const load = async () => {
-      const { data, error: rpcError } = await supabase.rpc(
-        'comic_list_message_styles', { p_conversation_id: conversationId }
-      )
-      if (!active) return
-      if (rpcError) {
-        setError('Could not load message artwork styles.')
-        return
-      }
-      const byMessage = Object.fromEntries((data || []).map((row) => [
-        row.message_id,
-        row.primary_style_id === 'classic' ? null : normalizeStyleConfig(row),
-      ]))
-      setSnapshots(byMessage)
-    }
-    load()
-    return () => { active = false }
-  }, [conversationId, messageIds, supabase])
+    const scope = { conversationId, active: true }
+    scopeRef.current = scope
+    const timer = setTimeout(refresh, 0)
+    return () => { scope.active = false; clearTimeout(timer) }
+  }, [conversationId, refresh])
 
   const save = useCallback(async (input) => {
     if (!conversationId) return false
+    const scope = scopeRef.current
     const desired = normalizeStyleConfig(input)
-    setPending(true)
+    setPendingConversation(conversationId)
     setNotice('')
     setError('')
     try {
@@ -72,19 +57,23 @@ export default function useComicChatStyles(supabase, conversationId, messages = 
         }
       )
       if (rpcError) throw rpcError
-      setCurrent(desired)
-      setNotice('Style saved. Future comic messages will use it; older panels stay unchanged.')
+      if (!scope?.active) return false
+      setSaved({ conversationId, current: desired })
+      setNotice('styleSaved')
       return true
     } catch (e) {
       console.error('Style update failed', e)
-      setError('Unable to save style. Check your permissions.')
+      if (scope?.active) setError('styleSaveFailed')
       return false
     } finally {
-      setPending(false)
+      setPendingConversation((previous) => previous === conversationId ? null : previous)
     }
   }, [conversationId, supabase])
 
   return {
-    current, snapshots, save, pending, notice, error,
+    current: saved.conversationId === conversationId ? saved.current : DEFAULT_STYLE,
+    snapshots, save, refresh, pending: pendingConversation === conversationId && !!conversationId,
+    notice: saved.conversationId === conversationId ? notice : '',
+    error: saved.conversationId === conversationId ? error : '',
   }
 }

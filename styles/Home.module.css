@@ -19,3 +19,7 @@
   width: 100%;
   transition: margin-inline-end 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* The conversation owns one viewport; only history and tools scroll. */
+.container { height:100vh; height:100dvh; min-height:0; overflow:hidden; }
+.main { min-height:0; overflow:hidden; }

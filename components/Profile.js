@@ -12,24 +12,19 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
 
   const updateUsername = async (e) => {
     e.preventDefault()
+    if (loading || !currentUser?.id) return
     setLoading(true)
     setMessage({ type: '', text: '' })
 
     try {
-      const { error } = await supabase.from('user').upsert(
-        {
-          id: currentUser.id,
-          ...currentUser,
-          username: newUsername.trim(),
-        },
-        { onConflict: 'id' }
-      )
+      const { error } = await supabase.from('user')
+        .update({ username: newUsername.trim() }).eq('id', currentUser.id)
 
       if (error) throw error
 
       setMessage({ type: 'success', text: t.statusUpdated })
       setEditingUsername(false)
-      window.location.reload()
+      onBack?.()
     } catch (error) {
       setMessage({
         type: 'error',
@@ -41,8 +36,16 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
-    window.location.reload()
+    if (loading) return
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message || t.errorAuth })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -59,7 +62,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             className={styles.back}
             onClick={onBack}
             whileTap={{ scale: 0.95 }}
-            aria-label="Back"
+            aria-label={t.backToChats}
           >
             ←
           </motion.button>
@@ -80,6 +83,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
         {message.text && (
           <motion.div
             className={`${styles.banner} ${message.type === 'success' ? styles.bannerSuccess : styles.bannerError}`}
+            role={message.type === 'error' ? 'alert' : 'status'}
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -99,7 +103,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               className={styles.fieldInput}
-              placeholder="Enter username"
+              placeholder={t.enterUsername}
               required
             />
             <div className={styles.actions}>
@@ -121,7 +125,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
                   setMessage({ type: '', text: '' })
                 }}
               >
-                {t.cancelReply.split(' ')[0]} {/* "Cancel" */}
+                {t.cancel}
               </button>
             </div>
           </form>
@@ -130,7 +134,8 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             type="button"
             data-testid="profile-edit-username"
             className={styles.btnBlock}
-            onClick={() => setEditingUsername(true)}
+            onClick={() => { setNewUsername(currentUser?.username || ''); setEditingUsername(true) }}
+            disabled={!currentUser?.id || loading}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
@@ -143,6 +148,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             type="button"
             className={styles.btnDanger}
             onClick={logout}
+            disabled={loading}
             whileTap={{ scale: 0.99 }}
           >
             {t.logout}

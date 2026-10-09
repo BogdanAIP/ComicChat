@@ -40,6 +40,14 @@ allow_dynamic_registration = true
 # OAuth middleware validates the user token. The Edge gateway must not consume it first.
 verify_jwt = false
 
+[functions.comicchat-story-art]
+# Explicit getUser plus service-only episode authorization precede byte access.
+verify_jwt = false
+
+[functions.comicchat-worker]
+# Dedicated high-entropy cron credential; no browser or anonymous queue drain.
+verify_jwt = false
+
 
 [functions.comicchat-render]
 # The function validates the bearer with auth.getUser(), then uses service_role

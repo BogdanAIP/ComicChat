@@ -12,7 +12,7 @@ function expect(source, needle, label) {
 
 const migration = read('supabase/migrations/20261007182000_pr17_conversation_read_boundary.sql')
 const test = read('supabase/tests/pr17_conversation_read_integration.sh')
-const web = read('components/ComicDirectMessages.js')
+const web = read('components/ComicDirectMessages.js') + read('utils/useComicMessages.js')
 const mcp = read('supabase/functions/comicchat-mcp/index.ts')
 const docs = read('docs/PR17_CONVERSATION_READ_BOUNDARY.md')
 const roadmap = read('ROADMAP.md')
@@ -31,7 +31,7 @@ expect(test, 'foreign conversation read unexpectedly succeeded', 'foreign IDOR r
 expect(test, 'unknown conversation read unexpectedly succeeded', 'unknown UUID rejection')
 expect(test, 'oversized message read unexpectedly succeeded', 'read bound test')
 
-expect(web, "'comic_read_conversation_messages'", 'web uses explicit read RPC')
+expect(web, "'comic_read_message_page'", 'web uses explicit read RPC')
 expect(mcp, "'comic_read_conversation_messages'", 'MCP uses explicit read RPC')
 expect(mcp, "selectedConversationId: conversationId || null", 'selected ID emitted only after successful RPC path')
 

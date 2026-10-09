@@ -17,6 +17,10 @@
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.sidebar[inert] {
+  visibility: hidden;
+}
+
 @media (min-width: 769px) {
   .sidebar {
     transform: translateX(0);
@@ -383,4 +387,16 @@
   .sidebar, .sidebarHeader, .navItem.active, .userInfo {
     border-color: CanvasText;
   }
+}
+
+.navItem { width:100%; text-align:start; font-family:inherit; }
+.navItem:focus-visible,.langToggle:focus-visible,.sidebarToggle:focus-visible {
+  outline:3px solid #9853c8; outline-offset:3px;
+}
+.sidebar { height:100vh; height:100dvh; }
+:global([dir="rtl"]) .sidebar.closed { transform:translateX(-100%); }
+@media(max-width:768px) {
+  :global([dir="rtl"]) .sidebar { transform:translateX(-100%); }
+  :global([dir="rtl"]) .sidebar.open { transform:translateX(0); }
+  .sidebarHeader { padding-inline-end:72px; }
 }

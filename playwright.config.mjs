@@ -14,6 +14,7 @@ export default defineConfig({
     ['html', { open: 'never', outputFolder: 'playwright-report' }],
   ],
   use: {
+    ...(process.env.COMICCHAT_BROWSER_CHANNEL ? { channel: process.env.COMICCHAT_BROWSER_CHANNEL } : {}),
     baseURL: process.env.COMICCHAT_BASE_URL || 'http://127.0.0.1:3000',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

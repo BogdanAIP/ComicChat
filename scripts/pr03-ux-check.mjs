@@ -3,7 +3,7 @@ import fs from 'node:fs'
 const read = (path) =>
   fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const chat = read('components/ComicDirectMessages.js')
+const chat = read('components/ComicDirectMessages.js') + read('utils/comicMessages.mjs')
 const panel = read('components/ComicPanel.js')
 const presentation = read('utils/templateRenderer.mjs')
 const css = read('styles/ComicDirectMessages.module.css')
@@ -66,13 +66,13 @@ requireText(panel, 'role="img"', 'decorative scene has image semantics')
 requireText(panel, 'aria-labelledby=', 'comic card has accessible speaker label')
 requireText(panel, 'aria-describedby=', 'comic card exposes status description')
 requireText(panel, 'role="status"', 'visual state is announced')
-requireText(panel, 'Copy original text', 'copy-original action')
+requireText(panel, '{t.panelCopy}', 'copy-original action')
 requireText(
   panel,
   'navigator.clipboard.writeText(exactText)',
   'copy action uses exact unmodified source text'
 )
-requireText(panel, 'Retry preview', 'failed card has same-slot retry preview affordance')
+requireText(panel, '{t.panelRetry}', 'failed card has same-slot retry preview affordance')
 requireText(
   panel,
   'data-message-id={messageId}',

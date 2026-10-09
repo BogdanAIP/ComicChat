@@ -1,226 +1,141 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import useTranslation from '../utils/useTranslation'
 import styles from '../styles/ComicStoryPermissions.module.css'
 
-function safeMessages(messages, cutoffId) {
-  const cutoff = messages.find((row) => row.id === cutoffId)
-  if (!cutoff) return []
-  return messages
-    .filter((m) =>
-      !String(m.id).startsWith('temp-') &&
-      (new Date(m.created_at).getTime() < new Date(cutoff.created_at).getTime() ||
-        (m.created_at === cutoff.created_at && String(m.id) <= String(cutoff.id)))
-    )
-    .slice(-36)
-}
-
-export default function ComicStoryPermissions({
-  supabase,
-  conversationId,
-  myUserId,
-  messages,
-  deletionPending = false,
-  blocked = false,
-}) {
+export default function ComicStoryPermissions({ supabase, conversationId, myUserId,
+  messages, deletionPending = false, blocked = false }) {
+  const { t } = useTranslation()
   const [requests, setRequests] = useState([])
+  const [previews, setPreviews] = useState({})
   const [cutoffId, setCutoffId] = useState('')
-  const [title, setTitle] = useState('Our comic story')
+  const [title, setTitle] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
-
-  const savedMessages = useMemo(
-    () => messages.filter((m) => !String(m.id).startsWith('temp-')),
-    [messages]
-  )
+  const generation = useRef(0)
+  const savedMessages = useMemo(() => messages.filter((m) => !String(m.id).startsWith('temp-')), [messages])
   const selectedCutoffId = savedMessages.some((m) => m.id === cutoffId)
-    ? cutoffId
-    : savedMessages[savedMessages.length - 1]?.id || ''
+    ? cutoffId : savedMessages[savedMessages.length - 1]?.id || ''
   const disabled = deletionPending || blocked || busy
 
   const refresh = useCallback(async () => {
-    if (!conversationId) return
-    const { data, error } = await supabase.rpc(
-      'comic_list_public_snapshot_requests',
-      { p_conversation_id: conversationId }
-    )
-    if (error) {
-      console.error('Could not load story permissions', error)
-      setNotice('Unable to load comic permissions. Please try again.')
-      return
-    }
+    const run = generation.current
+    const { data, error } = await supabase.rpc('comic_list_public_snapshot_requests', {
+      p_conversation_id: conversationId,
+    })
+    if (run !== generation.current) return
+    if (error) { setNotice(t.storyLoadError); return }
     setRequests(data || [])
-  }, [conversationId, supabase])
+  }, [conversationId, supabase, t])
 
   useEffect(() => {
+    generation.current += 1
+    const run = generation.current
+    queueMicrotask(() => {
+      if (run !== generation.current) return
+      setRequests([])
+      setPreviews({})
+      setNotice('')
+      setBusy(false)
+    })
     if (!conversationId) return undefined
-    let active = true
-    const update = async () => {
-      if (!active) return
-      await refresh()
-    }
-    update()
-    const timer = setInterval(update, 12000)
-    return () => {
-      active = false
-      clearInterval(timer)
-    }
+    const initial = setTimeout(refresh, 0)
+    const timer = setInterval(refresh, 12000)
+    return () => { generation.current += 1; clearTimeout(initial); clearInterval(timer) }
   }, [conversationId, refresh])
 
+  const review = async (requestId) => {
+    if (previews[requestId]?.loading || previews[requestId]?.panels?.length) return
+    const run = generation.current
+    setPreviews((current) => ({ ...current, [requestId]: { loading: true } }))
+    const { data, error } = await supabase.rpc('comic_read_publication_preview', { p_request_id: requestId })
+    if (run !== generation.current) return
+    setPreviews((current) => ({ ...current, [requestId]: {
+      panels: !error && Array.isArray(data) ? data : [], error: Boolean(error), loading: false,
+    } }))
+  }
+
   const act = async (action, success) => {
+    const run = generation.current
     setBusy(true)
     setNotice('')
     try {
       const { error } = await action()
       if (error) throw error
+      if (run !== generation.current) return
       setNotice(success)
       await refresh()
-    } catch (error) {
-      console.error('Comic permission action failed', error)
-      setNotice('This action could not be completed. No comic was published.')
+    } catch {
+      if (run === generation.current) setNotice(t.storyActionError)
     } finally {
-      setBusy(false)
+      if (run === generation.current) setBusy(false)
     }
   }
 
-  const askPermission = () => {
-    if (!selectedCutoffId || disabled) return
-    act(
-      () => supabase.rpc('comic_propose_public_snapshot', {
-        p_conversation_id: conversationId,
-        p_through_message_id: selectedCutoffId,
-      }),
-      'One permission request sent. It covers making and publishing this comic.'
-    )
-  }
-
   return (
-    <section className={styles.panel} aria-label="Comics from our conversation" data-testid="comic-story-permissions">
+    <section className={styles.panel} aria-label={t.storyHeading} data-testid="comic-story-permissions">
       <div className={styles.header}>
-        <span className={styles.marker}>STORY STUDIO</span>
-        <h3>Turn our chat into a comic</h3>
-        <p>One request covers creating <strong>and</strong> publishing a comic from the selected messages. Your partner approves only once.</p>
+        <span className={styles.marker}>{t.storyStudio}</span>
+        <h3>{t.storyHeading}</h3><p>{t.storyPermissionExplanation}</p>
       </div>
-
-      {savedMessages.length > 0 && (
-        <div className={styles.requestForm}>
-          <label>
-            Include messages through
-            <select
-              aria-label="Choose final message for comic"
-              data-testid="comic-story-cutoff"
-              value={selectedCutoffId}
-              onChange={(e) => setCutoffId(e.target.value)}
-              disabled={disabled}
-            >
-              {savedMessages.map((message) => (
-                <option key={message.id} value={message.id}>
-                  {message.original_text.slice(0, 55)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className={styles.hint}>
-            Up to 36 messages ending here will become comic panels. Your partner can review the exact messages before allowing publication.
-          </p>
-          <button
-            type="button"
-            data-testid="comic-story-request"
-            className={styles.primaryButton}
-            disabled={!selectedCutoffId || disabled}
-            onClick={askPermission}
-          >
-            Request one permission
-          </button>
-        </div>
-      )}
-
+      {savedMessages.length > 0 && <div className={styles.requestForm}>
+        <label>{t.storyThrough}
+          <select aria-label={t.storyChooseFinal} data-testid="comic-story-cutoff" value={selectedCutoffId}
+            onChange={(e) => setCutoffId(e.target.value)} disabled={disabled}>
+            {savedMessages.map((m) => <option key={m.id} value={m.id}>{m.original_text.slice(0, 55)}</option>)}
+          </select>
+        </label>
+        <p className={styles.hint}>{t.storyBound}</p>
+        <button type="button" data-testid="comic-story-request" className={styles.primaryButton}
+          disabled={!selectedCutoffId || disabled} onClick={() => act(
+            () => supabase.rpc('comic_propose_public_snapshot', {
+              p_conversation_id: conversationId, p_through_message_id: selectedCutoffId,
+            }), t.storyRequestSent)}>{t.storyRequest}</button>
+      </div>}
       {requests.map((request) => {
         const mine = request.requested_by === myUserId
         const approved = request.all_members_consented && request.sharing_eligible
-        const included = safeMessages(savedMessages, request.through_message_id)
-        return (
-          <article key={request.request_id} className={styles.request} data-testid="comic-story-request-card">
-            <div className={styles.requestHeading}>
-              <strong>{mine ? 'Your comic request' : 'Permission requested from you'}</strong>
-              <span>{approved ? 'Approved' : 'Awaiting permission'}</span>
-            </div>
-            <p className={styles.hint}>
-              One approval grants permission to <strong>create and publish</strong> a comic based on these messages. No further confirmation will be requested for this episode.
-            </p>
-            <details>
-              <summary>Review the included messages ({included.length} shown)</summary>
-              <ol className={styles.messageReview}>
-                {included.map((m) => (
-                  <li key={m.id}>{m.original_text}</li>
-                ))}
-              </ol>
-            </details>
-            {!mine && !request.my_consented && (
-              <div className={styles.actions}>
-                <button
-                  type="button"
-                  data-testid="comic-story-approve"
-                  disabled={disabled}
-                  className={styles.primaryButton}
-                  onClick={() => act(
-                    () => supabase.rpc('comic_set_public_snapshot_consent', {
-                      p_request_id: request.request_id,
-                      p_consented: true,
-                    }),
-                    'Approved creation and publication with one permission.'
-                  )}
-                >
-                  Allow making and publishing
-                </button>
-                <button
-                  type="button"
-                  data-testid="comic-story-decline"
-                  className={styles.secondaryButton}
-                  disabled={disabled}
-                  onClick={() => act(
-                    () => supabase.rpc('comic_cancel_public_snapshot_request', {
-                      p_request_id: request.request_id,
-                    }),
-                    'Request declined.'
-                  )}
-                >
-                  Decline
-                </button>
-              </div>
-            )}
-            {mine && approved && (
-              <div className={styles.requestForm}>
-                <label>
-                  Story title
-                  <input
-                    aria-label="Comic story title"
-                    value={title}
-                    maxLength={100}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={disabled}
-                  />
-                </label>
-                <button
-                  type="button"
-                  data-testid="comic-story-release"
-                  className={styles.primaryButton}
-                  disabled={disabled || !title.trim()}
-                  onClick={() => act(
-                    () => supabase.rpc('comic_release_approved_episode', {
-                      p_request_id: request.request_id,
-                      p_title: title.trim(),
-                    }),
-                    'Comic published! Open Stories to read it.'
-                  )}
-                >
-                  Create and publish comic
-                </button>
-              </div>
-            )}
-            {!mine && request.my_consented && (
-              <p className={styles.hint}>You gave permission for this comic. The requester can now create and publish it.</p>
-            )}
-          </article>
-        )
+        const preview = previews[request.request_id]
+        const canApprove = Boolean(preview?.panels?.length && !preview.error && !preview.loading)
+        return <article key={request.request_id} className={styles.request} data-testid="comic-story-request-card">
+          <div className={styles.requestHeading}><strong>{mine ? t.storyYourRequest : t.storyIncomingRequest}</strong>
+            <span>{approved ? t.storyApproved : t.storyAwaiting}</span></div>
+          <p className={styles.hint}>{t.storyPermissionExplanation}</p>
+          <details onToggle={(e) => { if (e.currentTarget.open) review(request.request_id) }}>
+            <summary>{t.storyReview}{preview?.panels?.length ? ` (${preview.panels.length})` : ''}</summary>
+            {preview?.loading && <p role="status">{t.storyPreviewLoading}</p>}
+            {preview && !preview.loading && !canApprove && <p role="alert">{t.storyPreviewError}
+              <button type="button" onClick={() => review(request.request_id)}>{t.storyRefresh}</button></p>}
+            {canApprove && <ol className={styles.messageReview} data-testid="comic-story-snapshot">
+              {preview.panels.map((panel) => <li key={panel.id} dir="auto"><strong>{panel.speaker}: </strong>{panel.text}</li>)}
+            </ol>}
+          </details>
+          {!mine && !request.my_consented && <div className={styles.actions}>
+            {!canApprove && <p className={styles.hint}>{t.storyReviewFirst}</p>}
+            <button type="button" data-testid="comic-story-approve" disabled={disabled || !canApprove}
+              className={styles.primaryButton} onClick={() => act(
+                () => supabase.rpc('comic_set_public_snapshot_consent', { p_request_id: request.request_id, p_consented: true }),
+                t.storyApproveDone)}>{t.storyApprove}</button>
+            <button type="button" data-testid="comic-story-decline" disabled={disabled}
+              className={styles.secondaryButton} onClick={() => act(
+                () => supabase.rpc('comic_cancel_public_snapshot_request', { p_request_id: request.request_id }),
+                t.storyDeclineDone)}>{t.storyDecline}</button>
+          </div>}
+          {mine && approved && <div className={styles.requestForm}>
+            <label>{t.storyTitle}<input aria-label={t.storyTitle} value={title} placeholder={t.storyDefaultTitle}
+              maxLength={100} onChange={(e) => setTitle(e.target.value)} disabled={disabled} /></label>
+            <button type="button" data-testid="comic-story-release" className={styles.primaryButton} disabled={disabled}
+              onClick={() => act(() => supabase.rpc('comic_release_approved_episode', {
+                p_request_id: request.request_id, p_title: title.trim() || t.storyDefaultTitle,
+              }), t.storyReleased)}>{t.storyRelease}</button>
+          </div>}
+          {request.my_consented && <div className={styles.actions}>
+            <p className={styles.hint}>{t.storyPermissionGiven}</p>
+            <button type="button" data-testid="comic-story-revoke" className={styles.secondaryButton} disabled={disabled}
+              onClick={() => act(() => supabase.rpc('comic_set_public_snapshot_consent', {
+                p_request_id: request.request_id, p_consented: false,
+              }), t.storyRevokeDone)}>{t.storyRevoke}</button>
+          </div>}
+        </article>
       })}
       {notice && <p role="status" className={styles.notice}>{notice}</p>}
     </section>

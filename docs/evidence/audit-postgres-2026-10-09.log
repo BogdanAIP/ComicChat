@@ -1,0 +1,49 @@
+PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit
+Migration SHA256: 0c63d41782171384553f32ba4d4737645f41953c651a1c01d69ab23f171babae
+Create isolated database PASS
+Isolated test database: comicchat_audit_20261009_1791529673195
+Auth/realtime CI bootstrap PASS
+supabase/migrations/20261005_pr02_secure_private_chat.sql PASS
+supabase/migrations/20261005130000_pr05_generation_pipeline.sql PASS
+supabase/migrations/20261006193000_pr11_blocking_boundary.sql PASS
+supabase/migrations/20261006202000_pr13_abuse_reports.sql PASS
+supabase/migrations/20261006211500_pr14_send_rate_limit.sql PASS
+supabase/migrations/20261007163000_pr15_self_service_data_export.sql PASS
+supabase/migrations/20261007174500_pr16_deletion_request_boundary.sql PASS
+supabase/migrations/20261007182000_pr17_conversation_read_boundary.sql PASS
+supabase/migrations/20261007211000_pr18_realtime_receive_only.sql PASS
+supabase/migrations/20261007223000_pr19_fail_closed_media.sql PASS
+supabase/migrations/20261007231000_pr20_public_snapshot_consent.sql PASS
+supabase/migrations/20261007234500_pr22_beta_safety_disclosure.sql PASS
+supabase/migrations/20261007235500_pr25_private_image_generation.sql PASS
+supabase/migrations/20261008002500_pr26_character_reference.sql PASS
+supabase/migrations/20261008215000_pr35_one_permission_story_publish.sql PASS
+supabase/migrations/20261008230000_pr36_group_chat.sql PASS
+supabase/migrations/20261009001000_pr37_group_episode_compiler.sql PASS
+supabase/migrations/20261009014000_pr38_comic_style_skills.sql PASS
+Pre-audit backfill fixture PASS
+supabase/migrations/20261009063333_audit_fixes.sql PASS
+Legacy snapshot backfill assertions PASS
+Post-migration security assertions PASS
+pr05_generation_pipeline_integration.sh PASS
+pr02_two_user_integration.sh PASS
+pr11_blocking_integration.sh PASS
+pr13_abuse_report_integration.sh PASS
+pr14_send_rate_limit_integration.sh PASS
+pr15_data_export_integration.sh PASS
+pr16_deletion_request_integration.sh PASS
+pr17_conversation_read_integration.sh PASS
+pr18_negative_security_matrix.sh PASS
+pr19_fail_closed_media_integration.sh PASS
+pr20_public_snapshot_consent_integration.sh PASS
+pr35_one_permission_publish_integration.sh PASS
+pr36_group_chat_integration.sh PASS
+pr37_group_episode_integration.sh PASS
+pr38_comic_style_skills_integration.sh PASS
+pr21_load_abuse_concurrency.sh PASS
+pr22_beta_safety_disclosure_integration.sh PASS
+pr25_generation_provider_integration.sh PASS
+pr26_character_reference_integration.sh PASS
+pr28_profile_bootstrap_integration.sh PASS
+audit_fixes_integration.sh PASS
+Native PostgreSQL: 21 integrations PASS.

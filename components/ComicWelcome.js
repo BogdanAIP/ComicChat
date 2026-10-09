@@ -1,35 +1,36 @@
 import styles from '../styles/ComicWelcome.module.css'
+import useTranslation from '../utils/useTranslation'
 
 export default function ComicWelcome({ onOpenProfile }) {
+  const { t } = useTranslation()
   return (
     <section className={styles.welcome} aria-labelledby="comic-welcome-title">
       <div className={styles.masthead}>
-        <span className={styles.issue}>ISSUE 001</span>
+        <span className={styles.issue}>{t.welcomeIssue}</span>
         <span className={styles.mastheadRule} aria-hidden="true" />
-        <span className={styles.edition}>YOUR ORIGIN STORY</span>
+        <span className={styles.edition}>{t.welcomeOrigin}</span>
       </div>
 
       <div className={styles.spread}>
         <div className={styles.intro}>
-          <span className={styles.introLabel}>WELCOME TO THE PANEL</span>
+          <span className={styles.introLabel}>{t.welcomeLabel}</span>
           <h2 id="comic-welcome-title">
-            Every chat deserves a <em>plot twist.</em>
+            {t.welcomeTitle} <em>{t.welcomeTitleEmphasis}</em>
           </h2>
           <p>
-            Your messages, told like a comic. Start a private conversation,
-            build a story together, and watch every line become a panel.
+            {t.welcomeDescription}
           </p>
           <button type="button" className={styles.cta} onClick={onOpenProfile}>
             <span>01</span>
-            Set your creator name
+            {t.welcomeNameAction}
             <span aria-hidden="true">↗</span>
           </button>
           <p className={styles.ctaHint}>
-            Then find a friend by their username to start your first scene.
+            {t.welcomeNameHint}
           </p>
         </div>
 
-        <div className={styles.preview} aria-label="Illustrated preview of a comic conversation">
+        <div className={styles.preview} aria-label={t.welcomePreview}>
           <div className={styles.previewTop}>
             <div className={styles.panelOne}>
               <div className={styles.dots} aria-hidden="true" />
@@ -37,32 +38,32 @@ export default function ComicWelcome({ onOpenProfile }) {
                 <span className={styles.figureHead} />
                 <span className={styles.figureTorso} />
               </div>
-              <span className={styles.bubbleOne}>Hey, you!</span>
-              <span className={styles.cornerLabel}>FRAME 01</span>
+              <span className={styles.bubbleOne}>{t.welcomeGreeting}</span>
+              <span className={styles.cornerLabel}>{t.welcomeFrameOne}</span>
             </div>
             <div className={styles.panelTwo}>
               <span className={styles.sparkle} aria-hidden="true">✳</span>
-              <span className={styles.kapow}>POW!</span>
-              <span className={styles.cornerLabel}>FRAME 02</span>
+              <span className={styles.kapow}>{t.welcomePow}</span>
+              <span className={styles.cornerLabel}>{t.welcomeFrameTwo}</span>
             </div>
           </div>
           <div className={styles.panelThree}>
             <span className={styles.star} aria-hidden="true">★</span>
-            <div className={styles.bubbleThree}>Let&apos;s make a story.</div>
-            <span className={styles.caption}>TO BE CONTINUED…</span>
+            <div className={styles.bubbleThree}>{t.welcomeStoryGreeting}</div>
+            <span className={styles.caption}>{t.welcomeContinued}</span>
           </div>
         </div>
       </div>
 
       <div className={styles.footerStrip}>
-        <span>PRIVATE BY DESIGN</span>
+        <span>{t.welcomePrivate}</span>
         <span aria-hidden="true">✦</span>
-        <span>COMIC PANELS FIRST</span>
+        <span>{t.welcomePanels}</span>
         <span aria-hidden="true">✦</span>
-        <span>YOUR STORY STARTS HERE</span>
+        <span>{t.welcomeStarts}</span>
       </div>
       <p className={styles.betaNote}>
-        Beta preview: comic artwork is stylized while AI image generation is switched off.
+        {t.welcomeBetaNote}
       </p>
     </section>
   )
