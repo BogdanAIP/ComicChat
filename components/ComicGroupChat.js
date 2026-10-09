@@ -335,7 +335,7 @@ export default function ComicGroupChat({ session, supabase }) {
               messages={messages}
               myUserId={myId}
             />
-            <ComicStylePicker key={selectedId} current={chatStyles.current}
+            <ComicStylePicker key={`${selectedId}:${chatStyles.current.primary_style_id}:${chatStyles.current.secondary_style_id}:${chatStyles.current.secondary_weight}`} current={chatStyles.current}
               onSave={chatStyles.save} pending={chatStyles.pending}
               notice={chatStyles.notice} error={chatStyles.error}
               editable={selectedGroup.my_role === 'owner'} group />
