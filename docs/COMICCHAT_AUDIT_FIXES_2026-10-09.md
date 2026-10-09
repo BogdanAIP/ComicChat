@@ -70,10 +70,18 @@ Custom code остаётся для специфики ComicChat: точного
 6. **Сценарии для друзей:** загадка, приключение или комедия с ролями. Проверить удержание до добавления публичных подписок.
 7. **Стоимость:** быстрый template chat и улучшение выбранного выпуска. Метрики latency, доли ошибок, фактической стоимости и повторов.
 
-Оставшиеся технические задачи: pagination ленты Stories сверх 50 выпусков; parity групп/стилей/эпизодов в MCP; завершение перевода редких safety/beta diagnostics; реальные уведомления; проверка paid image flow и character continuity после отдельной настройки бюджета. Отложенные adult/anti-leak функции не реализованы этим пакетом. Project-level leaked-password protection и legacy warnings требуют отдельного решения по настройкам/тарифу, не считаются исправленными.
+Оставшиеся технические задачи: pagination ленты Stories сверх 50 выпусков; parity групп/стилей/эпизодов в MCP; завершение перевода редких safety/beta diagnostics; реальные уведомления; проверка paid image flow и character continuity после отдельной настройки бюджета. Отложенные adult/anti-leak функции не реализованы этим пакетом. Project-level leaked-password protection требует отдельного решения по настройкам/тарифу, не считается исправленной. Supabase advisor продолжает отмечать намеренные authenticated SECURITY DEFINER RPC и deny-only таблицы без browser policies; расширение их доступа не является исправлением.
 
 ## Выпуск
 
 Ветка: `fix/comicchat-audit-2026-10-09`. Новая portable migration: `20261009063333_audit_fixes.sql`, SHA256 `0c63d41782171384553f32ba4d4737645f41953c651a1c01d69ab23f171babae`.
 
 Hosted worker provisioning находится отдельно в `supabase/ops/audit_worker_schedule.sql`: применяется после deployment и auth smoke worker. Полная история удалённых миграций не переигрывается. Статус CI, применения и staging будет записан ниже после фактической проверки.
+
+### Серверный выпуск — 07:19–07:21 UTC
+
+На staging Supabase применены `audit_fixes` и `audit_worker_schedule`. Активны `comicchat-render` v3, `comicchat-story-art` v1 и `comicchat-worker` v1. Все три без авторизации возвращают 401. Cron `comicchat-generation-drain` включён; первый вызов 07:21 UTC завершился HTTP 202 без timeout. Credential хранится в Vault; проверять его может только service_role. Очередь в момент проверки пуста, поэтому HTTP 202 не выдаётся за успешную генерацию изображения.
+
+`external_generation_enabled=false` подтверждён после выпуска. Anon SECURITY DEFINER advisor устранён. Для проверенного legacy `handle_updated_at()` подготовлено отдельное hosted hardening `audit_legacy_hardening.sql`: фиксируется search_path без изменения тела или исторических данных.
+
+[PR #39](https://github.com/BogdanAIP/ComicChat/pull/39) содержит полный анализ, исправления и доказательства. Первый CI прошёл Build, PostgreSQL, MCP и Realtime; group browser и все 5 UI fixtures прошли. Старый Direct browser test ожидал `Live` после автоматического выбора `/ar`; теперь тест явно открывает `/en`, сохраняя проверку настоящего realtime обмена. Повторный CI выполняется на исправленной версии.
