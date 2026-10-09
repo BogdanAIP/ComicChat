@@ -33,3 +33,18 @@ Vercel alias `comicchat-staging.vercel.app` was still on PR #38 commit `7bd8741`
 
 ## Boundary
 This OAuth connection is ChatGPT **as an MCP client of ComicChat**. It is distinct from linking a personal ChatGPT/Codex account **into ComicChat**, and neither one grants ChatGPT-plan image-generation entitlements. Paid external art generation must remain off.
+
+## 2026-10-09 follow-up: ChatGPT shows connected but cannot see tools
+
+Verified with Rakazo R dedicated authenticated Supabase Playwright after the project transfer to AIPMemoryHub's Project:
+
+- Supabase OAuth Server **enabled**. Site URL is **https://comicchat-staging.vercel.app**; authorization path is **/oauth/consent**; dynamic client registration enabled.
+- Live read-only remote readiness: **5/5 PASS**. Protected-resource metadata, authorization-server discovery and authorization route all respond properly.
+- GitHub main \`supabase/functions/comicchat-mcp/index.ts\` registers **21 tools**, including \`open_comicchat_app\`, \`list_conversations\`, \`get_messages\`, and \`send_message\`.
+- Supabase Dashboard → Edge Functions → \`comicchat-mcp\`: function deployed, code present, only deployment v1.
+- Supabase Dashboard → Edge Functions → \`comicchat-mcp\` → Invocations → Last 24 hours: **7 HTTP 401 results**, no verified authenticated invocation. 401 is expected for anonymous diagnostic requests and cannot alone prove a client error.
+- Supabase Dashboard → Authentication → OAuth Apps: **"No OAuth apps found"**. ChatGPT has not demonstrably registered as a client in this Supabase project, even though the user reports seeing \`@ComicChat\` as connected in the ChatGPT UI.
+- Plugin Creator private package \`plugins_6ac8acc335288191840771be191ab9fb\` v0.1.0 has a valid \`mcp.json\` URL for this exact project. Plugin Management reported \`not_installed\` for ComicChat in this conversation. As a control it also reported \`not_installed\` for private MyHOT, so this permission status is not conclusive on its own.
+- Earlier chat invocation referred to \`plugin://comicchat@created-by-me-remote\`; must verify it maps to the same private plugin ID, not assume a display-name match.
+
+**Next required step (ChatGPT host UI, explicit user approval):** open the specific private ComicChat plugin detail, complete its install/Connect OAuth authorization (or supported reconnect if ChatGPT says "connected" but the OAuth Apps table stays empty), consent at the hosted ComicChat site, then check that OAuth Apps now contains a ChatGPT client. Only after that should an authorized \`initialize → tools/list\` be exercised and \`open_comicchat_app\` invoked. Never copy tokens from a user's browser into a chat or bypass OAuth approval. Do not redeploy or disable auth just to make the icon appear; it would not resolve client registration.
