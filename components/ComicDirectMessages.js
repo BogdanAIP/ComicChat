@@ -7,6 +7,8 @@ import {
   useState,
 } from 'react'
 import ComicPanel from './ComicPanel'
+import ComicStylePicker from './ComicStylePicker'
+import useComicChatStyles from '../utils/useComicChatStyles'
 import styles from '../styles/ComicDirectMessages.module.css'
 import ComicWelcome from './ComicWelcome'
 import ComicStoryPermissions from './ComicStoryPermissions'
@@ -122,6 +124,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
   const [betaSafety, setBetaSafety] = useState(null)
 
   const selectedConversationId = selectedConversation?.conversation_id || null
+  const chatStyles = useComicChatStyles(supabase, selectedConversationId, messages)
   const selectedPartnerId = selectedConversation?.other_user_id || null
   const selectedBlockedByMe = selectedPartnerId
     ? blockedUserIds.includes(selectedPartnerId)
@@ -945,6 +948,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               />
             </details>
 
+            <ComicStylePicker key={selectedConversationId}
+              current={chatStyles.current} onSave={chatStyles.save}
+              pending={chatStyles.pending} error={chatStyles.error}
+              notice={chatStyles.notice} />
+
             <div className={styles.messages} aria-live="polite">
               {messages.length === 0 && (
                 <div className={styles.emptyChat}>
@@ -966,6 +974,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     key={message.id}
                     messageId={message.id}
                     conversationId={message.conversation_id}
+                    senderId={message.sender_id}
+                    styleConfig={String(message.id).startsWith('temp-')
+                      ? chatStyles.current
+                      : Object.hasOwn(chatStyles.snapshots, message.id)
+                        ? chatStyles.snapshots[message.id] : null}
                     speaker={mine ? 'You' : selectedTitle}
                     text={message.original_text}
                     status={message.status}
@@ -1075,6 +1088,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                 <div className={styles.composerPreview} aria-label="Comic message preview">
                   <ComicPanel
                     messageId={`draft:${selectedConversationId}`}
+                    senderId={myUserId}
+                    styleConfig={chatStyles.current}
                     speaker="You"
                     text={draft}
                     status="queued"
