@@ -188,3 +188,38 @@ GRANT EXECUTE ON FUNCTION public.comic_get_conversation_style(UUID),
   public.comic_set_conversation_style(UUID,TEXT,TEXT,INTEGER),
   public.comic_list_message_styles(UUID)
 TO authenticated;
+
+-- Preserve the render-time Skill selection when a conversation is compiled
+-- into a story. The exact original words and author fields remain unchanged.
+CREATE OR REPLACE FUNCTION public.comic_embed_story_panel_styles()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE
+  frozen_panels JSONB;
+BEGIN
+  SELECT JSONB_AGG(
+    panel.value || JSONB_BUILD_OBJECT(
+      'style',JSONB_BUILD_OBJECT(
+        'primary_style_id',COALESCE(ms.primary_style_id,'classic'),
+        'secondary_style_id',ms.secondary_style_id,
+        'secondary_weight',COALESCE(ms.secondary_weight,0),
+        'style_version',COALESCE(ms.style_version,1)
+      )
+    ) ORDER BY panel.ordinality
+  )
+  INTO frozen_panels
+  FROM JSONB_ARRAY_ELEMENTS(NEW.panels) WITH ORDINALITY AS panel(value,ordinality)
+  LEFT JOIN public.comic_message_style ms
+    ON ms.message_id=(panel.value->>'id')::UUID;
+  IF frozen_panels IS NOT NULL THEN NEW.panels=frozen_panels; END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.comic_embed_story_panel_styles()
+  FROM PUBLIC,anon,authenticated;
+
+CREATE TRIGGER comic_group_episode_freeze_style
+  BEFORE INSERT ON public.comic_group_episode
+  FOR EACH ROW EXECUTE FUNCTION public.comic_embed_story_panel_styles();
+CREATE TRIGGER comic_direct_episode_freeze_style
+  BEFORE INSERT ON public.comic_story_episode
+  FOR EACH ROW EXECUTE FUNCTION public.comic_embed_story_panel_styles();
