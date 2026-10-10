@@ -38,6 +38,7 @@ try {
   assert.equal(await frame.getByTestId('text-chat').locator('article p').textContent(),exact)
   await frame.getByTestId('text-chat-toggle').click()
   await frame.getByTestId('chatgpt-art-request').click()
+  await page.waitForFunction(() => Boolean(window.qaArtPrompt))
   assert.ok((await page.evaluate(()=>window.qaArtPrompt)).content[0].text.includes(JSON.stringify(exact)))
   await frame.getByTestId('groups-nav').click()
   await frame.getByTestId('comic-group-shell').waitFor()
