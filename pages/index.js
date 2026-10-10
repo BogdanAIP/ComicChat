@@ -14,7 +14,7 @@ export default function Home(props) {
   return <PreferencesProvider key={props.session?.user?.id || 'guest'} userId={props.session?.user?.id} supabase={props.supabase}><Workspace {...props} /></PreferencesProvider>
 }
 function Workspace({ currentUser, session, supabase }) {
-  const { t, locale } = useTranslation()
+  const { t, locale, setLanguage } = useTranslation()
   const [tab, setTab] = useState('private')
   const { recoveryMode, finishRecovery } = usePasswordRecovery(supabase)
   const loggedIn = !!session && !recoveryMode
@@ -22,6 +22,7 @@ function Workspace({ currentUser, session, supabase }) {
     <Head><title>ComicChat</title><meta name="description" content={t.brandSubtitle} /></Head>
     <header className={styles.header}>
       <a className={styles.brand} href="#" onClick={e => { e.preventDefault(); setTab('private') }} aria-label="ComicChat"><span aria-hidden="true">✦</span> ComicChat</a>
+      {!loggedIn && <label className={styles.guestLanguage}>{t.language}<select data-testid="auth-language" aria-label={t.language} value={locale} onChange={e=>setLanguage(e.target.value)}><option value="ru">Русский</option><option value="en">English</option><option value="ar">العربية</option></select></label>}
       {loggedIn && <nav className={styles.navigation} aria-label={t.navigation}>
         {[
           ['private','comicchat-nav',t.chats], ['groups','groups-nav',t.groups],

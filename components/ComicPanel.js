@@ -78,6 +78,7 @@ export default function ComicPanel({
     !preview &&
     status === 'ready' &&
     mediaStorageEnabled &&
+    mediaAssetId &&
     supabase &&
     conversationId &&
     messageId &&
