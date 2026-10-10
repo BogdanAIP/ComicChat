@@ -9,6 +9,7 @@ import { withOAuthProtectedResource, withSupabase } from 'npm:@supabase/server@^
 import { z } from 'npm:zod@^4.3.6'
 import { COMICCHAT_APP_HTML } from './ui.ts'
 import { makeOperationSchemas } from './operations.mjs'
+import { attachChatGptArt, readPrivateChatGptArt, readChatGptFile } from '../_shared/chatgpt-art.ts'
 
 const oauth = [{ type: 'oauth2' as const, scopes: ['openid', 'email', 'profile'] }]
 const COMICCHAT_APP_URI = 'ui://comicchat/app-v2.html'
@@ -81,6 +82,48 @@ Deno.serve(
             .eq('id', auth.user.id).select('id, username, email').single()
           if (error) fail(error)
           return jsonResult({ data })
+        })
+
+        server.registerTool('comicchat_ui_attach_art', {
+          title: 'Attach my ChatGPT illustration', description: 'Attach user-selected image bytes to my own direct message. Does not generate images or call an AI API.',
+          inputSchema: { accountId: z.string().uuid(), messageId: z.string().uuid(), imageBase64: z.string().max(11200000) },
+          annotations: {readOnlyHint:false,destructiveHint:false,openWorldHint:false}, securitySchemes:oauth,
+          _meta:{ui:{visibility:['app']}},
+        }, async ({accountId,messageId,imageBase64}) => {
+          const {data:auth,error}=await supabase.auth.getUser()
+          if(error || auth.user?.id!==accountId)fail('Connected account changed. Reopen ComicChat.')
+          const bytes=Uint8Array.from(atob(imageBase64),c=>c.charCodeAt(0))
+          return jsonResult({data:await attachChatGptArt(supabase,messageId,bytes)})
+        })
+        server.registerTool('comicchat_ui_read_art', {
+          title: 'Read a private ComicChat illustration', description: 'Return artwork only after current conversation membership is checked.',
+          inputSchema:{accountId:z.string().uuid(),messageId:z.string().uuid(),assetId:z.string().uuid()},
+          annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false},securitySchemes:oauth,
+          _meta:{ui:{visibility:['app']}},
+        }, async ({accountId,messageId,assetId}) => {
+          const {data:auth,error}=await supabase.auth.getUser()
+          if(error || auth.user?.id!==accountId)fail('Connected account changed. Reopen ComicChat.')
+          const blob=await readPrivateChatGptArt(supabase,messageId,assetId)
+          const bytes=new Uint8Array(await blob.arrayBuffer())
+          let binary=''
+          for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.slice(i,i+8192))
+          return {content:[{type:'text' as const,text:'Private illustration loaded.'}],_meta:{imageBase64:btoa(binary),mimeType:blob.type}}
+        })
+        server.registerTool('attach_chatgpt_illustration', {
+          title:'Attach ChatGPT illustration to my message',
+          description:'Save an image already created or selected in ChatGPT to an existing sender-owned private message. Never calls a generation API. Resolve the exact message first; retain original text. Ask the user to choose an image if none is attached.',
+          inputSchema:{messageId:z.string().uuid(),file:z.object({
+            download_url:z.string().url(),file_id:z.string().min(1),mime_type:z.string().optional(),file_name:z.string().optional(),
+          })},
+          annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true},securitySchemes:oauth,
+          _meta:{'openai/fileParams':['file']},
+        },async ({messageId,file})=>{
+          // Permission before any external file fetch, then checked again at commit.
+          const {data:auth,error:authError}=await supabase.auth.getUser()
+          const {data:rows,error}=await supabase.rpc('comic_read_message',{p_message_id:messageId})
+          const msg=Array.isArray(rows)?rows[0]:rows
+          if(authError || !auth.user || error || msg?.sender_id!==auth.user.id)fail('message_unavailable')
+          return jsonResult(await attachChatGptArt(supabase,messageId,await readChatGptFile(file)))
         })
 
         server.registerResource(

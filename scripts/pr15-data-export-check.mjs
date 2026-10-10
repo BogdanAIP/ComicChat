@@ -12,7 +12,7 @@ function expect(source, needle, label) {
 
 const migration = read('supabase/migrations/20261007163000_pr15_self_service_data_export.sql')
 const test = read('supabase/tests/pr15_data_export_integration.sh')
-const chat = read('components/ComicDirectMessages.js') + read('utils/translations.js')
+const chat = read('components/Settings.js') + read('components/ComicDirectMessages.js') + read('utils/translations.js')
 const mcp = read('supabase/functions/comicchat-mcp/index.ts')
 const docs = read('docs/PR15_DATA_EXPORT.md')
 const roadmap = read('ROADMAP.md')

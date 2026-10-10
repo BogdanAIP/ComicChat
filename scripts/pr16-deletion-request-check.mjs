@@ -12,7 +12,7 @@ function expect(source, needle, label) {
 
 const migration = read('supabase/migrations/20261007174500_pr16_deletion_request_boundary.sql')
 const test = read('supabase/tests/pr16_deletion_request_integration.sh')
-const chat = read('components/ComicDirectMessages.js') + read('utils/translations.js')
+const chat = read('components/Settings.js') + read('components/ComicDirectMessages.js') + read('utils/translations.js')
 const mcp = read('supabase/functions/comicchat-mcp/index.ts')
 const docs = read('docs/PR16_DELETION_REQUEST.md')
 const roadmap = read('ROADMAP.md')

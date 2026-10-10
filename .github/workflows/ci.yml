@@ -282,6 +282,12 @@ jobs:
       - name: Verify frozen publication, keyset reads, asset authorization, and retry fencing
         run: bash supabase/tests/audit_fixes_integration.sh
 
+      - name: Apply UI preferences and private ChatGPT illustration migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261010102635_ui_preferences_chatgpt_art.sql
+
+      - name: Verify account preferences and ChatGPT illustration authorization
+        run: bash supabase/tests/ui_chatgpt_integration.sh
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 

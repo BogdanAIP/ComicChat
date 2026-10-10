@@ -1,25 +1,7 @@
-.container {
-  min-height: 100vh;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-  height: 100vh;
-  position: relative;
-}
-
-.main {
-  padding: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-  width: 100%;
-  transition: margin-inline-end 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* The conversation owns one viewport; only history and tools scroll. */
-.container { height:100vh; height:100dvh; min-height:0; overflow:hidden; }
-.main { min-height:0; overflow:hidden; }
+.container{display:flex;flex-direction:column;height:100dvh;min-height:320px;width:100%;overflow:hidden;background:var(--ui-bg);color:var(--ui-ink)}
+.header{display:flex;align-items:center;gap:24px;min-height:64px;padding:10px 22px;border-bottom:1px solid var(--ui-border);background:var(--ui-paper);flex-shrink:0}
+.brand{display:flex;align-items:center;gap:8px;color:var(--ui-ink);font-size:21px;font-weight:800;text-decoration:none;white-space:nowrap}.brand span{color:var(--ui-accent);font-size:28px}
+.navigation{display:flex;align-items:center;gap:4px;flex:1}.navigation button,.identity{border:0;background:transparent;color:var(--ui-muted);border-radius:var(--ui-radius);padding:10px 14px;font:inherit;cursor:pointer;min-height:44px}.navigation .active{color:var(--ui-accent);background:var(--ui-soft);font-weight:700}.identity{display:flex;align-items:center;gap:8px;max-width:190px}.username{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ui-ink)}.avatar{display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border-radius:50%;background:var(--ui-mark);color:var(--ui-ink);font-weight:700}
+.main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto}
+@media(max-width:700px){.header{gap:10px;flex-wrap:wrap;padding:8px 12px;min-height:auto}.brand{font-size:18px}.identity{margin-inline-start:auto;max-width:150px;padding:3px}.navigation{order:3;width:100%;gap:0;justify-content:space-between}.navigation button{padding:8px 10px}.main{overflow:hidden}}
+@media(prefers-reduced-motion:reduce){.container *{animation:none!important;transition:none!important}}

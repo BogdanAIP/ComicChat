@@ -5,6 +5,7 @@ import Home from '../pages/index'
 import { RouterProvider } from './next-router'
 import { createMcpClient } from './client.mjs'
 import '../styles/globals.css'
+import '../styles/themes.css'
 
 const bridge = new App({ name: 'ComicChat', version: '0.2.0' }, {}, { strict: true, autoResize: true })
 const root = createRoot(document.getElementById('root'))
@@ -13,7 +14,8 @@ function Workspace({ initialProfile, selectedConversationId }) {
   const [profile, setProfile] = useState(initialProfile)
   const [supabase] = useState(() => createMcpClient(
     request => bridge.callServerTool(request), initialProfile,
-    row => setProfile(previous => ({ ...previous, username: row.username })), selectedConversationId
+    row => setProfile(previous => ({ ...previous, username: row.username })), selectedConversationId,
+    { requestArt: bridge.getHostCapabilities()?.message?.text ? async prompt => { const result = await bridge.sendMessage({ role: 'user', content: [{ type: 'text', text: prompt }] }); if(result.isError) throw new Error('Request rejected') } : undefined }
   ))
   const [session] = useState(() => ({ user: { id: initialProfile.id, email: initialProfile.email } }))
   return <RouterProvider><Home currentUser={{ ...profile, username: profile.username || profile.name }}
@@ -29,7 +31,7 @@ function show(result) {
   root.render(<Workspace key={activeId} initialProfile={data.profile} selectedConversationId={data.selectedConversationId} />)
 }
 bridge.ontoolresult = show
-root.render(<p role="status">Connecting ComicChat…</p>)
+root.render(<p role="status">Подключаем ComicChat…</p>)
 bridge.connect().then(() => {
   connected = true
   if (pending) show({ structuredContent: pending })

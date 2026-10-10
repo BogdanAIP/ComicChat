@@ -43,7 +43,7 @@ expect(chat, "supabase.rpc('comic_report_message'", 'web uses report RPC')
 expect(chat, 'setReportRequestId(makeUuid())', 'stable report request UUID starts with target')
 expect(chat, 'reportDetails.trim() || null', 'details normalization')
 expect(chat, 'event.target.value.slice(0, 1000)', 'web details cap')
-expect(chat, 'Report was not submitted. You can retry without creating a duplicate.', 'retry-safe user message')
+expect(chat, 'setReportStatus(t.reportFailed)', 'localized retry-safe user message')
 
 expect(docs, 'reported user cannot enumerate', 'documented reporter privacy')
 expect(docs, 'does not automatically punish', 'documented moderation boundary')

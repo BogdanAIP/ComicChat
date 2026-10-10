@@ -33,7 +33,7 @@ for (const [source, needle, label] of [
   [profile, 'data-testid="profile-username-input"', 'profile username selector'],
   [profile, 'data-testid="profile-save"', 'profile save selector'],
   [home, "'comicchat-nav'", 'ComicChat navigation selector'],
-  [home, "'profile-nav'", 'Profile navigation selector'],
+  [home, 'data-testid="profile-nav"', 'Profile navigation selector'],
   [comic, 'data-testid="comic-private-shell"', 'private shell selector'],
   [comic, 'data-testid="comic-user-search"', 'user search selector'],
   [comic, 'data-testid="comic-search-result"', 'search result selector'],

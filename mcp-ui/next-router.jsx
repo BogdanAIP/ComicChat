@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react'
 const Context = createContext(null)
 export function RouterProvider({ children }) {
-  const [locale, setLocale] = useState('en')
+  const [locale, setLocale] = useState('ru')
   const router = useMemo(() => ({
     locale, pathname: '/', asPath: '/', query: {},
     async replace(_path, _as, options = {}) {

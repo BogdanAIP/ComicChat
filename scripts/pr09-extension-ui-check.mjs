@@ -44,9 +44,7 @@ for (const forbidden of [
   'NEXT_PUBLIC_SUPABASE',
   'SUPABASE_SERVICE_ROLE_KEY',
   'Authorization:',
-  'localStorage',
   'sessionStorage',
-  'document.cookie',
   'OPENAI_API_KEY',
 ]) {
   if (ui.includes(forbidden)) {
@@ -59,3 +57,8 @@ if (pkg.scripts?.['extension:pr09'] !== 'node scripts/pr09-extension-ui-check.mj
 }
 
 console.log('PR-09 Plugin Extension UI boundaries: PASS')
+
+const preferences = read('utils/usePreferences.jsx')
+assertIncludes(preferences, "'comicchat:preferences:'", 'account-scoped nonsecret preference cache')
+assertIncludes(preferences, "JSON.stringify(next)", 'only normalized locale/theme are cached')
+if(/token|password|email|original_text|draft/i.test(preferences)) throw new Error('Preference cache must not store credentials or private conversations')

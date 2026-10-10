@@ -53,3 +53,7 @@ verify_jwt = false
 # The function validates the bearer with auth.getUser(), then uses service_role
 # only after proving the caller owns the sender-attributed generation job.
 verify_jwt = false
+
+[functions.comicchat-chatgpt-art]
+# getUser and sender ownership are validated before any private asset upload.
+verify_jwt = false

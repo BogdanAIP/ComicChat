@@ -55,3 +55,19 @@ test('profile facade cannot update another account or another column', async () 
   assert.equal(count, 1)
   assert.ok((await client.auth.signOut()).error)
 })
+
+test('preferences are self-only and accept only known locales and themes',()=>{
+  assert.equal(schemas.write.safeParse({operation:'comic_set_my_preferences',args:{p_locale:'ru',p_theme:'manga'}}).success,true)
+  for(const args of [{p_locale:'ru',p_theme:'invented'},{p_locale:'xx',p_theme:'classic'},{p_locale:'ru',p_theme:'classic',user_id:id}])
+    assert.equal(schemas.write.safeParse({operation:'comic_set_my_preferences',args}).success,false)
+  assert.equal(schemas.read.safeParse({operation:'comic_list_message_styles',args:{p_conversation_id:id}}).success,true)
+})
+test('private asset adapter exposes bytes only to UI and does not accept another bucket',async()=>{
+  const calls=[]
+  const client=createMcpClient(async request=>{calls.push(request);return {_meta:{imageBase64:btoa('test'),mimeType:'image/webp'}}},{id})
+  assert.ok((await client.storage.from('other').download(id+'/'+id+'.webp')).error)
+  assert.equal(calls.length,0)
+  const result=await client.storage.from('comicchat-art').download(id+'/'+id+'/'+id+'.webp')
+  assert.ok(result.data instanceof Blob)
+  assert.deepEqual(calls[0].arguments,{accountId:id,messageId:id,assetId:id})
+})
