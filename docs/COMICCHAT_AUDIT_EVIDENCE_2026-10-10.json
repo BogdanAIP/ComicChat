@@ -1,0 +1,82 @@
+{
+  "audit_date": "2026-10-10",
+  "baseline_sha": "5e82340a1bf661985646f0be692d0e28160ab965",
+  "main_sha": "b22da9de86f917f50ec3e50e108675845714950a",
+  "scope": "R remote Windows and authenticated R Playwright browser; read-only database inspection",
+  "db_checked_at": "2026-10-10T09:05:29.268098Z",
+  "tables_with_rls": 21,
+  "tables_with_anon_select": 0,
+  "anon_callable_comic_security_definers": 0,
+  "profile_constraints": [
+    "PRIMARY KEY(id)",
+    "FOREIGN KEY(id) REFERENCES auth.users(id) ON DELETE CASCADE"
+  ],
+  "username_unique_constraint": false,
+  "duplicate_normalized_username_groups": 0,
+  "profiles_without_username": 1,
+  "email_in_public_rpc_outputs": false,
+  "email_in_owner_ui": true,
+  "live_publication": {
+    "beta_status_public_publication_enabled": false,
+    "publish_rpc_checks_beta_gate": false,
+    "eligibility_checks": [
+      "public group",
+      "not adult_theme",
+      "creator current membership",
+      "selected messages belong to group",
+      "sender current membership and terms accepted before message"
+    ],
+    "publication_executed_in_audit": false
+  },
+  "live_style": {
+    "romance_allowed_in_public_group_path": true,
+    "visibility_checked_by_style_rpc": false,
+    "adult_theme_checked_by_style_rpc": false
+  },
+  "example_migration_drift": [
+    {
+      "name": "pr36_group_chat",
+      "repo": "20261008230000",
+      "live": "20261008201149"
+    },
+    {
+      "name": "pr37_group_episode_compiler",
+      "repo": "20261009001000",
+      "live": "20261008233719"
+    },
+    {
+      "name": "audit_fixes",
+      "repo": "20261009063333",
+      "live": "20261009071909"
+    }
+  ],
+  "ui_checks": [
+    {
+      "surface": "live website",
+      "width": 1100,
+      "body_scroll_width": 1100
+    },
+    {
+      "surface": "live website",
+      "width": 390,
+      "body_scroll_width": 390
+    },
+    {
+      "surface": "MCP fixture",
+      "width": 740,
+      "body_scroll_width": 740
+    }
+  ],
+  "limits": [
+    "No production publishing mutation",
+    "Paid image generation disabled",
+    "No complete penetration/load/restore test",
+    "Actual multi-account GPT group test still outstanding",
+    "Passing iframe fixture is not real OAuth E2E",
+    "No full WCAG certification"
+  ],
+  "qa_fixture_contract_mismatch": {
+    "group_role": "role instead of my_role",
+    "member_role": "role instead of member_role"
+  }
+}
