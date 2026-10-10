@@ -59,9 +59,9 @@ as_service "$COMMIT" >/dev/null
 [[ "$(as_user "$B" "SELECT media_asset_id FROM public.comic_read_message('$M'::uuid);")" == "$ART1" ]]
 [[ "$(as_user "$B" "SELECT original_text=E'  original\nПривет!  ' FROM public.comic_read_message('$M'::uuid);")" == "t" ]]
 deny "$C" "SELECT * FROM public.comic_read_message('$M'::uuid);" "outsider read private illustration"
-[[ "$(as_service "SELECT provider||'|'||billing_source||'|'||status FROM public.comic_generation_job WHERE message_id='$M';")" == "chatgpt-user-art|chatgpt-user-provided|ready" ]]
-[[ "$(as_service "SELECT lease_token IS NULL AND attempt_asset_id IS NULL AND lease_expires_at IS NULL FROM public.comic_generation_job WHERE message_id='$M';")" == "t" ]]
-[[ "$(as_service "SELECT public.comic_frozen_panel_metadata('$M')->'illustration'->>'mime_type';")" == "image/png" ]]
+[[ "$("${PSQL[@]}" -c "SELECT provider||'|'||billing_source||'|'||status FROM public.comic_generation_job WHERE message_id='$M';")" == "chatgpt-user-art|chatgpt-user-provided|ready" ]]
+[[ "$("${PSQL[@]}" -c "SELECT lease_token IS NULL AND attempt_asset_id IS NULL AND lease_expires_at IS NULL FROM public.comic_generation_job WHERE message_id='$M';")" == "t" ]]
+[[ "$("${PSQL[@]}" -c "SELECT public.comic_frozen_panel_metadata('$M')->'illustration'->>'mime_type';")" == "image/png" ]]
 # Existing publication snapshots keep their original art ID on later attachment.
 R="$(as_user "$A" "SELECT public.comic_propose_public_snapshot('$AB'::uuid,'$M'::uuid);")"
 BEFORE="$(as_user "$B" "SELECT public.comic_read_publication_preview('$R'::uuid)::text;")"
