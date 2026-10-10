@@ -101,7 +101,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     const rows = data || []
     setConversations(rows)
 
-    const currentId = selectedConversationRef.current?.conversation_id
+    const currentId = selectedConversationRef.current?.conversation_id || supabase.initialConversationId
     if (currentId) {
       const fresh = rows.find((row) => row.conversation_id === currentId)
       if (fresh) setSelectedConversation(fresh)
@@ -185,6 +185,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
         .subscribe()
     }
 
+    if (supabase.transport === 'mcp') {
+      const refresh = () => { if (!document.hidden) loadConversations() }
+      const timer = setInterval(refresh, 5000)
+      document.addEventListener('visibilitychange', refresh)
+      return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', refresh) }
+    }
     subscribeMemberships()
 
     return () => {

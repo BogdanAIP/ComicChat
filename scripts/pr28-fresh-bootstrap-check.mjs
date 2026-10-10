@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-const read = (path) => fs.readFileSync(path, 'utf8')
+const read = (path) => fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 const expect = (source, needle, label) => {
   if (!source.includes(needle)) {
     throw new Error(`PR-28 bootstrap gate missing: ${label}: ${needle}`)

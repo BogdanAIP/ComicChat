@@ -37,3 +37,8 @@ yarn-error.log*
 
 # local skills and generated helper scripts
 /skills/
+
+# Local QA process logs
+*.qa.log
+mcp-ui/qa-host.html
+*.qa.md

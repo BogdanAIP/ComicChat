@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n')
 
 const ui = read('components/ComicDirectMessages.js')
 const page = read('pages/index.js')

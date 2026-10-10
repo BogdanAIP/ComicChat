@@ -8,9 +8,10 @@ import { pipeline } from 'npm:@supabase/middleware@^1.0.0'
 import { withOAuthProtectedResource, withSupabase } from 'npm:@supabase/server@^1.6.0'
 import { z } from 'npm:zod@^4.3.6'
 import { COMICCHAT_APP_HTML } from './ui.ts'
+import { makeOperationSchemas } from './operations.mjs'
 
 const oauth = [{ type: 'oauth2' as const, scopes: ['openid', 'email', 'profile'] }]
-const COMICCHAT_APP_URI = 'ui://comicchat/app-v1.html'
+const COMICCHAT_APP_URI = 'ui://comicchat/app-v2.html'
 
 function jsonResult(value: unknown) {
   return {
@@ -20,7 +21,8 @@ function jsonResult(value: unknown) {
 }
 
 function fail(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = error instanceof Error ? error.message :
+    (error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error))
   throw new Error(message)
 }
 
@@ -35,12 +37,51 @@ Deno.serve(
     async (req, { supabase }) => {
       const handler = createMcpHandler(() => {
         const server = new McpServer(
-          { name: 'comicchat', version: '0.1.0' },
+          { name: 'comicchat', version: '0.2.0' },
           {
             instructions:
               'ComicChat is a private comic-first messenger. Resolve the authenticated profile before account-sensitive work. List or find a conversation before reading or sending. Never invent conversation IDs, user IDs, message IDs, or text.',
           }
         )
+
+        // App-only transport for the same website components; database RPCs
+        // retain their existing auth.uid(), RLS and consent enforcement.
+        const schemas = makeOperationSchemas(z)
+        for (const [name, schema, readOnly] of [
+          ['comicchat_ui_read', schemas.read, true],
+          ['comicchat_ui_write', schemas.write, false],
+        ] as const) {
+          server.registerTool(name, {
+            title: readOnly ? 'Read ComicChat app data' : 'Apply ComicChat app action',
+            description: 'Fixed app-only capabilities for the existing ComicChat website UI.',
+            inputSchema: { accountId: z.string().uuid(), request: schema },
+            annotations: { readOnlyHint: readOnly, destructiveHint: !readOnly, openWorldHint: false },
+            securitySchemes: oauth,
+            _meta: { ui: { visibility: ['app'] } },
+          }, async ({ accountId, request }) => {
+            const { data: auth, error: authError } = await supabase.auth.getUser()
+            if (authError || !auth.user || auth.user.id !== accountId) fail('Connected account changed. Reopen ComicChat.')
+            const { data, error } = await supabase.rpc(request.operation, request.args)
+            if (error) fail(error)
+            return jsonResult({ data: data ?? null })
+          })
+        }
+        server.registerTool('comicchat_ui_update_profile', {
+          title: 'Update my ComicChat username',
+          description: 'Update only the authenticated account username from the profile screen.',
+          inputSchema: { accountId: z.string().uuid(), username: z.string().trim().min(1).max(80) },
+          annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+          securitySchemes: oauth,
+          _meta: { ui: { visibility: ['app'] } },
+        }, async ({ accountId, username }) => {
+          const { data: auth, error: authError } = await supabase.auth.getUser()
+          if (authError || !auth.user) fail(authError || 'Authenticated user missing')
+          if (auth.user.id !== accountId) fail('Connected account changed. Reopen ComicChat.')
+          const { data, error } = await supabase.from('user').update({ username })
+            .eq('id', auth.user.id).select('id, username, email').single()
+          if (error) fail(error)
+          return jsonResult({ data })
+        })
 
         server.registerResource(
           'comicchat-app',
@@ -77,6 +118,8 @@ Deno.serve(
             outputSchema: {
               profile: z.record(z.string(), z.unknown()),
               conversations: z.array(z.record(z.string(), z.unknown())),
+              groups: z.array(z.record(z.string(), z.unknown())),
+              invitations: z.array(z.record(z.string(), z.unknown())),
               selectedConversationId: z.string().uuid().nullable(),
               messages: z.array(z.record(z.string(), z.unknown())),
             },
@@ -88,6 +131,7 @@ Deno.serve(
             securitySchemes: oauth,
             _meta: {
               ui: { resourceUri: COMICCHAT_APP_URI },
+              'openai/outputTemplate': COMICCHAT_APP_URI,
               'openai/ui': {
                 entrypoints: [{ type: 'global' }, { type: 'thread' }],
               },
@@ -110,6 +154,13 @@ Deno.serve(
               'comic_list_direct_conversations'
             )
             if (conversationsError) fail(conversationsError)
+
+            const [groupResult, invitationResult] = await Promise.all([
+              supabase.rpc('comic_list_groups'),
+              supabase.rpc('comic_list_group_invitations'),
+            ])
+            if (groupResult.error) fail(groupResult.error)
+            if (invitationResult.error) fail(invitationResult.error)
 
             let messages: Record<string, unknown>[] = []
             if (conversationId) {
@@ -136,9 +187,159 @@ Deno.serve(
             return jsonResult({
               profile,
               conversations: conversationRows || [],
+              groups: groupResult.data || [],
+              invitations: invitationResult.data || [],
               selectedConversationId: conversationId || null,
               messages,
             })
+          }
+        )
+
+        server.registerTool(
+          'list_groups',
+          {
+            title: 'List ComicChat groups',
+            description: "List only groups the authenticated account belongs to. Resolve the profile to choose the correct connected account.",
+            inputSchema: {  },
+            outputSchema: { groups: z.array(z.record(z.string(), z.unknown())) },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_list_groups')
+            if (error) fail(error)
+            return jsonResult({ groups: data || [] })
+          }
+        )
+
+        server.registerTool(
+          'list_group_invitations',
+          {
+            title: 'List ComicChat group invitations',
+            description: "List pending closed-group invitations addressed to the authenticated account.",
+            inputSchema: {  },
+            outputSchema: { invitations: z.array(z.record(z.string(), z.unknown())) },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async () => {
+            const { data, error } = await supabase.rpc('comic_list_group_invitations')
+            if (error) fail(error)
+            return jsonResult({ invitations: data || [] })
+          }
+        )
+
+        server.registerTool(
+          'list_group_members',
+          {
+            title: 'List ComicChat group members',
+            description: "List members of a known group. Only current members can read; foreign and unknown group IDs fail uniformly.",
+            inputSchema: { groupId: z.string().uuid() },
+            outputSchema: { members: z.array(z.record(z.string(), z.unknown())) },
+            annotations: {
+              readOnlyHint: true,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ groupId }) => {
+            const { data, error } = await supabase.rpc('comic_list_group_members', { p_group_id: groupId })
+            if (error) fail(error)
+            return jsonResult({ members: data || [] })
+          }
+        )
+
+        server.registerTool(
+          'create_group',
+          {
+            title: 'Create ComicChat group',
+            description: "Create a closed or public ordinary group after explicit user request. Public creation requires explicit acceptance of future message reuse in published comics.",
+            inputSchema: { title: z.string().trim().min(3).max(80), visibility: z.enum(['closed', 'public']).default('closed'), acceptPublicReuse: z.boolean().default(false) },
+            outputSchema: { groupId: z.string().uuid() },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ title, visibility, acceptPublicReuse }) => {
+            if (visibility === 'public' && !acceptPublicReuse) fail('public_group_terms_required')
+            const { data, error } = await supabase.rpc('comic_create_group', { p_title: title, p_visibility: visibility })
+            if (error) fail(error)
+            return jsonResult({ groupId: data })
+          }
+        )
+
+        server.registerTool(
+          'invite_group_user',
+          {
+            title: 'Invite ComicChat group user',
+            description: "Invite an exact user ID returned by find_users to a known closed group. Only the group owner can invite. Do not invent users or invite without the user's instruction.",
+            inputSchema: { groupId: z.string().uuid(), userId: z.string().uuid() },
+            outputSchema: { invited: z.boolean() },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ groupId, userId }) => {
+            const { data, error } = await supabase.rpc('comic_invite_group_user', { p_group_id: groupId, p_user_id: userId })
+            if (error) fail(error)
+            return jsonResult({ invited: data })
+          }
+        )
+
+        server.registerTool(
+          'join_group',
+          {
+            title: 'Join ComicChat group',
+            description: "Accept an invitation to a closed group or join a known public group. Public join requires explicit consent to future message reuse in published comics. Never infer consent.",
+            inputSchema: { groupId: z.string().uuid(), acceptPublicReuse: z.boolean().default(false) },
+            outputSchema: { groupId: z.string().uuid() },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: false,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ groupId, acceptPublicReuse }) => {
+            const { data, error } = await supabase.rpc('comic_join_group', { p_group_id: groupId, p_accept_public_reuse: acceptPublicReuse })
+            if (error) fail(error)
+            return jsonResult({ groupId: data })
+          }
+        )
+
+        server.registerTool(
+          'leave_group',
+          {
+            title: 'Leave ComicChat group',
+            description: "Leave a known group only when the user requests it; this removes current history access. Group owners must transfer ownership first.",
+            inputSchema: { groupId: z.string().uuid() },
+            outputSchema: { left: z.boolean() },
+            annotations: {
+              readOnlyHint: false,
+              destructiveHint: true,
+              openWorldHint: false,
+            },
+            securitySchemes: oauth,
+          },
+          async ({ groupId }) => {
+            const { data, error } = await supabase.rpc('comic_leave_group', { p_group_id: groupId })
+            if (error) fail(error)
+            return jsonResult({ left: data })
           }
         )
 
