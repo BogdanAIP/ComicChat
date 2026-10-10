@@ -77,7 +77,10 @@ export default function ComicGroupChat({ session, supabase }) {
       }
     }
     initialLoad()
-    return () => { live = false }
+    const refresh = () => { if (!document.hidden) initialLoad() }
+    const timer = supabase.transport === 'mcp' ? setInterval(refresh, 5000) : null
+    if (timer) document.addEventListener('visibilitychange', refresh)
+    return () => { live = false; if (timer) { clearInterval(timer); document.removeEventListener('visibilitychange', refresh) } }
   }, [supabase, t.groupsLoadFailed])
 
   useEffect(() => {

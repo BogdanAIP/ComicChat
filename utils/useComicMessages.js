@@ -72,6 +72,23 @@ export default function useComicMessages({ supabase, session, conversationId, on
 
     const subscribe = async () => {
       try {
+        if (supabase.transport === 'mcp') {
+          setState(current => current.conversationId === conversationId
+            ? current : { conversationId, messages: [], hasOlder: false })
+          setConnectionState('polling')
+          setLoadingOlder(false)
+          const poll = async () => {
+            if (!scope.active || scope.polling || document.hidden) return
+            scope.polling = true
+            try { await refreshLatest() } finally { scope.polling = false }
+          }
+          await poll()
+          if (!scope.active) return
+          scope.timer = setInterval(poll, 5000)
+          scope.visible = poll
+          document.addEventListener('visibilitychange', poll)
+          return
+        }
         await supabase.realtime.setAuth(session.access_token)
         if (!scope.active) return
         setState((current) => current.conversationId === conversationId
@@ -105,6 +122,8 @@ export default function useComicMessages({ supabase, session, conversationId, on
     subscribe()
     return () => {
       scope.active = false
+      if (scope.timer) clearInterval(scope.timer)
+      if (scope.visible) document.removeEventListener('visibilitychange', scope.visible)
       if (scope.channel) supabase.removeChannel(scope.channel)
     }
   }, [conversationId, session.access_token, supabase])

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 
 function read(path) {
-  return fs.readFileSync(path, 'utf8')
+  return fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 }
 
 function expect(source, needle, label) {
