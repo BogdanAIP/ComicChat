@@ -252,3 +252,68 @@ pages/index.js; components/Profile.js; components/ComicDirectMessages.js; compon
 | Восстановление сервиса | Зафиксировать политику резервирования, целевые сроки восстановления и проверяемый restore drill для DB и private assets | Восстановление в отдельном окружении подтверждает связи сообщений/эпизодов/изображений и права; секреты в отчёт не попадают |
 
 Порядок сохраняется: сначала серверные инварианты и согласованность выпусков; затем общий UX/settings/themes; после — полный четырёхаккаунтный website/GPT сценарий и эксплуатационные проверки. Платная генерация в рамках аудита не включалась.
+
+
+## AUTH-01 — Расширить способы входа и связать идентичности
+
+Добавлено по запросу пользователя 10 октября 2026, 12:38 МСК. **Приоритет P1**, security/account-linking проверки обязательны до включения новых провайдеров. Это задание на реализацию; providers, client IDs и live auth settings в этой доработке не менялись.
+
+### Цель и состав
+
+Один ComicChat account должен быть доступен через несколько подтверждённых способов входа, сохраняя профиль, handle, переписки, группы, эпизоды, настройки, блокировки и историю согласий.
+
+| Способ | Объём задания | Зависимость / условие |
+| --- | --- | --- |
+| Почта | Сохранить email/password; подтверждение адреса, восстановление пароля, понятные ошибки. Добавить passwordless код или ссылку после выбора основного email UX | Проверить реальную доставку, срок и однократность кодов/ссылок, лимиты отправки и локализованные письма; QA auto-confirm не является production сценариями |
+| Google | Вход/регистрация и привязка Google к существующему профилю | Зарегистрированный OAuth client, точные callback URLs и включённый provider; минимальные identity scopes |
+| OpenAI / ChatGPT | Официальное «Продолжить с ChatGPT» на сайте и соответствующий plugin sign-in flow, если он доступен проекту | По документации на дату проверки commercial identity sign-in предоставляется selected partners через limited trial. Проверить eligibility и получить зарегистрированный client; не показывать неработающую кнопку |
+| Яндекс ID | Российский способ входа, регистрации и привязки | Регистрация приложения, проверка сервиса и OAuth endpoints/права; подтвердить совместимость с выбранным Auth transport |
+| VK ID | Российский способ входа, регистрации и привязки | Регистрация приложения, OAuth/SDK contract, callback и PKCE; проверить сопоставление стабильного provider identity |
+| Сбер ID | Оценить как дополнительный российский вариант | Отдельно проверить доступность подключения, условия, требования и потребность аудитории; не считать подключённым |
+
+Яндекс ID и VK ID — предложенный первый набор российских провайдеров. Госуслуги/ЕСИА и SMS не добавляются автоматически: при необходимости это отдельное задание с собственными условиями, стоимостью и оценкой данных.
+
+### Архитектура и безопасность
+
+- Сохранять действующую привязку к auth.users и RLS; один canonical user_id. Не создавать независимую систему пользователей для каждого provider.
+- Google имеет встроенный Supabase provider; для остальных проверить действующие Custom OAuth/OIDC Providers и совместимость реального проекта/SDK. Если нужен adapter, обосновать его без переписывания всего Auth.
+- Не предполагать, что provider name/email является доказательством владения ComicChat account. Привязка нового способа — явный сценарий с подтверждением владения действующим аккаунтом и новым provider.
+- Проверить автоматическое linking действующего Auth: подтверждённость email, правила collision, unconfirmed identities и параллельные first login. Непроверенный совпадающий адрес не должен приводить к захвату профиля.
+- Внешняя identity сопоставляется по стабильному provider subject и корректному issuer/client context; email остаётся приватным и изменяемым атрибутом.
+- Предусмотреть аккаунты, для которых provider не возвращает email: не создавать публичный email/name fallback, не терять права из-за смены адреса.
+- Использовать поддержанный Authorization Code/PKCE flow, state/nonce и проверку токенов по контракту provider. Secrets только серверные; callback/return destination строго разрешены; исключить open redirect.
+- Локальный user_id для сайта и MCP совпадает; OpenAI identity sign-in и разрешение ChatGPT connector — отдельные границы. Не передавать provider/access/refresh tokens в widget, model-visible ответы или логи.
+- AUTH-01 не включает разрешения на чтение GPT-переписок, запрос пользовательского API key или включение платной генерации/ChatGPT plan usage.
+- Источники входа не должны обходить deletion/account state, blocking, group membership или публикационную policy.
+
+### Пользовательский сценарий
+
+Экран входа показывает только реально доступные методы, с понятными RU/EN/AR labels, отменой и ошибками. При первом входе — display name/уникальный handle без публикации email. В «Настройки → Аккаунт → Способы входа» видны привязанные методы, добавление и отключение; нельзя удалить последний работоспособный путь входа без подготовки альтернативы. Предусмотреть восстановление доступа и выход/отзыв сессий на других устройствах.
+
+### Критерии приёмки
+
+1. Каждый включённый provider проходит новый вход, повторный вход, отмену, отказ в consent и истёкший callback на staging.
+2. Привязка нового метода сохраняет тот же user_id, группы, эпизоды и preferences. Разные email не создают дубликат при подтверждённой привязке.
+3. Совпадение неподтверждённого email и подмена subject/token не дают доступ к чужому профилю.
+4. Concurrent first login и повтор callback не создают два аккаунта/двойную привязку; конфликт объясняется пользователю.
+5. Unlink, смена email и recovery не блокируют владельца и не изменяют чужие memberships.
+6. Website и настоящий GPT connector открывают один подтверждённый account; переключение независимых пользователей очищает старые данные.
+7. Secrets/PII не появляются в URL history после callback, UI, модели, экспорте технических логов или Git; публичные DTO остаются без email.
+8. Email confirm/reset/passwordless доставляются и работают с заявленными сроками, одноразовостью, rate limits и локализацией.
+9. Вводится provider rollout flag и возможность отключить сломанный provider, сохраняя альтернативный вход и существующий account.
+10. В release manifest указаны enabled providers, callback environments и tested contract versions. Неподключённый ChatGPT/Sber вариант обозначен как pending, а не готовая возможность.
+
+### Документация, проверенная 10 октября 2026
+
+- [Supabase Google](https://supabase.com/docs/guides/auth/social-login/auth-google)
+- [Supabase identities/linking](https://supabase.com/docs/guides/auth/auth-identity-linking)
+- [Supabase Custom OAuth/OIDC](https://supabase.com/docs/guides/auth/custom-oauth-providers)
+- [OpenAI Sign in with ChatGPT](https://developers.openai.com/siwc/quickstart)
+- [OpenAI website identity](https://developers.openai.com/siwc/website)
+- [OpenAI plugin identity](https://developers.openai.com/siwc/chatgpt-plugin)
+- [Яндекс ID — OAuth integration](https://yandex.ru/dev/id/doc/ru/how-to)
+- [Яндекс ID — регистрация](https://yandex.ru/dev/id/doc/ru/register-auth)
+- [VK ID — официальный SDK](https://github.com/VKCOM/vkid-web-sdk/blob/master/README.md)
+- [Сбер ID — официальный обзор](https://developers.sber.ru/help/sber-id)
+
+Перед реализацией вновь сверить provider contracts, quotas и наличие доступа. По текущей Supabase документации Custom OAuth/OIDC поддерживаются; это не доказательство, что они уже настроены или протестированы в нашем staging.
