@@ -372,7 +372,7 @@
 .comicCard{border:var(--ui-line) solid var(--ui-ink);border-radius:var(--ui-panel-radius);box-shadow:var(--ui-panel-shadow)}
 .comicCaption{border-top:var(--ui-line) solid var(--ui-ink);background:var(--ui-surface);padding:12px 14px}
 .comicSpeaker{color:var(--ui-ink)}.comicIdentity,.comicIdentity time{color:var(--ui-muted)}
-.comicScene .speechBubble{border:var(--ui-line) solid var(--ui-ink);border-radius:var(--ui-bubble-radius);box-shadow:var(--ui-bubble-shadow);background:#fff;color:#161b24;margin-block:24px}
+.comicScene .speechBubble,.comicScene[data-comic-style] .speechBubble{border:var(--ui-line) solid var(--ui-ink);border-radius:var(--ui-bubble-radius);box-shadow:var(--ui-bubble-shadow);background:#fff;color:#161b24;margin-block:24px}
 .comicCardMine .comicScene .speechBubble{border-radius:var(--ui-bubble-mine)}
 .speechBubble::after{content:'';position:absolute;width:18px;height:18px;bottom:-11px;left:22px;background:#fff;border-right:var(--ui-line) solid var(--ui-ink);border-bottom:var(--ui-line) solid var(--ui-ink);transform:skewY(25deg);z-index:-1}
 .comicCardMine .speechBubble::after{left:auto;right:22px;transform:skewY(-25deg)}

@@ -24,3 +24,5 @@ Original speech stays canonical, white-backed, at least16px, normal font and hig
 - Portable theme acceptance added to the existing MCP iframe CI job.
 
 Deployment status and exact verified commit are recorded in the Rakazo implementation resource after deployment. No DB migration, paid generation, authentication or message mutation introduced by this theme change.
+
+Incoming and outgoing speech frames both follow app appearance, including messages with an existing frozen Manga illustration style. A real staging screenshot revealed the old illustration-style CSS winning on incoming speech; the specificity boundary is fixed and browser acceptance now covers that case.
