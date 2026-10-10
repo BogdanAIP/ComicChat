@@ -35,7 +35,9 @@
     "bootstrap:pr28": "node scripts/pr28-fresh-bootstrap-check.mjs",
     "beta:pr29": "node scripts/pr29-comicchat-first-shell-check.mjs",
     "acceptance:pr30": "node scripts/pr30-browser-acceptance-check.mjs",
-    "styles:pr38": "node scripts/pr38-style-skills-check.mjs"
+    "styles:pr38": "node scripts/pr38-style-skills-check.mjs",
+    "plugin:build-ui": "node scripts/build-mcp-ui.mjs",
+    "plugin:test-ui": "node --test tests/mcpUi.test.mjs tests/chatgptArt.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
@@ -43,7 +45,8 @@
     "next": "^16.2.3",
     "nodemailer": "^8.0.5",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@modelcontextprotocol/ext-apps": "2.0.3"
   },
   "engines": {
     "node": ">=20.9.0"
@@ -51,6 +54,7 @@
   "devDependencies": {
     "@playwright/test": "1.64.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^16.2.3"
+    "eslint-config-next": "^16.2.3",
+    "esbuild": "0.28.2"
   }
 }

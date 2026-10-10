@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import styles from '../styles/Profile.module.css'
 import useTranslation from '../utils/useTranslation'
 
-const Profile = ({ currentUser, session, supabase, onBack }) => {
+const Profile = ({ currentUser, session, supabase, onBack, embedded = false }) => {
   const { t } = useTranslation()
   const [editingUsername, setEditingUsername] = useState(false)
   const [newUsername, setNewUsername] = useState(currentUser?.username || '')
@@ -28,7 +28,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error.message || t.errorAuth,
+        text: t.actionFailed,
       })
     } finally {
       setLoading(false)
@@ -42,21 +42,21 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
     } catch (error) {
-      setMessage({ type: 'error', text: error.message || t.errorAuth })
+      setMessage({ type: 'error', text: t.actionFailed })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className={styles.page} data-testid="profile-page" data-current-user-ready={currentUser?.id ? 'true' : 'false'}>
+    <div className={embedded ? styles.embedded : styles.page} data-testid="profile-page" data-current-user-ready={currentUser?.id ? 'true' : 'false'}>
       <motion.div
         className={styles.card}
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className={styles.headerRow}>
+        {!embedded && <div className={styles.headerRow}>
           <motion.button
             type="button"
             className={styles.back}
@@ -67,17 +67,17 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             ←
           </motion.button>
           <h1 className={styles.title}>{t.profile}</h1>
-        </div>
+        </div>}
 
         <div className={styles.avatar}>
-          {(currentUser?.username || session?.user?.email || 'U')[0].toUpperCase()}
+          {(currentUser?.username || '?')[0].toUpperCase()}
         </div>
 
         <div className={styles.identity}>
           <h2 className={styles.name}>
             {currentUser?.username || t.unnamed}
           </h2>
-          <p className={styles.email}>{session?.user?.email}</p>
+
         </div>
 
         {message.text && (
@@ -139,11 +139,11 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
           >
-            {t.usernameOptional}
+            {t.editName}
           </motion.button>
         )}
 
-        <div className={styles.divider}>
+        {supabase.transport === 'mcp' ? <p className={styles.connectionHint}>{t.connectionHelp}</p> : <div className={styles.divider}>
           <motion.button
             type="button"
             className={styles.btnDanger}
@@ -153,7 +153,7 @@ const Profile = ({ currentUser, session, supabase, onBack }) => {
           >
             {t.logout}
           </motion.button>
-        </div>
+        </div>}
       </motion.div>
     </div>
   )

@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import '../styles/themes.css'
 import { Cairo } from 'next/font/google'
 import useSupabase from '../utils/useSupabase'
 import { useRouter } from 'next/router'
@@ -12,7 +13,7 @@ const cairo = Cairo({
 function MyApp({ Component, pageProps }) {
   const { currentUser, session, supabase } = useSupabase()
   const router = useRouter()
-  const locale = router.locale || 'ar'
+  const locale = router.locale || 'ru'
   const isRTL = locale === 'ar'
 
   useEffect(() => {
@@ -21,7 +22,7 @@ function MyApp({ Component, pageProps }) {
   }, [locale, isRTL])
 
   return (
-    <div className={`${cairo.className} ${cairo.variable} app-root`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`${cairo.className} ${cairo.variable} app-root`}>
       <Component
         currentUser={currentUser}
         session={session}

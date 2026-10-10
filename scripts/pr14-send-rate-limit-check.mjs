@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 
 function read(path) {
-  return fs.readFileSync(path, 'utf8')
+  return fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 }
 
 function expect(source, needle, label) {
@@ -42,7 +42,7 @@ expect(test, 'other sender remains independent', 'per-sender isolation')
 expect(test, "created_at = created_at - INTERVAL '61 seconds'", 'window expiry coverage')
 
 expect(chat, "includes('send_rate_limited')", 'web recognizes server rate limit')
-expect(chat, 'your text is still in the composer', 'web preserves draft on rate limit')
+expect(chat, 'setDraft((current) => current || originalText)', 'web preserves draft on rate limit')
 expect(docs, '30 new messages per rolling 60 seconds', 'documented beta threshold')
 expect(docs, 'idempotent retries do not consume', 'documented retry semantics')
 expect(roadmap, '| PR-14 |', 'roadmap PR-14 row')

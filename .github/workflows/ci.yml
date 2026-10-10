@@ -31,6 +31,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Bundle shared website UI for ChatGPT
+        run: npm run plugin:build-ui
+
+      - name: Check app capability validation and account isolation
+        run: npm run plugin:test-ui
+
       - name: Lint
         run: npm run lint
 
@@ -276,6 +282,12 @@ jobs:
       - name: Verify frozen publication, keyset reads, asset authorization, and retry fencing
         run: bash supabase/tests/audit_fixes_integration.sh
 
+      - name: Apply UI preferences and private ChatGPT illustration migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261010102635_ui_preferences_chatgpt_art.sql
+
+      - name: Verify account preferences and ChatGPT illustration authorization
+        run: bash supabase/tests/ui_chatgpt_integration.sh
+
       - name: Run post-migration security assertions
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/pr02_security_assertions.sql
 
@@ -474,3 +486,19 @@ jobs:
       - name: Stop isolated local Supabase
         if: always()
         run: supabase stop --no-backup || true
+
+  shared-mcp-ui:
+    name: Shared website UI in MCP iframe
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run plugin:build-ui
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/mcp-ui-browser-test.mjs
+      - run: node scripts/theme-browser-acceptance.mjs

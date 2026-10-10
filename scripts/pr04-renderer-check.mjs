@@ -33,7 +33,7 @@ requireText(panel, 'data-character-template={renderModel.character.silhouette}',
 requireText(panel, 'maxWidth: renderModel.bubble.maxWidth', 'renderer max width metric')
 requireText(panel, 'minHeight: renderModel.bubble.minHeight', 'renderer min height metric')
 requireText(panel, 'padding: renderModel.bubble.padding', 'renderer padding metric')
-requireText(panel, 'fontSize: `${renderModel.bubble.fontScale}rem`', 'renderer font metric')
+requireText(panel, 'fontSize: `${Math.max(1, renderModel.bubble.fontScale)}rem`', 'readable renderer font metric with 1rem minimum')
 
 forbidText(panel, 'getComicScene', 'legacy ad-hoc scene helper')
 forbidText(panel, 'getComicStatus', 'legacy ad-hoc status helper')

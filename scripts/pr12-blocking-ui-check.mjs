@@ -27,7 +27,7 @@ expect(component, "'comic_unblock_user' : 'comic_block_user'", 'web mutations ch
 expect(component, 'p_user_id: selectedPartnerId', 'exact selected partner identity')
 expect(component, 'selectedBlockedByMe', 'selected block state')
 expect(component, "window.confirm(", 'explicit block confirmation')
-expect(component, 'Existing history stays visible', 'non-destructive block copy')
+expect(component, 't.blockConfirm', 'localized non-destructive block confirmation')
 expectOneOf(
   component,
   ['disabled={busy || deletionPending || selectedBlockedByMe}'],

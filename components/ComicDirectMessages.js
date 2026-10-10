@@ -15,7 +15,6 @@ import useConversationDraft from '../utils/useConversationDraft'
 import { makeUuid, mergeMessage, reusableSendAttempt } from '../utils/comicMessages.mjs'
 import useTranslation from '../utils/useTranslation'
 import styles from '../styles/ComicDirectMessages.module.css'
-import ComicWelcome from './ComicWelcome'
 import ComicStoryPermissions from './ComicStoryPermissions'
 
 const REPORT_REASONS = [
@@ -51,8 +50,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
   const sendAttemptRef = useRef(new Map())
   const styleRefreshRef = useRef(null)
   const messagesRef = useRef(null)
+  const textMessagesRef = useRef(null)
   const { t } = useTranslation()
-  const renderDispatchRef = useRef(new Set())
 
   const [conversations, setConversations] = useState([])
   const [selectedConversation, setSelectedConversation] = useState(null)
@@ -67,14 +66,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
   const [reportRequestId, setReportRequestId] = useState(null)
   const [reportBusy, setReportBusy] = useState(false)
   const [reportStatus, setReportStatus] = useState('')
-  const [exportBusy, setExportBusy] = useState(false)
-  const [exportStatus, setExportStatus] = useState('')
+  const [textOpen, setTextOpen] = useState(false)
   const [accountState, setAccountState] = useState({
     status: 'active',
     deletion_requested_at: null,
     hard_delete_enabled: false,
   })
-  const [accountStateBusy, setAccountStateBusy] = useState(false)
   const [betaSafety, setBetaSafety] = useState(null)
 
   const selectedConversationId = selectedConversation?.conversation_id || null
@@ -94,42 +91,42 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
 
     if (rpcError) {
       console.error('comic_list_direct_conversations failed', rpcError)
-      setError('Unable to load private conversations.')
+      setError(t.searchLoadFailed)
       return []
     }
 
     const rows = data || []
     setConversations(rows)
 
-    const currentId = selectedConversationRef.current?.conversation_id
+    const currentId = selectedConversationRef.current?.conversation_id || supabase.initialConversationId
     if (currentId) {
       const fresh = rows.find((row) => row.conversation_id === currentId)
       if (fresh) setSelectedConversation(fresh)
     }
 
     return rows
-  }, [supabase])
+  }, [supabase, t.searchLoadFailed])
 
   const loadBlockedUsers = useCallback(async () => {
     const { data, error: rpcError } = await supabase.rpc('comic_list_blocked_users')
 
     if (rpcError) {
       console.error('comic_list_blocked_users failed', rpcError)
-      setError('Unable to load blocked users.')
+      setError(t.actionFailed)
       return []
     }
 
     const ids = (data || []).map((row) => row.blocked_user_id)
     setBlockedUserIds(ids)
     return ids
-  }, [supabase])
+  }, [supabase, t.actionFailed])
 
   const loadAccountState = useCallback(async () => {
     const { data, error: rpcError } = await supabase.rpc('comic_get_my_account_state')
 
     if (rpcError) {
       console.error('comic_get_my_account_state failed', rpcError)
-      setError('Unable to load account deletion status.')
+      setError(t.actionFailed)
       return null
     }
 
@@ -141,7 +138,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     }
     setAccountState(nextState)
     return nextState
-  }, [supabase])
+  }, [supabase, t.actionFailed])
 
   const loadBetaSafety = useCallback(async () => {
     const { data, error: rpcError } = await supabase.rpc('comic_get_beta_safety_status')
@@ -185,6 +182,12 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
         .subscribe()
     }
 
+    if (supabase.transport === 'mcp') {
+      const refresh = () => { if (!document.hidden) loadConversations() }
+      const timer = setInterval(refresh, 5000)
+      document.addEventListener('visibilitychange', refresh)
+      return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', refresh) }
+    }
     subscribeMemberships()
 
     return () => {
@@ -225,10 +228,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     onActivity: onMessageActivity,
     onStyleChange: () => styleRefreshRef.current?.(),
   })
-  const { messages, setMessages, connectionState } = history
+  const { messages, setMessages } = history
   const chatStyles = useComicChatStyles(supabase, selectedConversationId, messages)
   useEffect(() => { styleRefreshRef.current = chatStyles.refresh }, [chatStyles.refresh])
   const messageScroll = useComicScroll(messagesRef, selectedConversationId, messages)
+  const textScroll = useComicScroll(textMessagesRef, selectedConversationId, messages, textOpen)
 
   useEffect(() => {
     if (!selectedConversationId || typeof document === 'undefined') return undefined
@@ -243,61 +247,6 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [loadConversations, markReceipts, selectedConversationId])
-
-  useEffect(() => {
-    if (!betaSafety?.external_generation_enabled) return undefined
-
-    let cancelled = false
-
-    // A retryable worker failure moves rendering -> queued. Clear the local
-    // dispatch marker as soon as the message leaves queued so the later queued
-    // transition can safely invoke the exact same job again.
-    for (const messageId of renderDispatchRef.current) {
-      const current = messages.find((message) => message.id === messageId)
-      if (!current || current.status !== 'queued') {
-        renderDispatchRef.current.delete(messageId)
-      }
-    }
-
-    for (const message of messages) {
-      if (
-        message.sender_id !== myUserId ||
-        message.status !== 'queued' ||
-        message.optimistic ||
-        String(message.id).startsWith('temp-') ||
-        renderDispatchRef.current.has(message.id)
-      ) {
-        continue
-      }
-
-      renderDispatchRef.current.add(message.id)
-
-      supabase.functions
-        .invoke('comicchat-render', {
-          body: { messageId: message.id },
-        })
-        .then(({ error: renderError }) => {
-          if (cancelled) return
-          if (renderError) {
-            renderDispatchRef.current.delete(message.id)
-            setError(
-              'Message was sent, but comic rendering could not be started. The text is safe and can be rendered later.'
-            )
-          }
-        })
-        .catch(() => {
-          if (cancelled) return
-          renderDispatchRef.current.delete(message.id)
-          setError(
-            'Message was sent, but comic rendering could not be started. The text is safe and can be rendered later.'
-          )
-        })
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [betaSafety?.external_generation_enabled, messages, myUserId, supabase])
 
   useEffect(() => {
     const trimmed = query.trim()
@@ -359,11 +308,11 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       setSearchResults([])
     } catch (openError) {
       console.error('comic_ensure_direct_conversation failed', openError)
-      setError('Unable to open this private conversation.')
+      setError(t.actionFailed)
     } finally {
       setBusy(false)
     }
-  }, [deletionPending, loadConversations, supabase])
+  }, [deletionPending, loadConversations, supabase, t.actionFailed])
 
   useImperativeHandle(
     forwardedRef,
@@ -380,7 +329,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       !selectedBlockedByMe &&
       typeof window !== 'undefined' &&
       !window.confirm(
-        `Block ${selectedTitle}? Existing history stays visible, but neither side can send new ComicChat messages until you unblock them.`
+        t.blockConfirm
       )
     ) {
       return
@@ -447,113 +396,15 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       const row = Array.isArray(data) ? data[0] : data
       if (!row?.id) throw new Error('comic_report_message returned no report')
 
-      setReportStatus('Report submitted. The other user cannot see your report through ComicChat.')
+      setReportStatus(t.reportSubmitted)
       setReportTargetId(null)
       setReportDetails('')
       setReportRequestId(null)
     } catch (reportError) {
       console.error('comic_report_message failed', reportError)
-      setReportStatus('Report was not submitted. You can retry without creating a duplicate.')
+      setReportStatus(t.reportFailed)
     } finally {
       setReportBusy(false)
-    }
-  }
-
-  const exportMyData = async () => {
-    if (exportBusy) return
-
-    setError('')
-    setExportStatus('')
-    setExportBusy(true)
-
-    try {
-      const { data, error: exportError } = await supabase.rpc('comic_export_my_data')
-      if (exportError) throw exportError
-      if (!data || typeof document === 'undefined') {
-        throw new Error('comic_export_my_data returned no export')
-      }
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      })
-      const objectUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = objectUrl
-      link.download = `comicchat-export-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
-      setExportStatus('Your ComicChat export was downloaded as JSON.')
-    } catch (exportError) {
-      console.error('comic_export_my_data failed', exportError)
-      setError('Unable to export your ComicChat data.')
-    } finally {
-      setExportBusy(false)
-    }
-  }
-
-  const requestAccountDeletion = async () => {
-    if (accountStateBusy || deletionPending) return
-
-    if (
-      typeof window !== 'undefined' &&
-      !window.confirm(
-        'Request ComicChat account deletion? New chat interaction will stop immediately, but shared conversation history is retained. This request can be cancelled; hard deletion is not enabled yet.'
-      )
-    ) {
-      return
-    }
-
-    setError('')
-    setAccountStateBusy(true)
-
-    try {
-      const { data, error: requestError } = await supabase.rpc(
-        'comic_request_account_deletion'
-      )
-      if (requestError) throw requestError
-
-      const row = Array.isArray(data) ? data[0] : data
-      setAccountState(row || {
-        status: 'deletion_requested',
-        deletion_requested_at: new Date().toISOString(),
-        hard_delete_enabled: false,
-      })
-      setQuery('')
-      setSearchResults([])
-      setDraft('')
-    } catch (requestError) {
-      console.error('comic_request_account_deletion failed', requestError)
-      setError('Unable to request account deletion.')
-    } finally {
-      setAccountStateBusy(false)
-    }
-  }
-
-  const cancelAccountDeletion = async () => {
-    if (accountStateBusy || !deletionPending) return
-
-    setError('')
-    setAccountStateBusy(true)
-
-    try {
-      const { data, error: cancelError } = await supabase.rpc(
-        'comic_cancel_account_deletion'
-      )
-      if (cancelError) throw cancelError
-
-      const row = Array.isArray(data) ? data[0] : data
-      setAccountState(row || {
-        status: 'active',
-        deletion_requested_at: null,
-        hard_delete_enabled: false,
-      })
-    } catch (cancelError) {
-      console.error('comic_cancel_account_deletion failed', cancelError)
-      setError('Unable to cancel the deletion request.')
-    } finally {
-      setAccountStateBusy(false)
     }
   }
 
@@ -590,6 +441,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
     setBusy(true)
     setDraft('')
     messageScroll.followEnd()
+    textScroll.followEnd()
     setMessages((current) => mergeMessage(current, optimistic))
 
     try {
@@ -620,13 +472,13 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       const accountUnavailable = serverMessage.includes('account_unavailable')
       setError(
         deletionRequested
-          ? 'Your deletion request makes ComicChat read-only. Cancel it before sending new messages.'
+          ? t.deletionReadOnly
           : accountUnavailable
-            ? 'This account is unavailable for new ComicChat messages.'
+            ? t.searchDisabled
             : blocked
-              ? 'New messages are blocked for this conversation. Your text is still in the composer.'
+              ? t.blockedNotice
               : rateLimited
-                ? 'Too many messages were sent recently. Try again shortly; your text is still in the composer.'
+                ? t.sendUnconfirmed
                 : t.sendUnconfirmed
       )
     } finally {
@@ -645,80 +497,28 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
       <aside className={styles.sidebar}>
         <header className={styles.sidebarHeader}>
           <div>
-            <p className={styles.eyebrow}>{t.storyDesk}</p>
+
             <h2>{t.privateConversations}</h2>
           </div>
           <span className={styles.lockBadge}>✦ {t.private}</span>
         </header>
 
         <label className={styles.searchLabel}>
-          Find a user by username
+          {t.typeTwoCharacters}
           <input
             className={styles.searchInput}
             data-testid="comic-user-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={
-              deletionPending ? 'Search disabled while deletion is requested' : t.typeTwoCharacters
+              deletionPending ? t.searchDisabled : t.typeTwoCharacters
             }
             autoComplete="off"
             disabled={deletionPending}
           />
         </label>
 
-        <details className={styles.exportActions}><summary>{t.betaSettings}</summary>
-          <button
-            type="button"
-            className={styles.safetyButton}
-            onClick={exportMyData}
-            disabled={exportBusy}
-          >
-            {exportBusy ? t.preparingExport : t.exportMyData}
-          </button>
-          {deletionPending ? (
-            <button
-              type="button"
-              className={styles.safetyButton}
-              onClick={cancelAccountDeletion}
-              disabled={accountStateBusy}
-            >
-              {accountStateBusy ? t.updating : t.cancelDeletion}
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={styles.safetyButton}
-              onClick={requestAccountDeletion}
-              disabled={accountStateBusy}
-            >
-              {accountStateBusy ? t.updating : t.requestDeletion}
-            </button>
-          )}
-          {exportStatus && (
-            <p className={styles.exportStatus} role="status">
-              {exportStatus}
-            </p>
-          )}
-          {deletionPending && (
-            <p className={styles.accountNotice} role="status">
-              Deletion requested. Existing history and data export remain available, but new chat interaction is disabled. Hard deletion is not enabled yet.
-            </p>
-          )}
-          {betaSafety && (
-            <div className={styles.accountNotice} aria-label="Closed beta limits">
-              <strong>Closed beta limits</strong>
-              <br />
-              Generation provider: {betaSafety.generation_provider || 'unknown'}.
-              {' '}External generation: {betaSafety.external_generation_enabled ? 'enabled' : 'disabled'}.
-              {' '}Media storage: {betaSafety.media_storage_enabled ? 'enabled' : 'disabled'}.
-              {' '}Public publication: {betaSafety.public_publication_enabled ? 'enabled' : 'disabled'}.
-              {' '}Hard deletion: {betaSafety.hard_delete_enabled ? 'enabled' : 'disabled'}.
-              {' '}Automated purge: {betaSafety.automated_retention_purge_enabled ? 'enabled' : 'disabled'}.
-              {' '}Retention duration {betaSafety.retention_duration_defined ? 'is defined' : 'is not defined'}.
-            </div>
-          )}
-        </details>
-
+        {query.trim().length >= 2 && visibleSearchResults.length === 0 && !busy && <p className={styles.emptySidebar}>{t.noSearchResults}</p>}
         {visibleSearchResults.length > 0 && (
           <div className={styles.searchResults}>
             {visibleSearchResults.map((user) => (
@@ -788,7 +588,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
             ← {t.backToChats}
           </button>}
           <div>
-            <p className={styles.eyebrow}>{t.yourStory}</p>
+
             <h2 data-testid="comic-chat-title">{selectedTitle}</h2>
           </div>
           <div className={styles.chatHeaderActions}>
@@ -807,14 +607,15 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                 {selectedBlockedByMe ? t.unblock : t.block}
               </button>
             )}
-            <span className={styles.connection} data-testid="comic-connection">
-              {connectionState === 'connected' ? t.live : connectionState}
-            </span>
+            <span className={styles.srOnly} data-testid="comic-connection" role="status">{history.connectionState === 'connected' ? t.live : t.loading}</span>
+            {selectedConversation && <button type="button" className={styles.safetyButton}
+              data-testid="text-chat-toggle" aria-expanded={textOpen} aria-controls="comic-text-chat"
+              onClick={() => setTextOpen(!textOpen)}>{textOpen ? t.closeText : t.textChat}</button>}
           </div>
         </header>
 
         {!selectedConversation ? (
-          <ComicWelcome onOpenProfile={onOpenProfile} />
+          <div className={styles.emptyChat}><span className={styles.placeholderPanel} aria-hidden="true">✦</span><h3>{t.chatWelcome}</h3><p>{t.chatWelcomeHelp}</p><button type="button" className={styles.safetyButton} onClick={onOpenProfile}>{t.editName}</button></div>
         ) : (
           <>
             <details className={styles.storyStudio} name="comic-studios">
@@ -835,6 +636,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               pending={chatStyles.pending} error={chatStyles.error}
               notice={chatStyles.notice} externalGenerationEnabled={Boolean(betaSafety?.external_generation_enabled)} />
 
+            <div className={`${styles.conversationBody} ${textOpen ? styles.textOpen : ''}`}>
             <div className={styles.messages} ref={messagesRef} onScroll={messageScroll.onScroll}
               aria-live="polite" data-testid="comic-messages">
               {history.error && <p role="alert" className={styles.error}>{t[history.error] || history.error}</p>}
@@ -876,9 +678,24 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     supabase={supabase}
                     mediaStorageEnabled={Boolean(betaSafety?.media_storage_enabled)}
                     mediaAssetId={message.media_asset_id || null}
+                    allowChatGptArt
+                    onArtAttached={async () => { const { data } = await supabase.rpc('comic_read_message', { p_message_id: message.id }); const row = Array.isArray(data) ? data[0] : data; if(row && selectedConversationRef.current?.conversation_id === row.conversation_id) setMessages(current => mergeMessage(current, row)) }}
                   />
                 )
               })}
+            </div>
+
+            {textOpen && <aside className={styles.textDrawer} id="comic-text-chat" aria-label={t.textChat} data-testid="text-chat">
+              <header><h3>{t.textChat}</h3><button type="button" className={styles.comicAction} onClick={() => setTextOpen(false)} aria-label={t.closeText}>×</button></header>
+              <div className={styles.textMessages} ref={textMessagesRef} onScroll={textScroll.onScroll}>
+                {history.hasOlder && <button type="button" className={styles.loadOlder} onClick={history.loadOlder} disabled={history.loadingOlder}>{t.loadEarlierMessages}</button>}
+                {messages.map(message => <article key={message.id} data-text-message-id={message.id} className={message.sender_id === myUserId ? styles.textMine : styles.textIncoming}>
+                  <strong>{message.sender_id === myUserId ? t.you : selectedTitle}</strong>
+                  <p dir="auto">{message.original_text}</p>
+                  <time dateTime={message.created_at}>{new Date(message.created_at).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}</time>
+                </article>)}
+              </div>
+            </aside>}
             </div>
 
             {reportTargetId && (
@@ -891,8 +708,8 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               >
                 <div className={styles.reportHeader}>
                   <div>
-                    <p className={styles.eyebrow}>Private safety report</p>
-                    <h3 id="comic-report-title">Report this message</h3>
+
+                    <h3 id="comic-report-title">{t.reportHeading}</h3>
                   </div>
                   <button
                     type="button"
@@ -900,28 +717,28 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     onClick={cancelReport}
                     disabled={reportBusy}
                   >
-                    Cancel
+                    {t.cancel}
                   </button>
                 </div>
 
                 <label className={styles.reportField}>
-                  Reason
+                  {t.reportReason}
                   <select
                     className={styles.reportSelect}
                     value={reportReason}
                     onChange={(event) => setReportReason(event.target.value)}
                     disabled={reportBusy}
                   >
-                    {REPORT_REASONS.map(([value, label]) => (
+                    {REPORT_REASONS.map(([value]) => (
                       <option key={value} value={value}>
-                        {label}
+                        {t['report_' + value]}
                       </option>
                     ))}
                   </select>
                 </label>
 
                 <label className={styles.reportField}>
-                  Optional details
+                  {t.reportDetails}
                   <textarea
                     className={styles.reportTextarea}
                     value={reportDetails}
@@ -929,7 +746,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     rows={3}
                     maxLength={1000}
                     disabled={reportBusy}
-                    placeholder="Add context for the safety review"
+                    placeholder={t.reportDetails}
                   />
                 </label>
 
@@ -940,7 +757,7 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                     className={styles.sendButton}
                     disabled={reportBusy}
                   >
-                    {reportBusy ? 'Submitting…' : 'Submit report'}
+                    {reportBusy ? t.sending : t.reportSubmit}
                   </button>
                 </div>
               </form>
@@ -956,20 +773,14 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
               {error && <p className={styles.error}>{error}</p>}
               {deletionPending && (
                 <p className={styles.safetyNotice} role="status">
-                  Account deletion is requested. Existing history stays visible, but ComicChat is read-only until you cancel the request.
+                  {t.deletionReadOnly}
                 </p>
               )}
               {selectedBlockedByMe && (
                 <p className={styles.safetyNotice} role="status">
-                  You blocked {selectedTitle}. Existing history stays visible. Unblock this user to resume messaging.
+                  {t.blockedNotice}
                 </p>
               )}
-              {betaSafety?.external_generation_enabled && (
-                <p className={styles.accountNotice} role="status">
-                  Comic rendering is enabled for this closed beta. The exact message text is sent to the configured OpenAI image provider as private scene context; generated bytes are stored in private Supabase Storage. ComicChat overlays your exact text separately and does not charge your ChatGPT plan.
-                </p>
-              )}
-
               {draft.length > 0 && (
                 <details className={styles.composerPreview} aria-label={t.messagePreview}>
                   <summary>{t.messagePreview}</summary>
@@ -995,9 +806,9 @@ function ComicDirectMessagesContent({ session, supabase, forwardedRef, onOpenPro
                   onChange={(event) => setDraft(event.target.value.slice(0, 4000))}
                   placeholder={
                     deletionPending
-                      ? 'Cancel the deletion request to send messages'
+                      ? t.deletionReadOnly
                       : selectedBlockedByMe
-                        ? 'Unblock this user to send a message'
+                        ? t.blockedNotice
                         : t.writeMessage
                   }
                   rows={2}

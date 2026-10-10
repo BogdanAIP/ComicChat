@@ -81,6 +81,11 @@ async function setUsername(page, username) {
   await page.getByTestId('profile-edit-username').click()
   await page.getByTestId('profile-username-input').fill(username)
   await page.getByTestId('profile-save').click()
+  await expect(page.getByTestId('profile-username-input')).toHaveCount(0)
+  await page.getByTestId('ui-language').selectOption('en')
+  await page.getByTestId('theme-manga').check()
+  await expect(page.locator('html')).toHaveAttribute('data-theme','manga')
+  await page.getByTestId('comicchat-nav').click()
 
   await expect(page.getByTestId('comic-private-shell')).toBeVisible()
 }
@@ -113,7 +118,7 @@ test('two users exchange exact private messages through the browser in realtime'
   const suffix = Date.now().toString(36)
   const usernameA = `pr30-alpha-${suffix}`
   const usernameB = `pr30-bravo-${suffix}`
-  const aToB = `PR30 exact A-to-B ${suffix}`
+  const aToB = `  PR30 exact A-to-B ${suffix}\nПривет, собеседник!  `
   const bToA = `PR30 exact B-to-A ${suffix}`
 
   const contextA = await browser.newContext()
@@ -148,6 +153,15 @@ test('two users exchange exact private messages through the browser in realtime'
     await expect(receivedByA).toHaveCount(1)
     await expect(receivedByA.getByText(bToA, { exact: true })).toHaveCount(1)
     await expect(receivedByA).not.toHaveAttribute('data-message-status', 'draft')
+    await pageB.getByTestId('text-chat-toggle').click()
+    const original = pageB.getByTestId('text-chat').locator('article').filter({hasText:'Привет, собеседник!'})
+    await expect(original.locator('p')).toHaveText(aToB)
+    expect(await original.locator('p').textContent()).toBe(aToB)
+    await expect(pageB.getByTestId('comic-composer')).toHaveCount(1)
+    await pageB.getByTestId('text-chat-toggle').click()
+    await pageA.reload()
+    await pageA.getByTestId('comic-conversation').filter({hasText:usernameB}).click()
+    await expect(messageCard(pageA,bToA)).toHaveCount(1)
   } finally {
     await contextA.close()
     await contextB.close()

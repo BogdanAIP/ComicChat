@@ -1,7 +1,1 @@
-module.exports = {
-  reactStrictMode: true,
-  i18n: {
-    locales: ['ar', 'en'],
-    defaultLocale: 'ar',
-  },
-}
+module.exports = { reactStrictMode: true, i18n: { locales: ['ru','en','ar'], defaultLocale: 'ru' } }

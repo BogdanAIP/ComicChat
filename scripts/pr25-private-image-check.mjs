@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-const read = (path) => fs.readFileSync(path, 'utf8')
+const read = (path) => fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n')
 const expect = (source, needle, label) => {
   if (!source.includes(needle)) {
     throw new Error(`PR-25 invariant missing: ${label}`)
@@ -64,10 +64,10 @@ expect(panel, 'URL.createObjectURL(data)', 'local blob URL rendering')
 forbid(panel, 'getPublicUrl', 'ComicPanel public URL helper')
 forbid(panel, 'createSignedUrl', 'ComicPanel signed URL helper')
 
-expect(web, "betaSafety?.external_generation_enabled", 'web dispatch provider gate')
-expect(web, ".invoke('comicchat-render'", 'sender render dispatch')
+forbid(web, ".invoke('comicchat-render'", 'private chat cannot dispatch API generation')
+expect(read('components/ComicArtActions.js'), "supabase.functions.invoke('comicchat-chatgpt-art'", 'explicit user-selected illustration attachment')
 expect(web, 'mediaStorageEnabled={Boolean(betaSafety?.media_storage_enabled)}', 'dynamic media capability')
-expect(web, 'does not charge your ChatGPT plan', 'billing-source disclosure')
+expect(read('components/ComicArtActions.js'), 'using ChatGPT image creation', 'explicit ChatGPT image workflow')
 
 expect(config, '[storage]\nenabled = true', 'local private Storage enabled')
 expect(config, '[functions.comicchat-render]', 'render function config')

@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { renderTemplate } from '../utils/templateRenderer.mjs'
 import { styleVisualTokens } from '../utils/comicStyleSkills.mjs'
+import ComicArtActions from './ComicArtActions'
 import useTranslation from '../utils/useTranslation'
 import panelStyles from '../styles/ComicPanel.module.css'
 import styles from '../styles/ComicDirectMessages.module.css'
 
-function formatTime(value) {
+function formatTime(value, locale) {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date)
@@ -35,8 +36,10 @@ export default function ComicPanel({
   mediaAssetId = null,
   episodeAsset = null,
   characterSeed = null,
+  allowChatGptArt = false,
+  onArtAttached = null,
 }) {
-  const { t } = useTranslation()
+  const { t, locale } = useTranslation()
   const [copyState, setCopyState] = useState('idle')
   const [retryPreviewing, setRetryPreviewing] = useState(false)
   const [privateArt, setPrivateArt] = useState(null)
@@ -75,6 +78,7 @@ export default function ComicPanel({
     !preview &&
     status === 'ready' &&
     mediaStorageEnabled &&
+    mediaAssetId &&
     supabase &&
     conversationId &&
     messageId &&
@@ -218,7 +222,7 @@ export default function ComicPanel({
               maxWidth: renderModel.bubble.maxWidth,
               minHeight: renderModel.bubble.minHeight,
               padding: renderModel.bubble.padding,
-              fontSize: `${renderModel.bubble.fontScale}rem`,
+              fontSize: `${Math.max(1, renderModel.bubble.fontScale)}rem`,
             }}
           >
             <p>{exactText || t.panelEmptyDraft}</p>
@@ -236,7 +240,7 @@ export default function ComicPanel({
               {speaker}
             </span>
             {!preview && createdAt && (
-              <time dateTime={createdAt}>{formatTime(createdAt)}</time>
+              <time dateTime={createdAt}>{formatTime(createdAt, locale)}</time>
             )}
           </div>
 
@@ -276,6 +280,7 @@ export default function ComicPanel({
             )}
           </div>
         </figcaption>
+        {!preview && mine && !optimistic && allowChatGptArt && supabase && <ComicArtActions supabase={supabase} messageId={messageId} text={text} styleConfig={styleConfig} onAttached={onArtAttached} />}
       </figure>
 
       <span
