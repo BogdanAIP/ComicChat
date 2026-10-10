@@ -33,6 +33,9 @@ async function loginAndName(page, account, name) {
   await page.getByTestId('profile-edit-username').click()
   await page.getByTestId('profile-username-input').fill(name)
   await page.getByTestId('profile-save').click()
+  await expect(page.getByTestId('profile-username-input')).toHaveCount(0)
+  await page.getByTestId('ui-language').selectOption('en')
+  await page.getByTestId('comicchat-nav').click()
   await expect(page.getByTestId('comic-private-shell')).toBeVisible()
 }
 

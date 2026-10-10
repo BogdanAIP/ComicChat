@@ -139,15 +139,16 @@ test('preview failure keeps publication approval disabled', async ({ page }) => 
   await expect(page.getByTestId('comic-story-permissions').getByRole('alert')).toContainText('snapshot could not be loaded')
 })
 
-test('mobile menu excludes hidden controls and Arabic auth has Arabic text', async ({ page }) => {
+test('mobile navigation stays reachable and Arabic auth has Arabic text', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await fixtureChat(page)
-  await expect(page.getByTestId('groups-nav')).not.toBeVisible()
-  await page.getByRole('button', { name: 'Open Menu', exact: true }).click()
-  await expect(page.getByTestId('groups-nav')).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page.getByTestId('groups-nav')).not.toBeVisible()
-  await expect(page.getByRole('button', { name: 'Open Menu', exact: true })).toBeFocused()
+  for(const id of ['comicchat-nav','groups-nav','settings-nav']) await expect(page.getByTestId(id)).toBeVisible()
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth)
+  expect(overflow).toBe(false)
+  await page.getByTestId('settings-nav').click()
+  await expect(page.getByTestId('ui-language')).toBeVisible()
+  await page.getByTestId('ui-language').selectOption('ar')
+  await expect(page.locator('html')).toHaveAttribute('dir','rtl')
   await page.evaluate(() => localStorage.clear())
   await page.unroute('**/auth/v1/**')
   const signedOut = await page.context().newPage()
