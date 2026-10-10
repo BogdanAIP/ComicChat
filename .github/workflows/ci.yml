@@ -501,3 +501,4 @@ jobs:
       - run: npm run plugin:build-ui
       - run: npx playwright install --with-deps chromium
       - run: node scripts/mcp-ui-browser-test.mjs
+      - run: node scripts/theme-browser-acceptance.mjs

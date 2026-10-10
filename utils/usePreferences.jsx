@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
 const Context = createContext(null)
-export const THEMES = ['classic','manga','anime','superhero','cartoon']
+export const THEMES = ['manga','superhero','cartoon','classic','anime']
 export const LOCALES = ['ru','en','ar']
 const valid = value => ({ locale: LOCALES.includes(value?.locale) ? value.locale : 'ru', theme: THEMES.includes(value?.theme) ? value.theme : 'classic' })
 export function PreferencesProvider({ userId, supabase, children }) {

@@ -132,3 +132,16 @@
   .memberBar { max-height:38px; padding-block:5px; }
   .chat>details>summary { padding-block:8px; }
 }
+
+
+/* Shared interface world, preserving group membership/publishing controls. */
+.layout{color:var(--ui-ink);background:var(--ui-paper);font-family:'Segoe UI','Cairo',sans-serif}
+.sidebar{background:var(--ui-sidebar-bg);border-color:var(--ui-ink);border-inline-end-width:var(--ui-line)}
+.sidebar h2,.chatHeader h2,.emptyScreen h2{font-family:var(--ui-display);letter-spacing:var(--ui-title-spacing);color:var(--ui-ink)}
+.chat{background-image:var(--ui-texture);background-size:var(--ui-texture-size)}
+.chatHeader,.composer,.ownerTools,.ownerActions{background:var(--ui-surface);border-color:var(--ui-ink)}
+.groupButton,.activeGroup,.form,.inviteBox{background:var(--ui-surface);border-color:var(--ui-ink);border-radius:var(--ui-button-radius);box-shadow:var(--ui-button-shadow);color:var(--ui-ink)}
+.activeGroup,.memberBar{background:var(--ui-soft);color:var(--ui-ink)}
+.messages>article{border:var(--ui-line) solid var(--ui-ink);border-radius:var(--ui-panel-radius)}
+.composer textarea{border-color:var(--ui-ink);border-radius:var(--ui-button-radius);font-size:16px}
+.composer button{background:var(--ui-send-bg);color:var(--ui-send-ink);border-color:var(--ui-ink);border-radius:var(--ui-button-radius);box-shadow:var(--ui-button-shadow)}

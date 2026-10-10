@@ -1,9 +1,38 @@
-:root,[data-theme="classic"]{--ui-bg:var(--ui-paper);--ui-paper:#f5f7fc;--ui-surface:#fff;--ui-ink:#24324a;--ui-muted:#55657c;--ui-accent:#304eaa;--ui-soft:#e8edff;--ui-mark:#f6cd59;--ui-border:#c5ccdb;--ui-radius:12px;--ui-shadow:3px 3px 0 #24324a;--ui-texture:radial-gradient(#d7deed .65px,transparent .7px)}
-[data-theme="manga"]{--ui-paper:#eee;--ui-surface:#fff;--ui-ink:#16181d;--ui-muted:#555;--ui-accent:#17191e;--ui-soft:#e5e5e5;--ui-mark:#d5d5d5;--ui-border:#919191;--ui-radius:2px;--ui-shadow:4px 4px 0 #16181d;--ui-texture:radial-gradient(#bbb .7px,transparent .8px)}
-[data-theme="anime"]{--ui-paper:#f5f1ff;--ui-surface:#fff;--ui-ink:#34264c;--ui-muted:#685878;--ui-accent:#6440ad;--ui-soft:#ede5ff;--ui-mark:#ffd7e9;--ui-border:#cfc1e7;--ui-radius:18px;--ui-shadow:0 5px 18px #6440ad18;--ui-texture:radial-gradient(#decdf1 .6px,transparent .7px)}
-[data-theme="superhero"]{--ui-paper:#f0f4fc;--ui-surface:#fff;--ui-ink:#122c56;--ui-muted:#475b78;--ui-accent:#b52638;--ui-soft:#ffeaed;--ui-mark:#ffda4e;--ui-border:#738aaa;--ui-radius:4px;--ui-shadow:5px 5px 0 #122c56;--ui-texture:radial-gradient(#b6c6e0 .8px,transparent .9px)}
-[data-theme="cartoon"]{--ui-paper:#effaf7;--ui-surface:#fff;--ui-ink:#234542;--ui-muted:#456c63;--ui-accent:#186254;--ui-soft:#d9f2e9;--ui-mark:#ffe39a;--ui-border:#a5c9bd;--ui-radius:22px;--ui-shadow:2px 4px 0 #234542;--ui-texture:radial-gradient(#c2e4d6 .7px,transparent .8px)}
+/* Interface worlds. Artwork/immutable message style is independent of these tokens. */
+:root,[data-theme="classic"]{
+ --ui-paper:#f7f3e9;--ui-bg:var(--ui-paper);--ui-surface:#fffdf6;--ui-ink:#262526;--ui-muted:#605a53;--ui-accent:#793a32;--ui-soft:#f3e5c5;--ui-mark:#f3cd67;--ui-border:#bdb29e;
+ --ui-radius:8px;--ui-shadow:3px 3px 0 #262526;--ui-line:2px;--ui-panel-radius:3px;--ui-panel-shadow:4px 5px 0 #262526;
+ --ui-bubble-radius:24px 24px 24px 4px;--ui-bubble-mine:24px 24px 4px 24px;--ui-bubble-shadow:3px 3px 0 #262526;
+ --ui-button-radius:5px;--ui-button-shadow:2px 2px 0 #262526;--ui-display:'Georgia','Cairo',serif;--ui-display-weight:800;--ui-title-spacing:-.035em;
+ --ui-header-bg:#f3e5c5;--ui-header-line:3px;--ui-sidebar-bg:#fffdf6;--ui-nav-active:#f3cd67;--ui-nav-ink:#262526;--ui-send-bg:#793a32;--ui-send-ink:#fff;
+ --ui-texture:radial-gradient(#d9ceb5 .7px,transparent .9px);--ui-texture-size:12px 12px;--ui-avatar-radius:50%;--ui-avatar-shadow:2px 2px 0 #262526;--ui-frame-gap:28px;
+}
+[data-theme="manga"]{
+ --ui-paper:#f3f3f1;--ui-surface:#fff;--ui-ink:#151515;--ui-muted:#505050;--ui-accent:#151515;--ui-soft:#e6e6e4;--ui-mark:#fff;--ui-border:#999;
+ --ui-radius:0px;--ui-shadow:5px 5px 0 #151515;--ui-line:2px;--ui-panel-radius:0px;--ui-panel-shadow:6px 6px 0 #151515;
+ --ui-bubble-radius:42px 36px 40px 3px;--ui-bubble-mine:36px 42px 3px 40px;--ui-bubble-shadow:2px 3px 0 #151515;
+ --ui-button-radius:0px;--ui-button-shadow:3px 3px 0 #151515;--ui-display:'Georgia','Cairo',serif;--ui-display-weight:900;--ui-title-spacing:-.035em;
+ --ui-header-bg:#fff;--ui-header-line:5px;--ui-sidebar-bg:#fff;--ui-nav-active:#151515;--ui-nav-ink:#fff;--ui-send-bg:#151515;--ui-send-ink:#fff;
+ --ui-texture:radial-gradient(#b8b8b6 1px,transparent 1.3px);--ui-texture-size:6px 6px;--ui-avatar-radius:2px;--ui-avatar-shadow:3px 3px 0 #151515;--ui-frame-gap:34px;
+}
+[data-theme="superhero"]{
+ --ui-paper:#fff3c9;--ui-surface:#fff;--ui-ink:#172546;--ui-muted:#44516c;--ui-accent:#a91f34;--ui-soft:#ffda4c;--ui-mark:#ffda4c;--ui-border:#77809b;
+ --ui-radius:3px;--ui-shadow:6px 6px 0 #172546;--ui-line:3px;--ui-panel-radius:2px;--ui-panel-shadow:7px 7px 0 #172546;
+ --ui-bubble-radius:3px 22px 3px 22px;--ui-bubble-mine:22px 3px 22px 3px;--ui-bubble-shadow:4px 4px 0 #172546;
+ --ui-button-radius:2px;--ui-button-shadow:3px 3px 0 #172546;--ui-display:'Arial Black','Cairo','Segoe UI',sans-serif;--ui-display-weight:900;--ui-title-spacing:-.055em;
+ --ui-header-bg:#173d82;--ui-header-line:5px;--ui-sidebar-bg:#fff;--ui-nav-active:#ffda4c;--ui-nav-ink:#172546;--ui-send-bg:#a91f34;--ui-send-ink:#fff;
+ --ui-texture:radial-gradient(#e9b446 1.7px,transparent 2px);--ui-texture-size:10px 10px;--ui-avatar-radius:8px 2px 8px 2px;--ui-avatar-shadow:3px 3px 0 #172546;--ui-frame-gap:30px;
+}
+[data-theme="cartoon"]{
+ --ui-paper:#e8f6ff;--ui-surface:#fffef9;--ui-ink:#253936;--ui-muted:#49625c;--ui-accent:#20604e;--ui-soft:#d5eebb;--ui-mark:#ffdc76;--ui-border:#87aaa1;
+ --ui-radius:24px;--ui-shadow:3px 5px 0 #253936;--ui-line:3px;--ui-panel-radius:24px 32px 20px 28px;--ui-panel-shadow:4px 6px 0 #253936;
+ --ui-bubble-radius:30px 25px 28px 7px;--ui-bubble-mine:25px 30px 7px 28px;--ui-bubble-shadow:2px 4px 0 #253936;
+ --ui-button-radius:18px 22px 15px 20px;--ui-button-shadow:2px 3px 0 #253936;--ui-display:'Trebuchet MS','Cairo',sans-serif;--ui-display-weight:900;--ui-title-spacing:-.035em;
+ --ui-header-bg:#ffe7a5;--ui-header-line:3px;--ui-sidebar-bg:#fffef9;--ui-nav-active:#d5eebb;--ui-nav-ink:#253936;--ui-send-bg:#20604e;--ui-send-ink:#fff;
+ --ui-texture:radial-gradient(ellipse at 20px 16px,#fff 0 12px,transparent 13px),radial-gradient(ellipse at 42px 20px,#fff 0 16px,transparent 17px);--ui-texture-size:130px 100px;--ui-avatar-radius:43% 57% 51% 49%;--ui-avatar-shadow:2px 3px 0 #253936;--ui-frame-gap:28px;
+}
+[data-theme="anime"]{--ui-paper:#f5f1ff;--ui-surface:#fff;--ui-ink:#34264c;--ui-muted:#685878;--ui-accent:#6440ad;--ui-soft:#ede5ff;--ui-mark:#ffd7e9;--ui-border:#cfc1e7;--ui-radius:18px;--ui-shadow:0 5px 18px #6440ad18;--ui-line:1px;--ui-panel-radius:18px;--ui-panel-shadow:0 6px 18px #6440ad30;--ui-bubble-radius:24px 24px 24px 8px;--ui-bubble-mine:24px 24px 8px 24px;--ui-bubble-shadow:0 3px 12px #6440ad25;--ui-button-radius:12px;--ui-button-shadow:none;--ui-display:'Trebuchet MS','Cairo',sans-serif;--ui-header-bg:#ede5ff;--ui-header-line:1px;--ui-sidebar-bg:#fff;--ui-nav-active:#ede5ff;--ui-nav-ink:#6440ad;--ui-send-bg:#6440ad;--ui-send-ink:#fff;--ui-texture:radial-gradient(#decdf1 .6px,transparent .7px);--ui-texture-size:12px 12px;--ui-avatar-radius:50%;--ui-avatar-shadow:none}
 html[data-theme]{--bg-deep:var(--ui-paper);--bg-mid:var(--ui-soft);--bg-elevated:var(--ui-surface);--text-primary:var(--ui-ink);--text-muted:var(--ui-muted);--text-faint:var(--ui-muted);--accent:var(--ui-accent);--border-focus:var(--ui-accent);--border-subtle:var(--ui-border);--border-strong:var(--ui-ink);--radius-md:var(--ui-radius);--comic-paper:var(--ui-paper);--comic-ink:var(--ui-ink);--shadow-sm:var(--ui-shadow)}
 html[data-theme] body{background:var(--ui-paper);color:var(--ui-ink);font-family:'Segoe UI','Cairo',system-ui,sans-serif}
 html[data-theme] body::before{display:none}
-html[data-theme] :focus-visible{outline-color:var(--ui-accent)}
+html[data-theme] :focus-visible{outline:3px solid var(--ui-accent);outline-offset:4px}

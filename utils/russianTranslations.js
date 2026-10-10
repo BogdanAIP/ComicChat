@@ -1,4 +1,11 @@
 export const russianTranslations = {
+ interfaceTheme:'Оформление приложения',
+ themeDesc_manga:'Тушь, печатный растр и строгие кадры',
+ themeDesc_superhero:'Толстые контуры и динамичные рамки',
+ themeDesc_cartoon:'Мягкие облачка и нарисованные линии',
+ themeDesc_classic:'Бумага и классическая печатная палитра',
+ themeDesc_anime:'Плавные линии и лёгкие акценты',
+
   "navigation": "Навигация",
   "workspaceSub": "Ваши разговоры в комиксах",
   "publicChat": "Общий чат",
@@ -213,7 +220,7 @@ export const russianTranslations = {
   "closeText": "Свернуть текст",
   "comicView": "Комикс",
   "textView": "Текст",
-  "themeHelp": "Меняет только ваш интерфейс. Стиль рисунков в переписке сохраняется.",
+  "themeHelp": "Оформление меняет рамки и элементы приложения. Стиль иллюстраций выбирается отдельно в чате; готовые изображения сохраняются.",
   "connectionSettings": "Управление подключением",
   "connectionHelp": "Смените или отключите аккаунт в настройках плагина ChatGPT.",
   "savedPreferences": "Настройки сохранены",

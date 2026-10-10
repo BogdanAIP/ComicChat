@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Profile from './Profile'
+import ThemePreview from './ThemePreview'
 import useTranslation from '../utils/useTranslation'
 import { usePreferences, LOCALES, THEMES } from '../utils/usePreferences'
 import styles from '../styles/Settings.module.css'
@@ -39,18 +40,18 @@ export default function Settings({ currentUser, session, supabase, onBack }) {
   return <section className={styles.page} data-testid="settings-page">
     <header className={styles.heading}><h1>{t.settings}</h1><button type="button" onClick={onBack}>{t.backToChats}</button></header>
     <div className={styles.grid}>
-      <section className={styles.card} aria-labelledby="appearance-title">
+      <section className={styles.card + " " + styles.appearanceCard} aria-labelledby="appearance-title">
         <h2 id="appearance-title">{t.appearance}</h2>
         <label className={styles.field} htmlFor="ui-language">{t.language}
           <select id="ui-language" data-testid="ui-language" value={preferences.locale} onChange={e => preferences.update({locale:e.target.value})}>
             {LOCALES.map(locale => <option key={locale} value={locale}>{({ru:'Русский',en:'English',ar:'العربية'})[locale]}</option>)}
           </select>
         </label>
-        <fieldset className={styles.themes}><legend>{t.theme}</legend>
+        <fieldset className={styles.themes}><legend>{t.interfaceTheme}</legend>
           {THEMES.map(theme => <label key={theme} className={styles.theme} data-theme-preview={theme}>
             <input type="radio" name="ui-theme" value={theme} checked={preferences.theme === theme}
               onChange={() => preferences.update({theme})} data-testid={'theme-' + theme} />
-            <span aria-hidden="true" className={styles.preview}>✦ Aa</span><span>{t['theme_' + theme]}</span>
+            <ThemePreview theme={theme} /><span className={styles.themeName}>{t['theme_' + theme]}</span><span className={styles.themeDescription}>{t['themeDesc_' + theme]}</span>
           </label>)}
         </fieldset>
         <p>{t.themeHelp}</p>

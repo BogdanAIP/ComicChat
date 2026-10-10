@@ -555,6 +555,8 @@
     "components/ComicStoryFeed.js",
     "styles/Profile.module.css",
     "components/Profile.js",
+    "styles/ThemePreview.module.css",
+    "components/ThemePreview.js",
     "styles/Settings.module.css",
     "components/Settings.js",
     "utils/usePasswordRecovery.js",
@@ -566,5 +568,5 @@
     "styles/themes.css",
     "mcp-ui/main.jsx"
   ],
-  "bytes": 1095499
+  "bytes": 1115046
 }
