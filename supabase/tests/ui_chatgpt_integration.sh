@@ -73,4 +73,5 @@ G="$(as_user "$A" "SELECT public.comic_create_group('UI test closed room','close
 GM="$(as_user "$A" "SELECT id FROM public.comic_send_message('$G'::uuid,gen_random_uuid(),'group');")"
 deny_service "SELECT public.comic_commit_chatgpt_art('$A'::uuid,'$GM'::uuid,'$ART1'::uuid,'image/png');" "DM attachment handler accepted group message"
 [[ "$(as_service "SELECT external_generation_enabled FROM public.comic_generation_config WHERE singleton_id=1;")" == "f" ]]
+"${PSQL[@]}" -c "UPDATE public.comic_generation_job SET status='failed',lease_token=NULL,lease_expires_at=NULL,attempt_asset_id=NULL WHERE sender_id IN('$A'::uuid,'$B'::uuid) AND status IN('queued','rendering');" >/dev/null
 echo 'Account-scoped preferences, sender-only art, original text and frozen snapshots: PASS'
